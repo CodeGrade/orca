@@ -1,6 +1,24 @@
-# Orca: A Grading Server
+# README
 
-Orca is a grading server for Computer Science submissions that works in tandem with [Bottlenose](https://github.com/codegrade/bottlenose).
+This README would normally document whatever steps are necessary to get the
+application up and running.
 
-The server's main functionality is provided with a REST API, where the files from a student submission are submitted (_possibly_) with
-teacher files and a configuration for how to build and test the submission.
+Things you may want to cover:
+
+* Ruby version
+
+* System dependencies
+
+* Configuration
+
+* Database creation
+
+* Database initialization
+
+* How to run the test suite
+
+* Services (job queues, cache servers, search engines, etc.)
+
+* Deployment instructions
+
+* ...
