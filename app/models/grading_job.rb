@@ -1,3 +1,2 @@
 class GradingJob < ApplicationRecord
-    
 end
