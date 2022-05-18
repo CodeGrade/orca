@@ -1,0 +1,10 @@
+{
+  "studentCode": "",
+  "commands": [
+    {
+      "cmd": "echo hello",
+      "onComplete": "output",
+      "onFail": "abort"
+    }
+  ]
+}
