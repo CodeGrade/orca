@@ -1,5 +1,5 @@
 from subprocess import run, CompletedProcess
-from scripting.grading_script_command_response import GradingScriptCommandResponse
+from grading_script.grading_script_command_response import GradingScriptCommandResponse
 
 class GradingScriptCommand:
 
