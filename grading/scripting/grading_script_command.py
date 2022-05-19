@@ -1,5 +1,5 @@
 from subprocess import run, CompletedProcess
-from grading.scripting.grading_script_command_response import GradingScriptCommandResponse
+from scripting.grading_script_command_response import GradingScriptCommandResponse
 
 class GradingScriptCommand:
 
@@ -9,9 +9,9 @@ class GradingScriptCommand:
     self.__on_fail = on_fail
   
   def exec_cmd(self) -> GradingScriptCommandResponse:
-    res: CompletedProcess = run(self.__cmd, capture_output=True, check=True)
+    res: CompletedProcess = run(self.__cmd, capture_output=True, check=True, shell=True)
     if res.stderr:
-      return GradingScriptCommandResponse(True, res.stderr, self.__on_fail, self.__cmd)
+      return GradingScriptCommandResponse(True, res.stderr.decode(), self.__on_fail, self.__cmd)
     else:
-      return GradingScriptCommandResponse(False, res.stdout, self.__on_complete, self.__cmd)
+      return GradingScriptCommandResponse(False, res.stdout.decode(), self.__on_complete, self.__cmd)
 
