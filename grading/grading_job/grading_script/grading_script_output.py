@@ -1,0 +1,2 @@
+class GradingScriptOutput:
+  pass

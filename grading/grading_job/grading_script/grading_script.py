@@ -3,11 +3,9 @@ from typing import List
 from grading_script.grading_script_command import GradingScriptCommand
 from grading_script.grading_script_command_response import GradingScriptCommandResponse
 
-DEFAULT_NUM_RETRIES = 2
-
 # TODO: Add files for student code, starter code(?), professor code(?) (tests).
 class GradingScript:  
-  def __init__(self, cmds: List[GradingScriptCommand], max_retries: int = DEFAULT_NUM_RETRIES) -> None:
+  def __init__(self, cmds: List[GradingScriptCommand], max_retries: int) -> None:
     self.__cmds: List[GradingScriptCommand] = cmds
     self.__num_retries = 0
     self.__max_retries = max_retries

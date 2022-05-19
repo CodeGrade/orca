@@ -1,4 +1,4 @@
-GRADING_JOB_SCHEMA = {
+GradingJobSchema = {
   "type": "object",
   "properties": {
     "student_code": { "type": "string" },

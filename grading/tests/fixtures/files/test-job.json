@@ -6,5 +6,7 @@
       "on_complete": "output",
       "on_fail": "abort"
     }
-  ]
+  ],
+  "submission_id": "123",
+  "grade_id": "234"
 }
