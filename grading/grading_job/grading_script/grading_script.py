@@ -1,7 +1,7 @@
 from typing import List
 
-from grading_script.grading_script_command import GradingScriptCommand
-from grading_script.grading_script_command_response import GradingScriptCommandResponse
+from grading_job.grading_script.grading_script_command import GradingScriptCommand
+from grading_job.grading_script.grading_script_command_response import GradingScriptCommandResponse
 
 # TODO: Add files for student code, starter code(?), professor code(?) (tests).
 class GradingScript:  
@@ -13,6 +13,8 @@ class GradingScript:
   # TODO: Create new Output class to capture all information.
   # TODO: This should probably be a while loop where we can navigate 
   # back to a previous/future command (i.e., onComplete and onAbort logic)
+  # TODO: Should we pass in the student/starter/professor code paths here?
+  # TODO: How to handle interpolated strings (i.e. \"$ASSETS\")?
   def execute_script(self) -> str:
     for cmd in self.__cmds:
       cmd_output: GradingScriptCommandResponse = cmd.exec_cmd()
@@ -22,3 +24,6 @@ class GradingScript:
         print("OUTPUT: {0}".format(cmd_output.get_output()))
       if cmd_output.get_next() == "output":
         return cmd_output.get_output()
+    
+  def set_max_retries(self, max_retries: int) -> None:
+    self.__max_retries = max_retries

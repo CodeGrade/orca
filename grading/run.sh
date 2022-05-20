@@ -1,3 +1,3 @@
-pipenv install > /dev/null
+pipenv install
 # TODO: We need to actually pass in the files to this script.
-cat assets/test-script.json | pipenv run python3 do_grading.py
+cat tests/fixtures/files/test-job.json | pipenv run python3 do_grading.py
