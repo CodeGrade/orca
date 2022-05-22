@@ -4,14 +4,14 @@ from typing import Dict
 from jsonschema import validate
 from grading_job.grading_job_builder import GradingJobBuilder
 from grading_job.grading_script.grading_script_output import GradingScriptOutput
-from validations.schemas.grading_script_schema import GradingJobSchema
+from validations.schemas.grading_job_schema import GradingJobSchema
 from grading_job.grading_job import GradingJob
 from grading_job.grading_script.grading_script import GradingScript
 from grading_job.grading_script.grading_script_command import GradingScriptCommand
 
 # TODO: We actually want to snatch the entire grading job JSON.
 # TODO: Builder pattern for GradingJob
-def get_grading_job_from_stdin() -> GradingScript:
+def get_grading_job_from_stdin() -> GradingJob:
   grading_job_json_str: str = sys.stdin.read()
   try:
     grading_job_json: Dict = json.loads(grading_job_json_str)

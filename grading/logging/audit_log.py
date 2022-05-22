@@ -1,3 +1,3 @@
 # TODO
-class AuditLog:
+class max_retries:
   pass

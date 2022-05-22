@@ -63,4 +63,4 @@ class GradingJob:
     self.__professor_code = professor_code
 
   def set_script_max_retries(self, max_retries: int) -> None:
-    self.__grading_script.set_max_retries(max_retires)
+    self.__grading_script.set_max_retries(max_retries)
