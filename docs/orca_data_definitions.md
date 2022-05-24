@@ -15,7 +15,7 @@ A `GradingJobConfig` is a JSON object that contains details about how to grade a
   starter_code?: string,
   student_code: string,
   professor_code?: string,
-  max_retries?: number
+  max_retries?: number,
   script: [GradingScriptCommand]
 }
 ```
@@ -36,9 +36,9 @@ A `GradingScriptCommand` defines an execution step during the autograding proces
 }
 ```
 
-The `cmd` key holds a string which is a shell command to be exectued by the autograding program. Commands include but are not limited to copying contents, compiling code, or running tests.
+The `cmd` key holds a string which is a shell command to be executed by the autograding program. Commands include but are not limited to copying contents, compiling code, or running tests.
 
-The `on_fail` value is a string of either `"abort"` or a string containing an integer _i_ that is in the range [0, # of commands]. When executing the script, if the command fails it will either exit the script if `on_fail` is set to `"abort"`, or will go to the command at the specified index.
+The `on_fail` value is a string of either `"abort"` or a string containing an integer _i_ that is in the range [0, (# of commands) - 1]. When executing the script, if the command fails it will either exit the script if `on_fail` is set to `"abort"`, or will go to the command at the specified index.
 
 The `on_complete` key serves a similar purpose to `on_fail`, but now we exit the script successfully upon the key word `"output"`. If the string contains an integer, we instead go to that index in the script. Usually, this will just be the next command in the array.
 
@@ -59,7 +59,6 @@ class GradingJob {
   gradingJobConfig: GradingJobConfig;
   spamCounter: number;
   createdAt: Date;
-  updatedAt: Date;
 }
 ```
 
@@ -72,12 +71,21 @@ Once a grading job has been completed on the Grading VM, we use a `GradingJobOut
 ```typescript
 {
   tap_output?: string,
-  audit: string,
+  audit: [string],
   errors?: [string],
   grade_id: string,
   submission_id: string
 }
 ```
+
+The required fields for the output include the grade Id and the submission Id associated with the job, as well as `audit`, which maps to a log (in the form of an array of strings) detailing the execution of the job.
+
+The optional fields are the following:
+
+- `tap_output` : The Test Anything Protocol (TAP) contents from a successful test execution.
+- `errors` : An array of error messages received from executing the grading script.
+
+**NOTE:** TAP output is present **iff** errors are not present, and errors are present **iff** TAP output is not present.
 
 ## Remaining Questions
 
