@@ -9,8 +9,8 @@ from grading_job.grading_job import GradingJob
 from grading_job.grading_script.grading_script import GradingScript
 from grading_job.grading_script.grading_script_command import GradingScriptCommand
 
-# TODO: We actually want to snatch the entire grading job JSON.
-# TODO: Builder pattern for GradingJob
+# TODO: Change ids to ints
+
 def get_grading_job_from_stdin() -> GradingJob:
   grading_job_json_str: str = sys.stdin.read()
   try:

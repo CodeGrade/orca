@@ -10,15 +10,19 @@ A `GradingJobConfig` is a JSON object that contains details about how to grade a
 
 ```typescript
 {
-  submission_id: string,
-  grade_id: string,
+  submission_id: number,
+  grade_id: number,
   starter_code?: string,
   student_code: string,
   professor_code?: string,
   max_retries?: number,
-  script: [GradingScriptCommand]
+  script: [GradingScriptCommand],
+  team_id?: number,
+  user_id?: number
 }
 ```
+
+[comment]: <> (Add description for team/user id.)
 
 `GradingJobConfig`s require a Grade Id and Submission Id (pulled from Bottlenose), as well as a path to a student's code files to be autograded. These are mapped to the `grade_id`, `submission_id`, and `student_code` keys, respectively. The object must also contain a grading script (specified by the `grading_script` key), which are a series of steps to execute such that an assignment can be graded. Each item in the list is in the shape of a `GradingScriptCommand` object.
 
@@ -73,8 +77,10 @@ Once a grading job has been completed on the Grading VM, we use a `GradingJobOut
   tap_output?: string,
   audit: [string],
   errors?: [string],
-  grade_id: string,
-  submission_id: string
+  grade_id: number,
+  submission_id: number,
+  user_id?: number,
+  team_id?: number
 }
 ```
 

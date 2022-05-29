@@ -1,5 +1,5 @@
 from typing import List
-
+from grading_job.grading_job_output import GradingJobOutput
 from grading_job.grading_script.grading_script_command import GradingScriptCommand
 from grading_job.grading_script.grading_script_command_response import GradingScriptCommandResponse
 
@@ -15,7 +15,7 @@ class GradingScript:
   # back to a previous/future command (i.e., onComplete and onAbort logic)
   # TODO: Should we pass in the student/starter/professor code paths here?
   # TODO: How to handle interpolated strings (i.e. \"$ASSETS\")?
-  def execute_script(self) -> str:
+  def execute_script(self) -> GradingJobOutput:
     for cmd in self.__cmds:
       cmd_output: GradingScriptCommandResponse = cmd.exec_cmd()
       if cmd_output.is_error():

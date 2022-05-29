@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Dict
 
 GradingScriptCommandJSON = Dict[str, str]
-GradingScriptOutputJSON = Dict[str, str]
+GradingScriptOutputJSON = Dict[str, Any]

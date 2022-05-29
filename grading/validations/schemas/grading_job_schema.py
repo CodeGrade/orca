@@ -1,3 +1,4 @@
+# TODO: Add team and user id
 GradingJobSchema = {
   "type": "object",
   "properties": {
