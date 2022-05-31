@@ -6,8 +6,6 @@ The following is a breakdown of the features left to implement to get Orca up an
 
 ## Orca
 
-<hr>
-
 ### API/HTTP Server [ ]
 
 - Validate incoming JSON [ ]
@@ -45,8 +43,6 @@ The following is a breakdown of the features left to implement to get Orca up an
 
 ## Grading Containers
 
-<hr>
-
 ### Redis/Grading Queue
 
 - Retrieval of `GradingJobConfig` from the Queue [ ]
@@ -71,8 +67,6 @@ The following is a breakdown of the features left to implement to get Orca up an
 <hr>
 
 ## Bottlenose
-
-<hr>
 
 ### API [ ]
 
