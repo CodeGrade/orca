@@ -7,7 +7,7 @@ class GradingScriptCommandResponse:
 
   Possibilities:
     - isError() == true && (next == "abort" || next == "<int>")
-    - isError() == false && (next == "abort" || next == "<int>")
+    - isError() == false && (next == "output" || next == "<int>")
   """
 
   def __init__(self, isError: bool, output: str, next: str, cmd: str) -> None:
