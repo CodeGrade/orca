@@ -47,18 +47,20 @@ The following is a breakdown of the features left to implement to get Orca up an
 
 <hr>
 
+### Redis/Grading Queue
+
+- Retrieval of `GradingJobConfig` from the Queue [ ]
+  - Lock/Semaphore on a job such that only "this" container has access [ ]
+
 ### Grading Script [ ]
 
 - Execution of Scripts [ ]s
-
   - Retries [ ]
   - Saving to Log [ ]
   - Producing TAP Output [ ]
   - Error Handling [ ]
   - Assets (e.g., Javalib and Tester library) [ ]
-
 - Retrieval of Student/Other Files [ ]
-
 - Send Results to Orca [ ]
 
 ### Docker
