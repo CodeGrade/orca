@@ -7,9 +7,12 @@ Workflow and Implementation Details:
   - Cover Fail Case/Convert error to GradingJobOutput object [ ]
 
 - Download Files [ ]
+  - Generate secret for build and other dirs so students cannot guess path names [ ]
   - Use HTTP request (basically curl/wget) with given URLs [ ]
   - Extract into directories [ ]
     - Security measures (see ArchiveUtils on Bottlenose) [ ]
+    - Change Behavior based on single code file vs .zip file [ ]
+      - Extract file extension [ ]
 
 - Execute GradingScript [ ]
   - Interpolated Strings [ ]

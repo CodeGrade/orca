@@ -1,4 +1,6 @@
 from typing import List
+from grading_job.build_script.retrieve_files import FileRetrievalCommand
+from grading_job.grading_job_output import GradingJobOutput
 from validations.grading_job_json_types import GradingScriptCommandJSON
 from grading_job.grading_script.grading_script import GradingScript
 from grading_job.grading_script.grading_script_command import GradingScriptCommand
@@ -22,10 +24,51 @@ class GradingJob:
   """
 
   def __init__(self, submission_id: int, grade_id: int, student_code: str, grading_script: GradingScript) -> None:
-      self.__grade_id = grade_id
-      self.__submission_id = submission_id
-      self.__student_code = student_code
-      self.__grading_script = grading_script
+      self.__grade_id: int = grade_id
+      self.__submission_id: int = submission_id
+      self.__student_code: str = student_code
+      self.__grading_script: GradingScript = grading_script
+      self.__starter_code: str = None
+      self.__professor_code: str = None
+      self.__interpolated_dirs: dict[str, str] = { "$ASSETS": "/assets" }
+
+  def execute_grading_job(self) -> GradingJobOutput:
+    """
+    Executes a grading job in full with the following workflow:
+      1.) Download student, as well as Possibly starter and professor code.
+      2.) Execute this object's GradingScript
+      3.) Return the results in a GradingJobOutput object.
+    """
+    # TODO: Replace sub/grade ID in dir name with secret. This goes for other files as well.
+    build_dir = f"{self.__submission_id}_{self.__grade_id}_build"
+    self.__interpolated_dirs["$BUILD"] = build_dir
+    self.retrieve_job_files()
+  
+  def retrieve_job_files(self) -> None:
+    """
+    Retrieves the code files necessary to run this GradingJob. This method has many side effects, 
+    including the following:
+      - Downloading either individual code files (e.g., code.java) or .zip files.
+      - Placing files (i.e., extraction in case of .zip) into specific directories.
+      - Updating the interpolated directories dictionary.
+    """
+    student_code_dir = f"{self.__submission_id}_{self.__submission_id}_student"
+    self.__interpolated_dirs
+    # TODO: Replace this with correct class
+    student_retrieval_cmd: FileRetrievalCommand = None
+    student_retrieval_cmd.execute()
+    self.__interpolated_dirs["$STUDENT"] = student_code_dir
+    if self.__starter_code:
+      starter_code_dir = f"{self.__submission_id}_{self.__grade_id}_starter"
+      starter_retrieval_cmd: FileRetrievalCommand = None
+      starter_retrieval_cmd.execute()
+      self.__interpolated_dirs["$STARTER"] = starter_code_dir
+    if self.__professor_code:
+      professor_code_dir = f"{self.__submission_id}_{self.__grade_id}_professor"
+      professor_retrieval_cmd: FileRetrievalCommand = None
+      professor_retrieval_cmd.execute()
+      self.__interpolated_dirs["$PROFESSOR"] = professor_code_dir
+
 
   @staticmethod
   def generate_grading_script(commands: List[GradingScriptCommandJSON], max_retries: int = DEFAULT_NUM_RETRIES):
