@@ -21,7 +21,7 @@ class GradingJob:
     - Max No. Retries allowed during execution. Default is two retries.
   """
 
-  def __init__(self, submission_id: str, grade_id: str, student_code: str, grading_script: GradingScript) -> None:
+  def __init__(self, submission_id: int, grade_id: int, student_code: str, grading_script: GradingScript) -> None:
       self.__grade_id = grade_id
       self.__submission_id = submission_id
       self.__student_code = student_code
@@ -38,16 +38,16 @@ class GradingJob:
     gs_cmd_objs = map(cmd_json_to_class, commands)
     return GradingScript(gs_cmd_objs, max_retries)
   
-  def get_grade_id(self) -> str:
+  def get_grade_id(self) -> int:
     return self.__grade_id
   
-  def get_submission_id(self) -> str:
+  def get_submission_id(self) -> int:
     return self.__submission_id
 
   def get_student_code(self) -> str:
     return self.__student_code
 
-  def get_grading_script(self) -> str:
+  def get_grading_script(self) -> GradingScript:
     return self.__grading_script
 
   def get_starter_code(self) -> str:

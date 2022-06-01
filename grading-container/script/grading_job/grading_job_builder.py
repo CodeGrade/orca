@@ -14,7 +14,7 @@ class GradingJobBuilder:
   def __init__(self) -> None:
       self.__grading_job = None
 
-  def create_grading_job(self, submission_id: str, grade_id: str, student_code: str, grading_script: GradingScript) -> None:
+  def create_grading_job(self, submission_id: int, grade_id: int, student_code: str, grading_script: GradingScript) -> None:
     """
     Creates a GradingJob instance contained by this builder. Takes in the parameters deemed necessary by the GradingJob 
     constructor.

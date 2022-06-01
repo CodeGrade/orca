@@ -10,10 +10,8 @@ class GradingScript:
     self.__num_retries = 0
     self.__max_retries = max_retries
     
-  # TODO: Create new Output class to capture all information.
   # TODO: This should probably be a while loop where we can navigate 
   # back to a previous/future command (i.e., onComplete and onAbort logic)
-  # TODO: Should we pass in the student/starter/professor code paths here?
   # TODO: How to handle interpolated strings (i.e. \"$ASSETS\")?
   def execute_script(self) -> GradingJobOutput:
     for cmd in self.__cmds:
@@ -27,3 +25,6 @@ class GradingScript:
     
   def set_max_retries(self, max_retries: int) -> None:
     self.__max_retries = max_retries
+  
+  def get_max_retries(self) -> int:
+    return self.__max_retries

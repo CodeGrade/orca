@@ -3,7 +3,7 @@ from validations.grading_job_json_types import GradingScriptOutputJSON
 
 
 class GradingJobOutput:
-  def __init__(self, audit: List[str], grade_id: str, submission_id: str, tap_output: str = None, errors: List[str] = None) -> None:
+  def __init__(self, audit: List[str], grade_id: int, submission_id: int, tap_output: str = None, errors: List[str] = None) -> None:
     self.audit = audit
     self.grade_id = grade_id
     self.submission_id = submission_id
