@@ -3,13 +3,10 @@ import json
 from typing import Dict
 from jsonschema import validate
 from grading_job.grading_job_builder import GradingJobBuilder
-from grading_job.grading_script.grading_script_output import GradingScriptOutput
+from grading_job.grading_job_output import GradingJobOutput
 from validations.schemas.grading_job_schema import GradingJobSchema
 from grading_job.grading_job import GradingJob
 from grading_job.grading_script.grading_script import GradingScript
-from grading_job.grading_script.grading_script_command import GradingScriptCommand
-
-# TODO: Change ids to ints
 
 def get_grading_job_from_stdin() -> GradingJob:
   grading_job_json_str: str = sys.stdin.read()
@@ -44,7 +41,7 @@ def build_grading_job_from_json(grading_job_json: Dict) -> GradingJob:
     builder.add_max_retries(grading_job_json['max_retries'])
   return builder.get_grading_job()
 
-def do_grading() -> GradingScriptOutput:
+def do_grading() -> GradingJobOutput:
   grading_job: GradingJob = get_grading_job_from_stdin()
   print(grading_job)
 

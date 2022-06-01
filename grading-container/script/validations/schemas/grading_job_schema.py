@@ -18,7 +18,8 @@ GradingJobSchema = {
     },
     "max_retries": { "type": "integer" },
     "team_id": { "type": "integer" },
-    "user_id": { "type": "integer" }
+    "user_id": { "type": "integer" },
+    "priority": { "type": "integer" }
   },
-  "required": ["submission_id", "grade_id", "student_code", "commands"]
+  "required": ["submission_id", "grade_id", "student_code", "commands", "priority"]
 }

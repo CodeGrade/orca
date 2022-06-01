@@ -4,6 +4,7 @@ Workflow and Implementation Details:
   - Read in JSON from sys.stdin [X]
   - Validate the JSON schema [X]
   - Convert into Class/object [X]
+  - Cover Fail Case/Convert error to GradingJobOutput object [ ]
 
 - Download Files [ ]
   - Use HTTP request (basically curl/wget) with given URLs [ ]
