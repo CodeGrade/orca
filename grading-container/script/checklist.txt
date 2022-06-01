@@ -1,0 +1,24 @@
+Workflow and Implementation Details:
+
+- Import GradingJob from JSON [X]
+  - Read in JSON from sys.stdin [X]
+  - Validate the JSON schema [X]
+  - Convert into Class/object [X]
+
+- Download Files [ ]
+  - Use HTTP request (basically curl/wget) with given URLs [ ]
+  - Extract into directories [ ]
+    - Security measures (see ArchiveUtils on Bottlenose) [ ]
+
+- Execute GradingScript [ ]
+  - Interpolated Strings [ ]
+    - Define where student/starter/professor code is [ ]
+    - Define where build directory will be [ ]
+  - Allow for retries/navigation between indices [ ]
+  - Implement logic for "abort" and "output" [ ]
+  - Stop execution on Errors [ ]
+  - Logging of execution details (Audit) [ ]
+  - Send to Output Object [ ]
+
+- Output and Results [ ]
+  - Write results as JSON to sys.stdout [ ]
