@@ -7,10 +7,10 @@ GradingJobSchema = {
   "properties": {
     "submission_id": { "type": "integer" },
     "grade_id": { "type": "integer" },
-    "student_code": { "type": "string" },
-    "starter_code": { "type": "string" },
-    "professor_code": { "type": "string" },
-    "commands": {
+    "student_code": { "$ref": "validations/schemas/code_file_schema.py" },
+    "starter_code": { "$ref": "validations/schemas/code_file_schema.py" },
+    "professor_code": { "$ref": "validations/schemas/code_file_schema.py" },
+    "script": {
       "type": "array",
       "items": {
         "$schema": "validations/schemas/grading_script_command_schema.py" 
@@ -21,5 +21,5 @@ GradingJobSchema = {
     "user_id": { "type": "integer" },
     "priority": { "type": "integer" }
   },
-  "required": ["submission_id", "grade_id", "student_code", "commands", "priority"]
+  "required": ["submission_id", "grade_id", "student_code", "script", "priority"]
 }

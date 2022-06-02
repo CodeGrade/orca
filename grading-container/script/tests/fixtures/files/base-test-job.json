@@ -1,5 +1,8 @@
 {
-  "student_code": "/path/to/student/code",
+  "student_code": {
+    "url": "/path/to/student/code",
+    "mime_type": "text"
+  },
   "commands": [
     {
       "cmd": "echo hello",

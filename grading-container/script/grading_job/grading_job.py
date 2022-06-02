@@ -1,6 +1,5 @@
 from tracemalloc import start
 from typing import List
-from grading_job.build_script.code_files import CodeFiles
 from grading_job.build_script.retrieve_file_command_factory import RetrieveFileCommandFactory
 from grading_job.build_script.retrieve_file_commands import FileRetrievalCommand
 from grading_job.grading_job_output import GradingJobOutput
@@ -72,7 +71,7 @@ class GradingJob:
     student_rfc = retrieval_cmd_factory.generate_retrieval_command(CodeFiles.student_code, 
       self.__student_code, secret)
     student_rfc.execute()
-    self.__interpolated_dirs["$STUDENT"] = student_rfc.get_save_dir_path()
+    self.__interpolated_dirs["$STUDENT"] = student_rfc.get_save_dir()
     audit.log_details("Successfully retrieved student file(s).")
     # Both of these must exist. Starter code will generally not be available, 
     # and is even moreso pointless if tests do not exist as well.
@@ -82,14 +81,14 @@ class GradingJob:
       starter_rfc = retrieval_cmd_factory.generate_retrieval_command(CodeFiles.starter_code, 
         self.__starter_code, secret)
       starter_rfc.execute()
-      self.__interpolated_dirs["$STARTER"] = starter_rfc.get_save_dir_path()
+      self.__interpolated_dirs["$STARTER"] = starter_rfc.get_save_dir()
       audit.log_details("Successfully retrieved starter code.")
       # Retrieve Professor Code/Tests
       audit.log_details(f"Retrieving professor tests/code from {self.__professor_code}")
       professor_rfc = retrieval_cmd_factory.generate_retrieval_command(CodeFiles.professor_code, 
         self.__professor_code, secret)
       professor_rfc.execute()
-      self.__interpolated_dirs["$PROFESSOR"] = professor_rfc.get_save_dir_path()
+      self.__interpolated_dirs["$PROFESSOR"] = professor_rfc.get_save_dir()
       audit.log_details("Successfully retrieved professor tests/code.")
     
   @staticmethod

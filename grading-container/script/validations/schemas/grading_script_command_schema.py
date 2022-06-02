@@ -1,4 +1,4 @@
-GRADING_SCRIPT_SCHEMA = {
+GradingScriptCommandSchema = {
   "type": "object",
   "properties": {
     "cmd": { "type": "string" },

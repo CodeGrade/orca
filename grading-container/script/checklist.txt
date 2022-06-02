@@ -5,7 +5,7 @@ Workflow and Implementation Details:
   - Validate the JSON schema [X]
   - Convert into Class/object [X]
   - Cover Fail Case/Convert error to GradingJobOutput object [ ]
-  - Add timeout to 
+  - Add timeout to reading from STDIN [ ]
 
 - Download Files [ ]
   - Use HTTP request (basically curl/wget) with given URLs [ ]
@@ -19,8 +19,8 @@ Workflow and Implementation Details:
     - Define where student/starter/professor code is [X]
     - Define where build directory will be [X]
   - Allow for retries/navigation between indices [ ]
-  - Create object for ScriptCommandOutput [ ]
-    - Add boolean field/getter for if command timed out [ ]
+  - Create object for ScriptCommandOutput [X]
+    - Add boolean field/getter for if command timed out [X]
   - Implement logic for "abort" and "output" [ ]
   - Stop execution on Errors [ ]
   - Logging of execution details (Audit) [ ]
@@ -29,5 +29,5 @@ Workflow and Implementation Details:
     - Network Access (likely a Docker thing) [ ]
     - File/IO access (how?) [ ]
 
-- Output and Results [ ]
-  - Write results as JSON to sys.stdout [ ]
+- Output and Results [X]
+  - Write results as JSON to sys.stdout [X]
