@@ -5,20 +5,22 @@ Workflow and Implementation Details:
   - Validate the JSON schema [X]
   - Convert into Class/object [X]
   - Cover Fail Case/Convert error to GradingJobOutput object [ ]
+  - Add timeout to 
 
 - Download Files [ ]
-  - Generate secret for build and other dirs so students cannot guess path names [ ]
   - Use HTTP request (basically curl/wget) with given URLs [ ]
   - Extract into directories [ ]
     - Security measures (see ArchiveUtils on Bottlenose) [ ]
     - Change Behavior based on single code file vs .zip file [ ]
-      - Extract file extension [ ]
+      - Extract file extension [ ] // Tentatively done but needs refactoring
 
 - Execute GradingScript [ ]
-  - Interpolated Strings [ ]
-    - Define where student/starter/professor code is [ ]
-    - Define where build directory will be [ ]
+  - Interpolated Strings [X]
+    - Define where student/starter/professor code is [X]
+    - Define where build directory will be [X]
   - Allow for retries/navigation between indices [ ]
+  - Create object for ScriptCommandOutput [ ]
+    - Add boolean field/getter for if command timed out [ ]
   - Implement logic for "abort" and "output" [ ]
   - Stop execution on Errors [ ]
   - Logging of execution details (Audit) [ ]
