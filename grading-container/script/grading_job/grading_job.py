@@ -10,6 +10,7 @@ from grading_job.grading_script.grading_script import GradingScript
 from grading_job.grading_script.grading_script_command import GradingScriptCommand
 
 DEFAULT_NUM_RETRIES = 2
+COMMAND_TIMEOUT = 60 # 1 Minute
 
 class GradingJob:
   """
@@ -98,7 +99,7 @@ class GradingJob:
     that can take these commands and execute them.
     """
     def cmd_json_to_class(cmd: GradingScriptCommandJSON) -> GradingScriptCommand:
-      return GradingScriptCommand(cmd['cmd'], cmd['on_complete'], cmd['on_fail'])
+      return GradingScriptCommand(cmd['cmd'], cmd['on_complete'], cmd['on_fail'], COMMAND_TIMEOUT)
     gs_cmd_objs = map(cmd_json_to_class, commands)
     return GradingScript(gs_cmd_objs, max_retries)
   

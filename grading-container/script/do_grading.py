@@ -51,7 +51,11 @@ def build_grading_job_from_json(grading_job_json: Dict) -> GradingJob:
 def do_grading() -> GradingJobOutput:
   audit = Audit()
   secret = GradingJobExecutionSecret().get_secret()
-  grading_job: GradingJob = get_grading_job_from_stdin()
+  grading_job: GradingJob = get_grading_job_from_stdin(audit)
+  output = grading_job.execute_grading_job(secret, audit)
+  json_repr = output.to_json()
+  json_str = json.dumps(json_repr)
+  sys.stdout.write(json_str)
 
 
 if __name__ == "__main__":

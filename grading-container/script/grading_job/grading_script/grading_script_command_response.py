@@ -10,11 +10,14 @@ class GradingScriptCommandResponse:
     - isError() == false && (next == "output" || next == "<int>")
   """
 
-  def __init__(self, isError: bool, output: str, next: str, cmd: str) -> None:
+  def __init__(self, isError: bool, output: str, next: str, cmd: str, 
+    status_code: int, timed_out: bool = False) -> None:
     self.__isError = isError
     self.__output = output
     self.__next = next
     self.__cmd = cmd
+    self.__status_code = status_code
+    self.__timed_out = timed_out
   
   def is_error(self) -> bool:
     return self.__isError
@@ -27,3 +30,9 @@ class GradingScriptCommandResponse:
   
   def get_original_cmd(self) -> str:
     return self.__cmd
+
+  def get_status_code(self) -> int:
+    return self.__status_code
+
+  def did_time_out(self) -> bool:
+    return self.__timed_out
