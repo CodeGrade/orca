@@ -23,6 +23,9 @@ Workflow and Implementation Details:
   - Stop execution on Errors [ ]
   - Logging of execution details (Audit) [ ]
   - Send to Output Object [ ]
+  - Lock down Program [ ]
+    - Network Access (likely a Docker thing) [ ]
+    - File/IO access (how?) [ ]
 
 - Output and Results [ ]
   - Write results as JSON to sys.stdout [ ]

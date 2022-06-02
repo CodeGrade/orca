@@ -2,25 +2,32 @@ import sys
 import json
 from typing import Dict
 from jsonschema import validate
+from audit import Audit
+from exceptions import GradingJobProcessingException
+from grading_job.exec_secret import GradingJobExecutionSecret
 from grading_job.grading_job_builder import GradingJobBuilder
 from grading_job.grading_job_output import GradingJobOutput
 from validations.schemas.grading_job_schema import GradingJobSchema
 from grading_job.grading_job import GradingJob
 from grading_job.grading_script.grading_script import GradingScript
 
-def get_grading_job_from_stdin() -> GradingJob:
+# TODO: Add timeout for reading from STDIN.
+# TODO: Add JSON Schema validation exception.
+def get_grading_job_from_stdin(audit: Audit) -> GradingJob:
+  audit.log("Attempting to read JSON from STDIN...")
   grading_job_json_str: str = sys.stdin.read()
+  audit.log("Successfully read JSON from STDIN.")
   try:
+    audit.log("Creating grading job for execution...")
     grading_job_json: Dict = json.loads(grading_job_json_str)
     validate(grading_job_json, GradingJobSchema)
     grading_job: GradingJob = build_grading_job_from_json(grading_job_json)
+    audit.log("Successfully processed and created the grading job.")
     return grading_job
   except (json.JSONDecodeError, KeyError) as e:
-    # TODO: Should we write out the exception message?
-    # TODO: Should this just be some sort of JSON object sent back to Orca?
-    print(e.msg)
-    sys.stderr.write("ERROR: The given grading script (JSON) was malformed and could not be parsed.")
-    exit(1)
+    log_message = f"A grading job could not be created due to the following exception: {e.msg}"
+    audit.log_details(log_message, error=True)
+    raise GradingJobProcessingException(e.msg)
 
 def build_grading_job_from_json(grading_job_json: Dict) -> GradingJob:
   """
@@ -42,8 +49,10 @@ def build_grading_job_from_json(grading_job_json: Dict) -> GradingJob:
   return builder.get_grading_job()
 
 def do_grading() -> GradingJobOutput:
+  audit = Audit()
+  secret = GradingJobExecutionSecret().get_secret()
   grading_job: GradingJob = get_grading_job_from_stdin()
-  print(grading_job)
+
 
 if __name__ == "__main__":
   do_grading()
