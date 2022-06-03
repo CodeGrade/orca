@@ -3,7 +3,7 @@
     "url": "/path/to/student/code",
     "mime_type": "text"
   },
-  "commands": [
+  "script": [
     {
       "cmd": "echo hello",
       "on_complete": "output",
