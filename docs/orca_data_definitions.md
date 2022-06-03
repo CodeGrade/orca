@@ -12,9 +12,9 @@ A `GradingJobConfig` is a JSON object that contains details about how to grade a
 {
   submission_id: number,
   grade_id: number,
-  starter_code?: string,
-  student_code: string,
-  professor_code?: string,
+  starter_code?: CodeFileInfo,
+  student_code: CodeFileInfo,
+  professor_code?: CodeFileInfo,
   priority: integer,
   max_retries?: number,
   script: [GradingScriptCommand],
@@ -25,7 +25,25 @@ A `GradingJobConfig` is a JSON object that contains details about how to grade a
 
 [comment]: <> (Add description for team/user id.)
 
-`GradingJobConfig`s require a Grade Id and Submission Id (pulled from Bottlenose), as well as a path to a student's code files to be autograded. These are mapped to the `grade_id`, `submission_id`, and `student_code` keys, respectively. Grading jobs have a priority in the form of a timestamp `int`. The object must also contain a grading script (specified by the `grading_script` key), which are a series of steps to execute such that an assignment can be graded. Each item in the list is in the shape of a `GradingScriptCommand` object.
+`GradingJobConfig`s require a Grade Id and Submission Id (pulled from Bottlenose), as well as details about a student's code files (in the form of a `CodeFileInfo` object) to be autograded. These are mapped to the `grade_id`, `submission_id`, and `student_code` keys, respectively.
+
+<hr>
+
+### `CodeFileInfo`
+
+A `CodeFileInfo` is simply a JSON object that contains the URL to an assignment starter, submission,
+or test file, as well as the MIME type of the file.
+
+```typescript
+{
+  "url": string,
+  "mime_type": string
+}
+```
+
+<hr>
+
+Grading jobs have a priority in the form of a timestamp `int`. The object must also contain a grading script (specified by the `grading_script` key), which are a series of steps to execute such that an assignment can be graded. Each item in the list is in the shape of a `GradingScriptCommand` object.
 
 <hr>
 

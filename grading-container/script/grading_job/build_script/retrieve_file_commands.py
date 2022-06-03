@@ -1,9 +1,12 @@
 from grading_job.build_script.code_file_info import CodeFileInfo 
 from grading_job.build_script.code_file_source import CodeFileSource
 from os import makedirs, remove
-from os.path import join
+from os.path import join, basename
 from requests import request
 import tarfile
+from zipfile import ZipFile
+import gzip
+import shutil
 
 class FileRetrievalCommand:
   """
@@ -72,7 +75,7 @@ class ArchiveFileRetrievalCommand(FileRetrievalCommand):
     # 3. Remove original archive/compressed file.
     remove(file_path)
 
-  def _extract_files(self, acv_file_path: str, extract_dir: str) -> None:
+  def _extract_files(self, achv_file_path: str, extract_dir: str) -> None:
     """
     Abstract method for extract some number of files from a fiven
     archive/compressed file based on type.
@@ -89,25 +92,41 @@ class TarFileRetrievalCommand(ArchiveFileRetrievalCommand):
   def _extract_files(self, acv_file_path: str, extract_dir: str) -> None:
     tf = tarfile.open(acv_file_path, "r")
     tf.extractall(extract_dir)
-  
+    tf.close()
 
 class ZipFileRetrievalCommand(ArchiveFileRetrievalCommand):
   """
   Retrival command that downloads, saves, and extracts the contents from
   a .zip file.
   """
-  pass
+  
+  def _extract_files(self, achv_file_path: str, extract_dir: str) -> None:
+    zf = ZipFile(achv_file_path)
+    zf.extractall(extract_dir)
+    zf.close()
 
 class GZipFileRetrievalCommnad(ArchiveFileRetrievalCommand):
   """
-  Retrieval command that downloads, saves, and extracts the contents 
+  Retrieval command that downloads, saves, and decompresses the contents 
   from a .gz file.
   """
-  pass
+  
+  def _extract_files(self, achv_file_path: str, extract_dir: str) -> None:
+    gzf = gzip.open(achv_file_path, "rb")
+    extracted_file_name = basename(achv_file_path).replace(".gz", "")
+    extracted_file_path = join(extract_dir, extracted_file_name)
+    exf = open(extracted_file_path, "wb")
+    shutil.copyfileobj(gzf, exf)
+    gzf.close()
+    exf.close()
 
 class TarGZFileRetrievalCommand(ArchiveFileRetrievalCommand):
   """
   Retrieval command that downloads, saves, and extracts the contents
   from a .tgz/.tar.gz file.
   """
-  pass
+  
+  def _extract_files(self, achv_file_path: str, extract_dir: str) -> None:
+    tgz_file = tarfile.open(achv_file_path, "r:gz")
+    tgz_file.extractall(extract_dir)
+    tgz_file.close()
