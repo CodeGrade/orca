@@ -1,4 +1,5 @@
 from subprocess import CalledProcessError, run, CompletedProcess, TimeoutExpired
+from typing import Dict
 from grading_job.grading_script.grading_script_command_response import GradingScriptCommandResponse
 
 class GradingScriptCommand:
@@ -21,3 +22,24 @@ class GradingScriptCommand:
     except (CalledProcessError) as e:
       return GradingScriptCommandResponse(True, e.stderr.decode(), self.__on_fail, self.__cmd, 
         e.returncode)
+  
+  def get_command_string(self) -> str:
+    """
+    Get this GradingScriptCommand's shell/bash command to be executed by 
+    a GradingScript.
+    """
+    return self.__cmd
+  
+  def replace_interpolated_dirs(self, interpolated_dirs: Dict[str, str]) -> None:
+    """
+    Given a dictionary mapping directory variables to their directory paths, 
+    update the command string to use the proper path.
+
+    Dicitonary example:
+
+    { "$ASSETS": "assets" }
+    """
+    updated_cmd = self.__cmd
+    for dir_key in interpolated_dirs:
+      updated_cmd = updated_cmd.replace(dir_key, interpolated_dirs[dir_key])
+    self.__cmd = updated_cmd
