@@ -1,8 +1,6 @@
 from base64 import b64encode
 from os import urandom
 
-# TODO: This should be a singleton. Find out how those are implemented
-# in Python.
 class GradingJobExecutionSecret:
   """
   Singleton class that contains a secret to be used by various strings,
