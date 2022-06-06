@@ -51,7 +51,8 @@ class GradingJob:
     self.__interpolated_dirs["$BUILD"] = build_dir
     self.retrieve_job_files()
     # TODO: Replace with actual object.
-    output: GradingJobOutput = None
+    output: GradingJobOutput = self.__grading_script.execute_script(audit, self.__grade_id, 
+      self.__submission_id, self.__interpolated_dirs)
     if output.has_tap_output():
       audit.log_details("Successfully completed running the grading script.")
     else: 
@@ -88,7 +89,7 @@ class GradingJob:
       professor_rfc.execute()
       self.__interpolated_dirs["$PROFESSOR"] = professor_rfc.get_save_dir()
       audit.log_details("Successfully retrieved professor tests/code.")
-    
+
   @staticmethod
   def generate_grading_script(commands: List[GradingScriptCommandJSON], max_retries: int = DEFAULT_NUM_RETRIES):
     """
