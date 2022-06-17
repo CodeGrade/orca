@@ -1,0 +1,4 @@
+from grading_job.build_script.retrieve_file_commands import FileRetrievalCommand
+
+class MockFileRetrievalCommand(FileRetrievalCommand):
+  pass
