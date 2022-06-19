@@ -27,7 +27,7 @@ const QueueItem = ({
           <div>#{queue_pos}</div>
         </div>
         <div className="card-body">
-          <table className="table table-sm table-hover table-dark table-striped">
+          <table className="table table-sm table-dark table-striped">
             <tbody>
               <tr>
                 <th scope="row">Submission ID</th>
