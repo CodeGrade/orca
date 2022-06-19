@@ -35,8 +35,54 @@ module Api
 
     # Get all grading jobs
     def index
-        grading_jobs = GradingJob.all
-        render json: grading_jobs
+      grading_jobs = GradingJob.all
+      sorted_grading_jobs = grading_jobs.sort_by(&:priority)
+      render json: sorted_grading_jobs
+    end
+
+    # Update a grading job (move position in queue)
+    def update
+      priority_config = JSON.parse(request.raw_post)
+      new_priority_pos = priority_config["priority"] # 'front' or 'back'
+
+      @grading_job_to_update = GradingJob.find(params[:id])
+      current_priority = @grading_job_to_update.priority
+      new_priority = current_priority
+
+      # Calculate new priority based on desired position in queue
+      if (new_priority_pos == "front")
+        front_priority = GradingJob.minimum(:priority)
+        # Already in front
+        if (front_priority == current_priority)
+        end
+        new_priority = front_priority - 1
+
+      elsif (new_priority_pos == "back")
+        back_priority = GradingJob.maximum(:priority)
+        # Already in back
+        if (back_priority == current_priority)
+        end
+        new_priority = back_priority + 1
+      else
+        # error
+      end
+
+      # There is an update to be made
+      if (new_priority != current_priority)
+        # Update priority in config as well
+        grading_job_config_to_update = @grading_job_to_update.config
+        grading_job_config_to_update["priority"] = new_priority
+        @grading_job_to_update.update(priority: new_priority, config: grading_job_config_to_update)
+      end
+      head :ok
+    end
+
+    # Delete a grading job
+    def destroy
+      @grading_job_to_delete = GradingJob.find(params[:id])
+      @grading_job_to_delete.destroy
+      redirect_to :action => 'index'
+      head :ok # if successful
     end
 
     # Create a grading job

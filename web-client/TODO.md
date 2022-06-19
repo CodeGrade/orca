@@ -30,3 +30,4 @@
 - [ ] What other field/info should I display in `QueueItem` entry (num max retries, link to student code, link to starter code, etc.)
 - [ ] Find better way to conditionally render user id, team id or neither in `QueueItem` table
 - [ ] Move wait time below `QueueItem` table?
+- [ ] Top right of `QueueItem` card currently displays priority when it should be position in queue (want to be given that info)
