@@ -53,8 +53,6 @@ module Api
       if (new_priority_pos == "front")
         front_priority = GradingJob.minimum(:priority)
         # If not already in front
-        puts front_priority
-        puts current_priority
         if (front_priority != current_priority)
           new_priority = front_priority - 1
         end
