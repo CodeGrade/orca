@@ -72,8 +72,10 @@ module Api
         grading_job_config_to_update = @grading_job_to_update.config
         grading_job_config_to_update["priority"] = new_priority
         @grading_job_to_update.update(priority: new_priority, config: grading_job_config_to_update)
+        return render json: {
+          new_priority: new_priority
+        }
       end
-      head :ok
     end
 
     # Delete a grading job

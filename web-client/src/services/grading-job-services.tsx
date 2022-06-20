@@ -14,10 +14,10 @@ export const deleteGradingJob = async (grading_job_id: number) => {
 
 export const moveGradingJob = async (
   grading_job_id: number,
-  new_priority: string
+  new_position: string
 ) => {
   const response = await axios.put(`${API_BASE}/${grading_job_id}`, {
-    priority: new_priority,
+    priority: new_position,
   });
-  return response.data;
+  return response;
 };

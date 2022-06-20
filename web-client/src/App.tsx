@@ -1,14 +1,10 @@
 import "./vendors/bootstrap.min.css";
-import Navbar from "./components/navbar/navbar";
-import Dashboard from "./components/dashboard/dashboard";
+import Orca from "./components/orca";
 
 const App = () => {
   return (
-    <div>
-      <Navbar />
-      <div className="container">
-        <Dashboard />
-      </div>
+    <div className="container-fluid">
+      <Orca />
     </div>
   );
 };

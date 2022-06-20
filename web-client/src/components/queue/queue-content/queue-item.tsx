@@ -1,8 +1,10 @@
 import React from "react";
+import { useDispatch } from "react-redux";
+import { Dispatch } from "redux";
 import {
   deleteGradingJob,
   moveGradingJob,
-} from "../../../services/grading-job-services";
+} from "../../../actions/grading-job-actions";
 
 type QueueItemProps = {
   job_id: number;
@@ -23,19 +25,20 @@ const QueueItem = ({
   team_id,
   wait_time,
 }: QueueItemProps) => {
+  const dispatch: Dispatch = useDispatch();
   const handleDelete = () => {
-    deleteGradingJob(job_id);
+    deleteGradingJob(dispatch, job_id);
     // TODO: check status
     // TODO: delete it locally
   };
   const handleMoveToFront = () => {
-    moveGradingJob(job_id, "front");
+    moveGradingJob(dispatch, job_id, "front");
   };
   const handleMoveToBack = () => {
-    moveGradingJob(job_id, "back");
+    moveGradingJob(dispatch, job_id, "back");
   };
   return (
-    <li className="list-group-item">
+    <li className="list-group-item border border-dark">
       <div className="d-flex justify-content-end">
         <div onClick={() => handleDelete()}>X</div>
       </div>
