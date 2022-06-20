@@ -52,17 +52,18 @@ module Api
       # Calculate new priority based on desired position in queue
       if (new_priority_pos == "front")
         front_priority = GradingJob.minimum(:priority)
-        # Already in front
-        if (front_priority == current_priority)
+        # If not already in front
+        puts front_priority
+        puts current_priority
+        if (front_priority != current_priority)
+          new_priority = front_priority - 1
         end
-        new_priority = front_priority - 1
-
       elsif (new_priority_pos == "back")
         back_priority = GradingJob.maximum(:priority)
-        # Already in back
-        if (back_priority == current_priority)
+        # If not already in back
+        if (back_priority != current_priority)
+          new_priority = back_priority + 1
         end
-        new_priority = back_priority + 1
       else
         # error
       end
@@ -81,7 +82,7 @@ module Api
     def destroy
       @grading_job_to_delete = GradingJob.find(params[:id])
       @grading_job_to_delete.destroy
-      redirect_to :action => 'index'
+      # redirect_to :action => 'index'
       head :ok # if successful
     end
 
