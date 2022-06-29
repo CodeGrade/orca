@@ -1,4 +1,5 @@
 import "./vendors/bootstrap.min.css";
+import "./App.css";
 import Orca from "./components/orca";
 
 const App = () => {

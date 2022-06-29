@@ -38,11 +38,9 @@ const QueueItem = ({
     moveGradingJob(dispatch, job_id, "back");
   };
   return (
-    <li className="list-group-item border border-dark">
-      <div className="d-flex justify-content-end">
-        <div onClick={() => handleDelete()}>X</div>
-      </div>
-      <div className="card text-white bg-dark mb-3">
+    <li className="list-group-item bg-primary border border-dark d-flex flex-column ">
+      <div className="d-flex align-items start flex-column"></div>
+      <div className="card text-white bg-dark mb-3 rounded">
         <div className="card-header d-flex justify-content-between">
           <div>JOB ID: {job_id}</div>
           <div>#{queue_pos}</div>
@@ -71,9 +69,25 @@ const QueueItem = ({
         </div>
         <div className="card-footer">Wait Time: {wait_time}</div>
       </div>
-      <div className="d-flex justify-content-between">
-        <div onClick={() => handleMoveToFront()}>{"<"}-- front</div>
-        <div onClick={() => handleMoveToBack()}>back --{">"}</div>
+      <div className="d-flex justify-content-between mt-auto">
+        <div
+          className="bg-success rounded clickable-icon px-2"
+          onClick={() => handleMoveToFront()}
+        >
+          Front
+        </div>
+        <div
+          className="bg-danger rounded clickable-icon px-2"
+          onClick={() => handleDelete()}
+        >
+          Delete
+        </div>
+        <div
+          className="bg-warning rounded clickable-icon px-2"
+          onClick={() => handleMoveToBack()}
+        >
+          Back
+        </div>
       </div>
     </li>
   );

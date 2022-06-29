@@ -5,6 +5,7 @@
 # API
 
 - [ ] Error handling for axios requests
+- [ ] Need to remove anything having to do with postgres database and replace with redis stuff
 
 # GradingJobReducer
 

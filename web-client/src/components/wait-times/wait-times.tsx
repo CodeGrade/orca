@@ -2,7 +2,7 @@ import React from "react";
 
 const WaitTimes = (): JSX.Element => {
   return (
-    <div className="d-flex justify-content-center mt-2">
+    <div className="d-flex justify-content-center mt-3">
       <ul className="list-group list-group-horizontal text-center">
         <li className="list-group-item list-group-item-success">
           <div className="border-bottom border-success">Min Wait Time</div>

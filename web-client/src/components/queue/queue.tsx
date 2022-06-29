@@ -14,7 +14,7 @@ const Queue = () => {
     getGradingJobQueue(dispatch);
   }, []);
   return (
-    <div className="d-flex justify-content-center align-items-center border border-dark">
+    <div className="d-flex justify-content-center align-items-center mt-3">
       <QueueContent grading_job_queue={grading_job_queue} />;
     </div>
   );
