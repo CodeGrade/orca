@@ -23,7 +23,6 @@ export type GradingJobProps = {
   config: GradingJobConfigProps;
   created_at: string;
   grade_id: number;
-  id: number;
   priority: number;
   submission_id: number;
   team_id?: number;
@@ -53,13 +52,13 @@ const gradingJobReducer = (state: State = initialState, action: AnyAction) => {
         ...state,
         grading_job_queue: state.grading_job_queue.filter(
           (grading_job: GradingJobProps) =>
-            grading_job.id !== action.grading_job_id
+            grading_job.submission_id !== action.grading_job_submission_id
         ),
       });
     // TODO: Abstract from moving back/front
     case MOVE_GRADING_JOB_BACK:
       const job_to_move_back = state.grading_job_queue.find(
-        (job) => job.id === action.grading_job_id
+        (job) => job.submission_id === action.grading_job_submission_id
       );
       if (job_to_move_back) {
         // Update priority of job in state
@@ -69,7 +68,7 @@ const gradingJobReducer = (state: State = initialState, action: AnyAction) => {
         };
         const updated_queue = [
           ...state.grading_job_queue.filter(
-            (job) => job.id !== action.grading_job_id
+            (job) => job.submission_id !== action.grading_job_submission_id
           ),
           updated_job,
         ];
@@ -81,7 +80,7 @@ const gradingJobReducer = (state: State = initialState, action: AnyAction) => {
       return state;
     case MOVE_GRADING_JOB_FRONT:
       const job_to_move_front = state.grading_job_queue.find(
-        (job) => job.id === action.grading_job_id
+        (job) => job.submission_id === action.grading_job_submission_id
       );
       if (job_to_move_front) {
         // Update priority of job in state
@@ -92,7 +91,7 @@ const gradingJobReducer = (state: State = initialState, action: AnyAction) => {
         const updated_queue = [
           updated_job,
           ...state.grading_job_queue.filter(
-            (job) => job.id !== action.grading_job_id
+            (job) => job.submission_id !== action.grading_job_submission_id
           ),
         ];
         return (state = {

@@ -30,8 +30,8 @@
 ### Queue Content
 
 - [ ] Redesign UI for visualizing a grading job
-- [ ] Paginated queue content list (e.g., https://gist.github.com/rxtur/6c29e2b0d81bac2578ca)
+- [ ] Paginated queue content list (e.g., https://gist.github.com/rxtur/6c29e2b0d81bac2578ca) \*\*
 - [ ] Abstract job info table to its own component
 - [ ] What other field/info should I display in `QueueItem` entry (num max retries, link to student code, link to starter code, etc.)
 - [ ] Find better way to conditionally render user id, team id or neither in `QueueItem` table
-- [ ] Top right of `QueueItem` card currently displays priority when it should be position in queue (want to be given that info)
+- [ ] Extrapolate something more useful from a job's `priority` (datetime, position in queue, etc.)

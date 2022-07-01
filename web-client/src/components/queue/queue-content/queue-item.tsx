@@ -5,45 +5,62 @@ import {
   deleteGradingJob,
   moveGradingJob,
 } from "../../../actions/grading-job-actions";
+import { formatExpirationTimestamp } from "../../../helpers/queue-item";
 
 type QueueItemProps = {
-  job_id: number;
   queue_pos: number;
   submission_id: number;
   grade_id: number;
   user_id?: number;
   team_id?: number;
   wait_time: string;
+  expiration: number;
+  total: number;
 };
 
 const QueueItem = ({
-  job_id,
   queue_pos,
   submission_id,
   grade_id,
   user_id,
   team_id,
   wait_time,
+  expiration,
+  total,
 }: QueueItemProps) => {
   const dispatch: Dispatch = useDispatch();
   const handleDelete = () => {
-    deleteGradingJob(dispatch, job_id);
+    deleteGradingJob(dispatch, submission_id);
     // TODO: check status
     // TODO: delete it locally
   };
+  const firstInQueue = queue_pos === 1;
+  const lastInQueue = queue_pos === total;
+
   const handleMoveToFront = () => {
-    moveGradingJob(dispatch, job_id, "front");
+    if (firstInQueue) {
+      // Should never need this
+      alert("Job is already first in queue");
+      return;
+    }
+    moveGradingJob(dispatch, submission_id, "front", team_id, user_id);
   };
   const handleMoveToBack = () => {
-    moveGradingJob(dispatch, job_id, "back");
+    if (lastInQueue) {
+      // Should never need this
+      alert("Job is already last in queue");
+      return;
+    }
+    moveGradingJob(dispatch, submission_id, "back", team_id, user_id);
   };
+
   return (
     <li className="list-group-item bg-primary border border-dark d-flex flex-column ">
       <div className="d-flex align-items start flex-column"></div>
       <div className="card text-white bg-dark mb-3 rounded">
-        <div className="card-header d-flex justify-content-between">
-          <div>JOB ID: {job_id}</div>
-          <div>#{queue_pos}</div>
+        <div className="card-header">
+          <div>Position #{queue_pos}</div>
+          <div>Expires: {formatExpirationTimestamp(expiration)}</div>
         </div>
         <div className="card-body">
           <table className="table table-sm table-dark">
@@ -71,10 +88,12 @@ const QueueItem = ({
       </div>
       <div className="d-flex justify-content-between mt-auto">
         <div
-          className="bg-success rounded clickable-icon px-2"
+          className={`bg-success rounded clickable-icon px-2 ${
+            firstInQueue ? "invisible" : "visible"
+          }`}
           onClick={() => handleMoveToFront()}
         >
-          Front
+          To Front
         </div>
         <div
           className="bg-danger rounded clickable-icon px-2"
@@ -83,10 +102,12 @@ const QueueItem = ({
           Delete
         </div>
         <div
-          className="bg-warning rounded clickable-icon px-2"
+          className={`bg-warning rounded clickable-icon px-2 ${
+            lastInQueue ? "invisible" : "visible"
+          }`}
           onClick={() => handleMoveToBack()}
         >
-          Back
+          To Back
         </div>
       </div>
     </li>

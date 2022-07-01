@@ -6,18 +6,24 @@ export const getGradingJobQueue = async () => {
   return response.data;
 };
 
-export const deleteGradingJob = async (grading_job_id: number) => {
+export const deleteGradingJob = async (grading_job_submission_id: number) => {
   // if not using redux then maybe have it hand back the new queue
-  const response = await axios.delete(`${API_BASE}/${grading_job_id}`);
+  const response = await axios.delete(
+    `${API_BASE}/${grading_job_submission_id}`
+  );
   return response.data;
 };
 
 export const moveGradingJob = async (
-  grading_job_id: number,
-  new_position: string
+  grading_job_submission_id: number,
+  new_position: string,
+  team_id?: number,
+  user_id?: number
 ) => {
-  const response = await axios.put(`${API_BASE}/${grading_job_id}`, {
+  const response = await axios.put(`${API_BASE}/${grading_job_submission_id}`, {
     priority: new_position,
+    team_id: team_id,
+    user_id: user_id,
   });
   return response;
 };
