@@ -5,7 +5,11 @@ import {
   deleteGradingJob,
   moveGradingJob,
 } from "../../../actions/grading-job-actions";
-import { formatExpirationTimestamp } from "../../../helpers/queue-item";
+import { formatReleaseTimestamp, convertHHMMSS } from "../../../helpers/time";
+import {
+  getTimeInQueue,
+  getTimeUntilRelease,
+} from "../../../helpers/queue-stats";
 
 type QueueItemProps = {
   queue_pos: number;
@@ -13,8 +17,8 @@ type QueueItemProps = {
   grade_id: number;
   user_id?: number;
   team_id?: number;
-  wait_time: string;
-  expiration: number;
+  created_at: number;
+  release: number;
   total: number;
 };
 
@@ -24,8 +28,8 @@ const QueueItem = ({
   grade_id,
   user_id,
   team_id,
-  wait_time,
-  expiration,
+  created_at,
+  release,
   total,
 }: QueueItemProps) => {
   const dispatch: Dispatch = useDispatch();
@@ -55,12 +59,12 @@ const QueueItem = ({
   };
 
   return (
-    <li className="list-group-item bg-primary border border-dark d-flex flex-column ">
+    <li className="list-group-item bg-primary border border-dark d-flex flex-column">
       <div className="d-flex align-items start flex-column"></div>
       <div className="card text-white bg-dark mb-3 rounded">
         <div className="card-header">
           <div>Position #{queue_pos}</div>
-          <div>Expires: {formatExpirationTimestamp(expiration)}</div>
+          <div>Release: {formatReleaseTimestamp(release)}</div>
         </div>
         <div className="card-body">
           <table className="table table-sm table-dark">
@@ -84,7 +88,10 @@ const QueueItem = ({
             </tbody>
           </table>
         </div>
-        <div className="card-footer">Wait Time: {wait_time}</div>
+        <div className="card-footer text-center">
+          <div>Wait Time: {convertHHMMSS(getTimeInQueue(created_at))}</div>
+          <div>Remaining: {convertHHMMSS(getTimeUntilRelease(release))}</div>
+        </div>
       </div>
       <div className="d-flex justify-content-between mt-auto">
         <div

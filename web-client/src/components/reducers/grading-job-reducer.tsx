@@ -21,13 +21,12 @@ type GradingJobConfigProps = {
 
 export type GradingJobProps = {
   config: GradingJobConfigProps;
-  created_at: string;
+  created_at: number;
   grade_id: number;
   priority: number;
   submission_id: number;
   team_id?: number;
   user_id?: number;
-  updated_at: string;
 };
 
 export type State = {
