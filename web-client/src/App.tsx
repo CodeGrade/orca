@@ -4,7 +4,7 @@ import Orca from "./components/orca";
 
 const App = () => {
   return (
-    <div className="container-fluid">
+    <div>
       <Orca />
     </div>
   );

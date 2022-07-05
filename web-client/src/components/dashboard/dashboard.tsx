@@ -15,16 +15,18 @@ const Dashboard = () => {
     getGradingJobQueue(dispatch);
   }, []);
   return (
-    <div className="row">
-      <div className="mt-2">
-        <Queue grading_job_queue={grading_job_queue && grading_job_queue} />
+    <div className="container">
+      <div className="row">
+        <div className="mt-2">
+          <Queue grading_job_queue={grading_job_queue && grading_job_queue} />
+        </div>
       </div>
-      <div className="mt-2">
+      {/* <div className="mt-2">
         <hr />
         <GraderStatsTable
           grading_job_queue={grading_job_queue && grading_job_queue}
         />
-      </div>
+      </div> */}
     </div>
   );
 };

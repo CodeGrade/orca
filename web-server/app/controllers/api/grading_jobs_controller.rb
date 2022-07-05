@@ -47,7 +47,6 @@ module Api
     end
 
     # Update a grading job (move position in queue)
-    # TODO: Dont update if already in back/front
     def update
       priority_config = JSON.parse(request.raw_post)
       sub_id_to_move = params[:id]
@@ -61,6 +60,8 @@ module Api
       else
         # error - invalid pos
       end
+      # TODO: split up move to front/back logic
+      # - only change priority when moving to front
       grading_job_to_move = JSON.parse($redis.get("QueuedGradingInfo.#{sub_id_to_move}"))
       grading_job_to_move["priority"] = new_priority
       $redis.set("QueuedGradingInfo.#{sub_id_to_move}", grading_job_to_move.to_json)
@@ -116,6 +117,7 @@ module Api
       end
       sub_id = parsed_config["submission_id"]
       priority = parsed_config["priority"]
+      # TODO: Buffer constant - 1 day
       lifetime = [priority + 10, $redis.expiretime("QueuedGradingInfo.#{sub_id}")].max # 10s
       $redis.set("QueuedGradingInfo.#{sub_id}", grading_job_config)
       $redis.expireat("QueuedGradingInfo.#{sub_id}", lifetime)

@@ -1,13 +1,13 @@
 import { GradingJobProps } from "../components/reducers/grading-job-reducer";
 
 export const getTimeInQueue = (created_at: number): number => {
-  const now: number = new Date().getTime() / 1000; // in seconds
+  const now: number = new Date().getTime() / 1000; // seconds to milliseconds
   const duration_timestamp: number = now - created_at;
   return duration_timestamp;
 };
 
 export const getTimeUntilRelease = (release_time: number): number => {
-  const now: number = new Date().getTime() / 1000; // in seconds
+  const now: number = new Date().getTime() / 1000; // seconds to milliseconds
   const remaining_timestamp: number = release_time - now;
   return remaining_timestamp;
 };
