@@ -11,6 +11,7 @@ type GradingJobActionsProps = {
   team_id?: number;
   user_id?: number;
   last: boolean;
+  released: boolean;
 };
 
 const GradingJobActions = ({
@@ -18,16 +19,22 @@ const GradingJobActions = ({
   team_id,
   user_id,
   last,
+  released,
 }: GradingJobActionsProps) => {
   const dispatch: Dispatch = useDispatch();
   const handleDelete = () => {
     deleteGradingJob(dispatch, sub_id);
   };
   const handleMoveToFront = () => {
+    if (released) {
+      // Should never need this
+      alert("Job is already released");
+      return;
+    }
     moveGradingJob(dispatch, sub_id, "front", team_id, user_id);
   };
   const handleMoveToBack = () => {
-    if (last) {
+    if (last || released) {
       // Should never need this
       alert("Job is already last in queue");
       return;
@@ -37,10 +44,11 @@ const GradingJobActions = ({
   return (
     <div className="d-flex justify-content-around">
       <div
-        className="bg-success rounded clickable-icon px-2"
+        className={`bg-success rounded clickable-icon px-2 ${
+          released ? "invisible" : "visible"
+        }`}
         onClick={() => handleMoveToFront()}
       >
-        {/* {firstInQueue ? "Release" : "To Front"} */}
         Release
       </div>
       <div
@@ -51,7 +59,7 @@ const GradingJobActions = ({
       </div>
       <div
         className={`bg-warning rounded clickable-icon px-2 ${
-          last ? "invisible" : "visible"
+          last || released ? "invisible" : "visible"
         }`}
         onClick={() => handleMoveToBack()}
       >

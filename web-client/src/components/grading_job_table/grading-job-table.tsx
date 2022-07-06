@@ -8,9 +8,9 @@ const GradingJobTable = ({
   grading_job_queue: GradingJobProps[];
 }) => {
   return (
-    <table className="table table-hover table-striped text-center">
+    <table className="table table-hover text-center">
       <thead>
-        <tr>
+        <tr className="table-primary">
           <th scope="col">ID</th>
           <th scope="col">Submission</th>
           <th scope="col">Wait Time</th>
