@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  formatReleaseTimestamp,
-  convertHHMMSS,
-  describeTime,
-  makeReadableDate,
-} from "../../helpers/time";
-import { getTimeInQueue, getTimeUntilRelease } from "../../helpers/queue-stats";
+import { describeTime, makeReadableDate } from "../../helpers/time";
 import GradingJobActions from "./grading-job-actions";
 import { DateTime } from "luxon";
 
@@ -28,27 +22,25 @@ const GradingJobTableItem = ({
   position,
   total,
 }: GradingJobTableItemProps) => {
-  let id_str: string = "N/A";
+  let id_str: string = "";
   if (user_id) id_str = `U-${user_id}`;
-  if (team_id) id_str = `T-${team_id}`;
-  // const wait_time: DateTime = DateTime.fromMillis(getTimeInQueue(created_at));
-  const time_until_release: DateTime = DateTime.fromMillis(
-    getTimeUntilRelease(release_time)
-  );
-  const x = getTimeUntilRelease(release_time);
-  console.log(x);
-  console.log(time_until_release);
-  const y = DateTime.fromSeconds(release_time);
+  else if (team_id) id_str = `T-${team_id}`;
+  else id_str = `S-${sub_id}`;
 
-  // use makeReadableDate for release time tooltip
+  const release_time_dt: DateTime = DateTime.fromSeconds(release_time);
+  const wait_time_dt: DateTime = DateTime.fromSeconds(created_at);
 
   return (
     <tr>
       <td>{id_str}</td>
       <td>LINK</td>
-      <td>{describeTime(time_until_release)}</td>
-      <td>{convertHHMMSS(x)}</td>
-      {/* <td>{describeTime(time_until_release)}</td> */}
+      <td>{describeTime(wait_time_dt)}</td>
+      <td
+        data-toggle="tooltip"
+        title={`${makeReadableDate(release_time_dt, true, true)}`}
+      >
+        {describeTime(release_time_dt)}
+      </td>
       <td>
         <GradingJobActions
           sub_id={sub_id}

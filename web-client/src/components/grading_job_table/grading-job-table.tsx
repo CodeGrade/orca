@@ -11,15 +11,16 @@ const GradingJobTable = ({
     <table className="table table-hover table-striped text-center">
       <thead>
         <tr>
-          <th scope="col">User/Team ID</th>
+          <th scope="col">ID</th>
           <th scope="col">Submission</th>
           <th scope="col">Wait Time</th>
-          <th scope="col">Release Time</th>
+          <th scope="col">Release</th>
           <th scope="col">Actions</th>
         </tr>
       </thead>
       <tbody>
-        {grading_job_queue && grading_job_queue.length > 0 ? (
+        {grading_job_queue &&
+          grading_job_queue.length > 0 &&
           grading_job_queue.map((grading_job, index) => {
             return (
               <GradingJobTableItem
@@ -32,10 +33,7 @@ const GradingJobTable = ({
                 total={grading_job_queue.length}
               />
             );
-          })
-        ) : (
-          <h3>There are no jobs in the queue</h3>
-        )}
+          })}
       </tbody>
     </table>
   );

@@ -1,7 +1,7 @@
 import React from "react";
 import { GradingJobProps } from "../reducers/grading-job-reducer";
 import GraderStatsItem, { GraderWaitTimeStats } from "./grader-stats-item";
-import { getTimeInQueue } from "../../helpers/queue-stats";
+import { getTimeInQueue } from "../../helpers/grading-job-stats";
 
 const GraderStatsTable = ({
   grading_job_queue,

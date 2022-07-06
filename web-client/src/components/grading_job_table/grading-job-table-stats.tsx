@@ -1,14 +1,18 @@
 import React from "react";
 import { GradingJobProps } from "../reducers/grading-job-reducer";
-import { WaitTimeStats, getWaitTimesOfQueue } from "../../helpers/queue-stats";
-import { convertHHMMSS } from "../../helpers/time";
+import {
+  WaitTimeStats,
+  getWaitTimesOfQueue,
+} from "../../helpers/grading-job-stats";
+import { secondsToDhms } from "../../helpers/time";
 
-const QueueStats = ({
+const GradingJobTableStats = ({
   grading_job_queue,
 }: {
   grading_job_queue: GradingJobProps[];
 }) => {
   const wait_times: WaitTimeStats = getWaitTimesOfQueue(grading_job_queue);
+
   return (
     <div className="d-flex justify-content-center mt-3">
       <ul className="list-group list-group-horizontal text-center">
@@ -21,7 +25,7 @@ const QueueStats = ({
           <div>
             {grading_job_queue &&
               grading_job_queue.length > 0 &&
-              convertHHMMSS(wait_times.min)}
+              secondsToDhms(wait_times.min)}
           </div>
         </li>
         <li className="list-group-item list-group-item-info">
@@ -29,7 +33,7 @@ const QueueStats = ({
           <div>
             {grading_job_queue &&
               grading_job_queue.length > 0 &&
-              convertHHMMSS(wait_times.avg)}
+              secondsToDhms(wait_times.avg)}
           </div>
         </li>
         <li className="list-group-item list-group-item-danger">
@@ -37,11 +41,11 @@ const QueueStats = ({
           <div>
             {grading_job_queue &&
               grading_job_queue.length > 0 &&
-              convertHHMMSS(wait_times.max)}
+              secondsToDhms(wait_times.max)}
           </div>
         </li>
       </ul>
     </div>
   );
 };
-export default QueueStats;
+export default GradingJobTableStats;

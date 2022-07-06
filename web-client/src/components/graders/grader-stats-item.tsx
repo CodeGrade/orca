@@ -1,5 +1,4 @@
 import React from "react";
-import { WaitTimeStats } from "../../helpers/queue-stats";
 import { convertHHMMSS } from "../../helpers/time";
 
 export type GraderWaitTimeStats = {

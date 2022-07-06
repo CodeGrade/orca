@@ -15,6 +15,32 @@ export const convertHHMMSS = (seconds_to_convert: number): string => {
   return hhmmss;
 };
 
+export const secondsToDhms = (
+  seconds: number,
+  written: boolean = false
+): string => {
+  const d: number = Math.floor(seconds / (3600 * 24));
+  const h: number = Math.floor((seconds % (3600 * 24)) / 3600);
+  const m: number = Math.floor((seconds % 3600) / 60);
+  const s: number = Math.floor(seconds % 60);
+
+  let out_str: string = "";
+  if (written) {
+    const d_str = d > 0 ? d + (d === 1 ? " day, " : " days, ") : "";
+    const h_str = h > 0 ? h + (h === 1 ? " hour, " : " hours, ") : "";
+    const m_str = m > 0 ? m + (m === 1 ? " minute, " : " minutes, ") : "";
+    const s_str = s > 0 ? s + (s === 1 ? " second" : " seconds") : "";
+    out_str = d_str + h_str + m_str + s_str;
+  } else {
+    const d_str = d > 0 ? d + (d === 1 ? " day, " : " days, ") : "";
+    const h_str = h > 0 ? (h < 10 ? `0${h}:` : `${h}:`) : "00:";
+    const m_str = m > 0 ? (m < 10 ? `0${m}:` : `${m}:`) : "00:";
+    const s_str = s > 0 ? (s < 10 ? `0${s}` : `${s}`) : "00";
+    out_str = d_str + h_str + m_str + s_str;
+  }
+  return out_str;
+};
+
 const pluralize = (
   number: number,
   singular: string,

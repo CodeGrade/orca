@@ -1,10 +1,10 @@
 import React, { useEffect } from "react";
-import Queue from "../queue/queue";
-import GraderStatsTable from "../graders/grader-stats-table";
 import { getGradingJobQueue } from "../../actions/grading-job-actions";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch } from "redux";
 import { State } from "../reducers/grading-job-reducer";
+import GradingJobTableStats from "../grading_job_table/grading-job-table-stats";
+import GradingJobTable from "../grading_job_table/grading-job-table";
 
 const Dashboard = () => {
   const grading_job_queue = useSelector(
@@ -18,7 +18,14 @@ const Dashboard = () => {
     <div className="container">
       <div className="row">
         <div className="mt-2">
-          <Queue grading_job_queue={grading_job_queue && grading_job_queue} />
+          <GradingJobTableStats
+            grading_job_queue={grading_job_queue && grading_job_queue}
+          />
+          <div className="d-flex justify-content-center align-items-center mt-3">
+            <GradingJobTable
+              grading_job_queue={grading_job_queue && grading_job_queue}
+            />
+          </div>
         </div>
       </div>
       {/* <div className="mt-2">
