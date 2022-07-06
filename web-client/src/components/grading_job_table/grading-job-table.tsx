@@ -31,6 +31,7 @@ const GradingJobTable = ({
                 release_time={grading_job.priority}
                 position={index + 1}
                 total={grading_job_queue.length}
+                key={grading_job.submission_id}
               />
             );
           })}

@@ -39,7 +39,7 @@ const GradingJobTableItem = ({
       <td>{id_str}</td>
       <td>LINK</td>
       {/* Remove 'ago' from described time*/}
-      <td>{describeTime(wait_time_dt).slice(0, -4)}</td>{" "}
+      <td>{describeTime(wait_time_dt).slice(0, -4)}</td>
       <td
         data-toggle="tooltip"
         title={`${makeReadableDate(release_time_dt, true, true)}`}

@@ -3,7 +3,7 @@ import { getGradingJobQueue } from "../../actions/grading-job-actions";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch } from "redux";
 import { State } from "../reducers/grading-job-reducer";
-import GradingJobTableStats from "../grading_job_table/grading-job-table-stats";
+import GradingJobTableStats from "../grading_job_table/grading_job_table_stats/grading-job-table-stats";
 import GradingJobTable from "../grading_job_table/grading-job-table";
 
 const Dashboard = () => {
@@ -18,9 +18,12 @@ const Dashboard = () => {
     <div className="container">
       <div className="row">
         <div className="mt-2">
-          <GradingJobTableStats
-            grading_job_queue={grading_job_queue && grading_job_queue}
-          />
+          <div>
+            <GradingJobTableStats
+              grading_job_queue={grading_job_queue && grading_job_queue}
+            />
+          </div>
+
           <div className="d-flex justify-content-center align-items-center mt-3">
             <GradingJobTable
               grading_job_queue={grading_job_queue && grading_job_queue}
