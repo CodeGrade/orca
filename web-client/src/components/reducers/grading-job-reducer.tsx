@@ -59,46 +59,55 @@ const gradingJobReducer = (state: State = initialState, action: AnyAction) => {
       const job_to_move_back = state.grading_job_queue.find(
         (job) => job.submission_id === action.grading_job_submission_id
       );
-      if (job_to_move_back) {
-        // Update priority of job in state
-        const updated_job = {
-          ...job_to_move_back,
-          priority: action.new_priority,
-        };
-        const updated_queue = [
-          ...state.grading_job_queue.filter(
-            (job) => job.submission_id !== action.grading_job_submission_id
-          ),
-          updated_job,
-        ];
-        return (state = {
-          ...state,
-          grading_job_queue: updated_queue,
-        });
-      }
-      return state;
+      if (!job_to_move_back) return state;
+
+      // Update priority of job in state
+      const updated_job_back = {
+        ...job_to_move_back,
+        priority: action.new_priority,
+      };
+      const updated_queue_back = [
+        ...state.grading_job_queue.filter(
+          (job) => job.submission_id !== action.grading_job_submission_id
+        ),
+        updated_job_back,
+      ];
+      return (state = {
+        ...state,
+        grading_job_queue: updated_queue_back,
+      });
     case MOVE_GRADING_JOB_FRONT:
       const job_to_move_front = state.grading_job_queue.find(
         (job) => job.submission_id === action.grading_job_submission_id
       );
-      if (job_to_move_front) {
-        // Update priority of job in state
-        const updated_job = {
-          ...job_to_move_front,
-          priority: action.new_priority,
-        };
-        const updated_queue = [
-          updated_job,
-          ...state.grading_job_queue.filter(
-            (job) => job.submission_id !== action.grading_job_submission_id
-          ),
-        ];
-        return (state = {
-          ...state,
-          grading_job_queue: updated_queue,
-        });
+      if (!job_to_move_front) return state;
+      // Update priority of job in state
+      const updated_job = {
+        ...job_to_move_front,
+        priority: action.new_priority,
+      };
+
+      const now: number = new Date().getTime();
+      let released_ind = 0;
+      for (let i = 0; i < state.grading_job_queue.length; i++) {
+        const grading_job = state.grading_job_queue[i];
+        const release_time_ms: number = grading_job.priority * 1000;
+        const is_released: boolean = release_time_ms < now;
+        if (!is_released) {
+          released_ind = i;
+          break;
+        }
       }
-      return state;
+      const updated_queue = [
+        ...state.grading_job_queue.filter(
+          (job) => job.submission_id !== action.grading_job_submission_id
+        ),
+      ];
+      updated_queue.splice(released_ind, 0, updated_job);
+      return (state = {
+        ...state,
+        grading_job_queue: updated_queue,
+      });
     default:
       return state;
   }

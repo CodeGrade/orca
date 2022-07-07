@@ -13,6 +13,7 @@ const GradingJobTableStats = ({
   grading_job_queue: GradingJobProps[];
 }) => {
   const stats: GradingTableStatsProps = getGradingTableStats(grading_job_queue);
+
   return (
     <div className="d-flex flex-column flex-lg-row justify-content-between align-items-center">
       <AllStats stats={stats && stats["all"]} />

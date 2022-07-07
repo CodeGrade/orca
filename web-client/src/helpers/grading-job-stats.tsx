@@ -28,7 +28,10 @@ export const getGradingTableStats = (
     const release_time_ms: number = grading_job.priority * 1000;
     const released: boolean = release_time_ms < now;
     if (released) {
-      released_wait_times.push(getTimeInQueue(grading_job.created_at));
+      // released_wait_times.push(getTimeInQueue(grading_job.created_at)); // Total Wait time of released job
+      const wait_time_since_released = now - release_time_ms;
+      // TODO: Make this uniform - Converting milliseconds to seconds
+      released_wait_times.push(wait_time_since_released / 1000);
     }
     return wait_times.push(getTimeInQueue(grading_job.created_at));
   });
@@ -36,6 +39,7 @@ export const getGradingTableStats = (
   const min_wait = Math.min(...wait_times);
   const max_wait = Math.max(...wait_times);
 
+  // Wait time after being released
   const released_avg_wait =
     released_wait_times.reduce((a, b) => a + b, 0) / released_wait_times.length;
   const released_min_wait = Math.min(...released_wait_times);

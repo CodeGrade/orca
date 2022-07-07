@@ -26,7 +26,7 @@ const Dashboard = () => {
 
           <div className="d-flex justify-content-center align-items-center mt-3">
             <GradingJobTable
-              grading_job_queue={grading_job_queue && grading_job_queue}
+              grading_job_queue={grading_job_queue && [...grading_job_queue]}
             />
           </div>
         </div>
