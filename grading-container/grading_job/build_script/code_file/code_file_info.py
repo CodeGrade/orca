@@ -1,7 +1,7 @@
 from urllib.parse import urlparse, unquote
 from os.path import basename
-from grading_job.build_script.code_file_source import CodeFileSource
-from grading_job.build_script.sub_mime_types import SubmissionMIMEType
+from grading_job.build_script.code_file.code_file_source import CodeFileSource
+from grading_job.build_script.code_file.sub_mime_types import SubmissionMIMEType
 
 class CodeFileInfo:
   """

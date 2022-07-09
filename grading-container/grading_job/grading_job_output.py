@@ -1,13 +1,13 @@
 from typing import List
+from grading_job.grading_script.grading_script_command_response import GradingScriptCommandResponse
 from validations.grading_job_json_types import GradingScriptOutputJSON
 
 
 class GradingJobOutput:
-  def __init__(self, grade_id: int, submission_id: int, tap_output: str = None, errors: List[str] = None) -> None:
-    self.__grade_id = grade_id
-    self.__submission_id = submission_id
+  
+  def __init__(self, command_responses: List[GradingScriptCommandResponse], tap_output: str = None) -> None:
+    self.__command_responses = command_responses
     self.__tap_output = tap_output
-    self.__errors = errors
   
   def set_audit_log(self, audit_log: List[str]) -> None:
     """
@@ -25,19 +25,9 @@ class GradingJobOutput:
 
   def has_tap_output(self) -> bool:
     return self.__tap_output is not None
-
-  def to_json(self) -> GradingScriptOutputJSON:
-    """
-    Converts this object to a JSON object (by Python implementation)
-    such that it can be be sent back to Orca and Bottlenose.
-    """
-    grading_script_output_json: GradingScriptOutputJSON = {
-      "audit": self.__audit_log,
-      "grade_id": self.__grade_id,
-      "submission_id": self.__submission_id,
-    }
-    if self.__tap_output:
-      grading_script_output_json["tap_output"] = self.__tap_output
-    if self.__errors:
-      grading_script_output_json["errors"] = self.__errors
-    return grading_script_output_json
+  
+  def get_command_responses(self) -> List[GradingScriptCommandResponse]:
+    return self.__command_responses
+  
+  def get_tap_output(self) -> str:
+    return self.__tap_output

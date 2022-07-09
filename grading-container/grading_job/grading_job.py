@@ -1,16 +1,12 @@
 from tracemalloc import start
 from typing import List
 from grading_job.build_script.code_file_info import CodeFileInfo
-from grading_job.build_script.retrieve_file_command_factory import FileRetrievalCommandFactory
-from grading_job.build_script.retrieve_file_commands import FileRetrievalCommand
 from grading_job.grading_job_output import GradingJobOutput
 from audit import Audit
 from validations.grading_job_json_types import GradingScriptCommandJSON
-from grading_job.grading_script.grading_script import GradingScript
 from grading_job.grading_script.grading_script_command import GradingScriptCommand
 
-DEFAULT_NUM_RETRIES = 2
-COMMAND_TIMEOUT = 60 # 1 Minute
+DEFAULT_COMMAND_TIMEOUT = 60 # 1 Minute
 
 class GradingJob:
   """
