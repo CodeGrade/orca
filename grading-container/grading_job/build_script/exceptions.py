@@ -37,3 +37,9 @@ class NotADAGException(PreprocessingException):
 
   def __init__(self, msg: str) -> None:
     super().__init__(msg)
+
+class InvalidGradingScriptCommand(PreprocessingException):
+
+  def __init__(self, msg: str = "The given JSON does not match "\
+    "the schema of a valid GradingScriptCommand.") -> None:
+    super().__init__(msg)
