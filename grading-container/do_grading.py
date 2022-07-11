@@ -1,23 +1,45 @@
 import json
-from typing import Dict
+from typing import Dict, List
 from jsonschema import validate
-from audit import Audit
+from jsonschema.exceptions import ValidationError
+from exceptions import GradingJobProcessingException
+from grading_job.audit import Audit
+from grading_job.build_script.preprocess import GradingScriptPreprocessor
 from grading_job.exec_secret import GradingJobExecutionSecret
-from grading_job.grading_job_builder import GradingJobBuilder
 from grading_job.grading_job_output import GradingJobOutput
+from validations.grading_job_json_types import CodeFileInfoJSON, GradingJobJSON, GradingJobOutputJSON, GradingScriptCommandJSON
 from validations.schemas.grading_job_schema import GradingJobSchema
-from grading_job.grading_job import GradingJob
 
-def build_grading_job_from_json(grading_job_json: Dict) -> GradingJob:
-  """
-  Given a JSON object for a Grading Job, use the GradingJobBuilder class
-  to create an instance of a GradingJob to execute.
-  """
+def is_valid_grading_job(json_grading_job: GradingJobJSON):
+  try:
+    validate(json_grading_job, GradingJobSchema)
+    return True
+  except ValidationError:
+    return False
+
+def push_results_to_bottlenose(grading_job_output: GradingJobOutput):
+  json_output: GradingJobOutputJSON = grading_job_output.to_json()
+  # TODO: Add an API endpoint URL to Bottlenose
   pass
 
-def do_grading() -> GradingJobOutput:
-  secret = GradingJobExecutionSecret().get_secret()
+def clean_up_folders():
   pass
+
+def do_grading(json_grading_job: GradingJobOutputJSON) -> GradingJobOutput:
+  if not is_valid_grading_job(json_grading_job):
+    raise GradingJobProcessingException("The given JSON does not properly match the schema of a GradingJob.")
+  secret: str = GradingJobExecutionSecret.get_secret()
+  # TODO: Pull credentials (e.g., submission id, student id, etc.)
+  code_files: List[CodeFileInfoJSON] = json_grading_job["code_files"]
+  commands: List[GradingScriptCommandJSON] = json_grading_job["script"]
+  if json_grading_job["timeout"]:
+    preprocessor = GradingScriptPreprocessor(secret, commands, code_files, json_grading_job["timeout"])
+  else:
+    preprocessor = GradingScriptPreprocessor(secret, commands, code_files)
+
 
 if __name__ == "__main__":
-  do_grading()
+  test_file = open("tests/fixtures/files/live-URL-student-only.json", "r")
+  json_job = json.dump(test_file)
+  test_file.close()
+  do_grading(json_job)

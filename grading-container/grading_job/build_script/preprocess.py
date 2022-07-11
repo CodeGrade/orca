@@ -6,27 +6,30 @@ from grading_job.grading_script.conditional_grading_script_command import Condit
 from grading_job.grading_script.grading_script_command import GradingScriptCommand
 from validations.grading_job_json_types import CodeFileInfoJSON, GradingScriptCommandJSON
 
+DEFAULT_COMMAND_TIMEOUT = 60 # 1 minute
+
 class GradingScriptPreprocessor:
 
   # TODO: CodeFileInfo will be a JSON.
   def __init__(self, secret: str, json_cmds: List[GradingScriptCommandJSON], 
-    json_code_files: List[CodeFileInfoJSON], cmd_timeout: int) -> None:
+    json_code_files: List[CodeFileInfoJSON], cmd_timeout: int = DEFAULT_COMMAND_TIMEOUT) -> None:
     self.__interpolated_dirs = {
       "$ASSETS": "/assets",
-      "$DOWNLOADED": f"{secret}_downloaded",
-      "$EXTRACTED": f"{secret}_extracted",
-      "$BUILD": f"{secret}_build"
+      "$DOWNLOADED": f"{secret}/downloaded",
+      "$EXTRACTED": f"{secret}/extracted",
+      "$BUILD": f"{secret}/build"
     }
     self.__json_cmds = json_cmds
     self.__cmds = [None for _ in range(len(json_cmds))]
     self.__cmd_timeout = cmd_timeout
     
-  def process_job(self) -> GradingScriptCommand:
-    """
-    """
-    pass
+  def preprocess_job(self) -> GradingScriptCommand:
+    # TODO: Add CodeFile logic.
+    self.__download_and_process_code_files()
+    script = self.__generate_grading_script()
+    return script
 
-  def __download_and_process_code_files(self, code_files: List[CodeFileInfo]) -> None:
+  def __download_and_process_code_files(self) -> None:
     """
     Given a list of CodeFileInfo objects, download and extract (if necessary) each one.
     """
@@ -51,28 +54,29 @@ class GradingScriptPreprocessor:
     else:
       raise InvalidGradingScriptCommand()
 
-  def __process_bash_command_json(self, json: GradingScriptCommandJSON, index: int) -> GradingScriptCommand:
-    bash_cmd: str = self.__add_interpolated_paths(json["cmd"])
-    if json["on_fail"] == "abort" and json["on_complete"] == "output":
-      cmd = BashGradingScriptCommand(bash_cmd, timeout=self.__cmd_timeout)
-    elif json["on_fail"] == "abort":
-      cmd = BashGradingScriptCommand(bash_cmd, 
-        on_complete=self.__get_grading_command_by_index(json["on_complete"]), 
-        timeout=self.__cmd_timeout)
-    elif json["on_complete"] == "output": 
-      cmd = BashGradingScriptCommand(bash_cmd, on_fail=self.__get_grading_command_by_index(json["on_fail"]), 
-        timeout=self.__cmd_timeout)
+  def __process_bash_command_json(self, json_command: GradingScriptCommandJSON, index: int) -> GradingScriptCommand:
+    bash_cmd: str = self.__add_interpolated_paths(json_command["cmd"])
+    if json_command["on_fail"] == "abort" and json_command["on_complete"] == "output":
+      cmd = BashGradingScriptCommand(bash_cmd, self.__cmd_timeout)
+    elif json_command["on_fail"] == "abort":
+      cmd = BashGradingScriptCommand(bash_cmd, self.__cmd_timeout,
+        on_complete=self.__get_grading_command_by_index(json_command["on_complete"]))
+    elif json_command["on_complete"] == "output": 
+      cmd = BashGradingScriptCommand(bash_cmd, self.__cmd_timeout, 
+        on_fail=self.__get_grading_command_by_index(json_command["on_fail"]))
     else:
-      cmd = BashGradingScriptCommand(bash_cmd, self.__get_grading_command_by_index())
+      cmd = BashGradingScriptCommand(bash_cmd, self.__cmd_timeout, 
+        self.__get_grading_command_by_index(json_command["on_complete"]), 
+        self.__get_grading_command_by_index(json_command["on_fail"]))
     self.__cmds[index] = cmd
     return cmd
   
-  def __process_conditional_command_json(self, json: GradingScriptCommandJSON, index: int):
-    conditional: Dict[str, str] = json["conditional"]
+  def __process_conditional_command_json(self, json_command: GradingScriptCommandJSON, index: int):
+    conditional: Dict[str, str] = json_command["conditional"]
     predicate: GradingScriptPredicate = GradingScriptPredicate(conditional["predicate"])
     fs_path: str = self.__add_interpolated_paths(conditional["path"])
-    cmd: ConditionalGradingScriptCommand = ConditionalGradingScriptCommand(self.__get_grading_command_by_index(json["on_true"]), 
-      self.__get_grading_command_by_index(json["on_false"]), fs_path, predicate)
+    cmd: ConditionalGradingScriptCommand = ConditionalGradingScriptCommand(self.__get_grading_command_by_index(json_command["on_true"]), 
+      self.__get_grading_command_by_index(json_command["on_false"]), fs_path, predicate)
     self.__cmds[index] = cmd
     return cmd
   

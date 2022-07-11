@@ -1,7 +1,6 @@
 from typing import List
 from grading_job.grading_script.grading_script_command_response import GradingScriptCommandResponse
-from validations.grading_job_json_types import GradingScriptOutputJSON
-
+from validations.grading_job_json_types import GradingJobOutputJSON, GradingScriptOutputJSON
 
 class GradingJobOutput:
   
@@ -31,3 +30,10 @@ class GradingJobOutput:
   
   def get_tap_output(self) -> str:
     return self.__tap_output
+  
+  def to_json(self) -> GradingJobOutputJSON:
+    json_responses = list(map(lambda c: c.to_json(), self.__command_responses))
+    ans = { "execution_responses": json_responses }
+    if self.has_tap_output():
+      ans["tap_output"] = self.__tap_output
+    return ans

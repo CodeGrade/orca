@@ -1,7 +1,6 @@
 from subprocess import CalledProcessError, CompletedProcess, run, TimeoutExpired
 from tkinter.font import BOLD
 from typing import List
-from grading_job.grading_job import DEFAULT_COMMAND_TIMEOUT
 from grading_job.grading_job_output import GradingJobOutput
 from grading_job.grading_script.exceptions import CommandFlowIsFinalException
 from grading_job.grading_script.grading_script_command import GradingScriptCommand
@@ -13,8 +12,8 @@ class BashGradingScriptCommand:
   GradingScriptCommand that executes a bash command in the Linux shell.
   """
 
-  def __init__(self, cmd: str, on_complete: GradingScriptCommand = None, 
-    on_fail: GradingScriptCommand = None, timeout: int = DEFAULT_COMMAND_TIMEOUT) -> None:
+  def __init__(self, cmd: str, timeout: int, on_complete: GradingScriptCommand = None, 
+    on_fail: GradingScriptCommand = None) -> None:
     self.__cmd = cmd
     self.__on_complete = on_complete
     self.__on_fail = on_fail
