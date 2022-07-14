@@ -1,5 +1,7 @@
 from typing import Dict, List
-from grading_job.build_script.code_file.code_file_info import CodeFileInfo
+import os
+from grading_job.build_script.code_file.code_file_info import CodeFileInfo, json_to_code_file_info
+from grading_job.build_script.code_file.processing.code_file_processing_strategy import CodeFileProcessor
 from grading_job.build_script.exceptions import InvalidGradingScriptCommand
 from grading_job.grading_script.bash_grading_script_command import BashGradingScriptCommand
 from grading_job.grading_script.conditional_grading_script_command import ConditionalGradingScriptCommand, GradingScriptPredicate
@@ -10,16 +12,18 @@ DEFAULT_COMMAND_TIMEOUT = 60 # 1 minute
 
 class GradingScriptPreprocessor:
 
-  # TODO: CodeFileInfo will be a JSON.
   def __init__(self, secret: str, json_cmds: List[GradingScriptCommandJSON], 
-    json_code_files: List[CodeFileInfoJSON], cmd_timeout: int = DEFAULT_COMMAND_TIMEOUT) -> None:
+    code_files: Dict[CodeFileInfo], file_processor: CodeFileProcessor, 
+    cmd_timeout: int = DEFAULT_COMMAND_TIMEOUT) -> None:
     self.__interpolated_dirs = {
       "$ASSETS": "/assets",
       "$DOWNLOADED": f"{secret}/downloaded",
       "$EXTRACTED": f"{secret}/extracted",
       "$BUILD": f"{secret}/build"
     }
+    self.__file_processing_command = file_processor
     self.__json_cmds = json_cmds
+    self.__code_files = code_files
     self.__cmds = [None for _ in range(len(json_cmds))]
     self.__cmd_timeout = cmd_timeout
     
@@ -33,7 +37,13 @@ class GradingScriptPreprocessor:
     """
     Given a list of CodeFileInfo objects, download and extract (if necessary) each one.
     """
-    pass
+    for item in self.__interpolated_dirs.items():
+      _, dir = item
+      if not os.path.exists(dir):
+        os.makedirs(dir)
+    for code_file in self.__code_files:
+      self.__file_processing_command.process_file(code_file, self.__interpolated_dirs["$DOWNLOADED"], 
+        self.__interpolated_dirs["EXTRACTED"])
 
   def __generate_grading_script(self):
     for i in range(len(self.__cmds)):

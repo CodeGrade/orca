@@ -2,6 +2,7 @@ from urllib.parse import urlparse, unquote
 from os.path import basename
 from grading_job.build_script.code_file.code_file_source import CodeFileSource
 from grading_job.build_script.code_file.sub_mime_types import SubmissionMIMEType
+from validations.grading_job_json_types import CodeFileInfoJSON
 
 class CodeFileInfo:
   """
@@ -12,11 +13,10 @@ class CodeFileInfo:
     - The source of the code file. See ./code_file_source.py for more info.
   """
 
-  def __init__(self, url: str, mime_type: SubmissionMIMEType, 
-    code_file_source: CodeFileSource) -> None:
+  def __init__(self, url: str, mime_type: SubmissionMIMEType, source: CodeFileSource) -> None:
     self.__url = url
     self.__mime_type = mime_type
-    self.__code_file_source = code_file_source
+    self.__source = source
 
   def get_url(self) -> str:
     return self.__url
@@ -24,9 +24,9 @@ class CodeFileInfo:
   def get_mime_type(self) -> SubmissionMIMEType:
     return self.__mime_type
   
-  def get_code_file_source(self) -> CodeFileSource:
-    return self.__code_file_source
-  
+  def get_source(self) -> CodeFileSource:
+    return self.__source
+
   def get_save_dir(self, secret: str) -> str:
     """
     Gets the name of the directory to save and extract files to.
@@ -42,3 +42,5 @@ class CodeFileInfo:
     file_path = unquote(url_encoded_file_path)
     return basename(file_path)
 
+def json_to_code_file_info(json_code_file: CodeFileInfoJSON, source: str) -> CodeFileInfo:
+  return CodeFileInfo(json_code_file["url"], json_code_file["mime_type"], CodeFileSource(source))

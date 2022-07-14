@@ -1,0 +1,68 @@
+from os.path import basename, join
+from shutil import copyfileobj, copyfile
+import gzip
+import tarfile
+from zipfile import ZipFile
+import requests
+from grading_job.build_script.code_file.code_file_info import CodeFileInfo
+from grading_job.build_script.code_file.sub_mime_types import SubmissionMIMEType
+
+def extract_tar_file(from_path: str, to_path: str) -> None:
+  f = tarfile.open(from_path, "r:")
+  f.extractall(to_path)
+  f.close()
+
+def extract_tar_gz_file(from_path: str, to_path: str) -> None:
+  f = tarfile.open(from_path, "r:gz")
+  f.extractall(to_path)
+  f.close()
+
+def extract_gz_file(from_path: str, to_path: str) -> None:
+  from_f_name = basename(from_path)
+  f_in = gzip.open(from_path, "rb")
+  f_out = gzip.open(join(to_path, from_f_name))
+  copyfileobj(f_in, f_out)
+  f_in.close()
+  f_out.close()
+
+def extract_zip_file(from_path: str, to_path: str) -> None:
+  f = ZipFile(from_path)
+  if to_path:
+    f.extractall(path=to_path)
+  else:
+    f.extractall()
+  f.close()
+
+
+class CodeFileProcessor:
+
+  def process_file(self, code_file: CodeFileInfo, download_dir: str, extraction_dir: str) -> None:
+    code_source = code_file.get_source()
+    download_path = join(download_dir, code_source.value)
+    extraction_path = join(extraction_dir, code_source.value)
+    downloaded_file_path = self._download_code_file(code_file, download_path)
+    self._extract_code_file(code_file, downloaded_file_path, extraction_path)
+
+  def _download_code_file(self, code_file: CodeFileInfo, download_path: str) -> str:
+    file_name = code_file.get_file_name()
+    file_path = join(download_path, file_name)
+    with open(file_path, "w") as f:
+      web_reponse = requests.get(code_file.get_url())
+      f.write(web_reponse.content)
+      f.close()
+    return file_path
+
+  # TODO: There is no *explicit* need for this to return a file path, however...should it?
+  def _extract_code_file(self, code_file: CodeFileInfo, from_path: str, to_path: str) -> None:
+    mime_to_extraction = {
+      SubmissionMIMEType.TAR: extract_tar_file,
+      SubmissionMIMEType.TAR_GZ: extract_gz_file,
+      SubmissionMIMEType.GZ: extract_gz_file,
+      SubmissionMIMEType.ZIP: extract_zip_file,
+    }
+    mime_type = code_file.get_mime_type()
+    if mime_type in mime_to_extraction:
+      mime_to_extraction[mime_type](from_path, to_path)
+    else:
+      copyfile(from_path, to_path)
+
