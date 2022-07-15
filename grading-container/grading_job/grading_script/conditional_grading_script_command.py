@@ -1,4 +1,5 @@
 from enum import Enum
+from types import FunctionType
 from typing import List
 from grading_job.grading_job_output import GradingJobOutput
 from grading_job.grading_script.grading_script_command import GradingScriptCommand
@@ -10,7 +11,7 @@ class GradingScriptPredicate(Enum):
   FILE = "file"
   DIR = "dir"
 
-def predicate_to_func(pred: GradingScriptPredicate) -> function:
+def predicate_to_func(pred: GradingScriptPredicate) -> FunctionType:
   """
   Given a GradingScriptPredicate, returns the function needed to properly 
   apply the predicate to a file path.

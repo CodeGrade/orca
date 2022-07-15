@@ -1,4 +1,3 @@
-from base64 import b64encode
 from os import urandom
 
 class GradingJobExecutionSecret:
@@ -8,8 +7,7 @@ class GradingJobExecutionSecret:
   """
 
   @staticmethod
-  def get_secret(self) -> str:
+  def get_secret() -> str:
     secret_length = 32
     os_bytes = urandom(secret_length)
-    str_in_b64 = b64encode(os_bytes).decode()
-    return str_in_b64
+    return os_bytes.hex()

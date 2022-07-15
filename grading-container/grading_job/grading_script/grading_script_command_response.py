@@ -44,7 +44,7 @@ class GradingScriptCommandResponse:
     return self.__timed_out
   
   # TODO: Replace with more accurate type.
-  def to_json(self) -> Dict[any]:
+  def to_json(self) -> Dict[str, any]:
     ans = {
       "cmd": self.__cmd,
       "stdout": self.__stdout_output,

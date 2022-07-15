@@ -27,26 +27,20 @@ def extract_gz_file(from_path: str, to_path: str) -> None:
 
 def extract_zip_file(from_path: str, to_path: str) -> None:
   f = ZipFile(from_path)
-  if to_path:
-    f.extractall(path=to_path)
-  else:
-    f.extractall()
+  f.extractall(to_path)
   f.close()
 
 
 class CodeFileProcessor:
 
   def process_file(self, code_file: CodeFileInfo, download_dir: str, extraction_dir: str) -> None:
-    code_source = code_file.get_source()
-    download_path = join(download_dir, code_source.value)
-    extraction_path = join(extraction_dir, code_source.value)
-    downloaded_file_path = self._download_code_file(code_file, download_path)
-    self._extract_code_file(code_file, downloaded_file_path, extraction_path)
+    downloaded_file_path = self._download_code_file(code_file, download_dir)
+    self._extract_code_file(code_file, downloaded_file_path, extraction_dir)
 
   def _download_code_file(self, code_file: CodeFileInfo, download_path: str) -> str:
     file_name = code_file.get_file_name()
     file_path = join(download_path, file_name)
-    with open(file_path, "w") as f:
+    with open(file_path, "wb") as f:
       web_reponse = requests.get(code_file.get_url())
       f.write(web_reponse.content)
       f.close()
@@ -65,4 +59,3 @@ class CodeFileProcessor:
       mime_to_extraction[mime_type](from_path, to_path)
     else:
       copyfile(from_path, to_path)
-

@@ -1,6 +1,6 @@
 from typing import List
 from grading_job.grading_script.grading_script_command_response import GradingScriptCommandResponse
-from validations.grading_job_json_types import GradingJobOutputJSON, GradingScriptOutputJSON
+from validations.grading_job_json_types import GradingJobOutputJSON, GradingJobOutputJSON
 
 class GradingJobOutput:
   

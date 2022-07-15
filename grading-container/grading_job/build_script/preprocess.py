@@ -13,10 +13,10 @@ DEFAULT_COMMAND_TIMEOUT = 60 # 1 minute
 class GradingScriptPreprocessor:
 
   def __init__(self, secret: str, json_cmds: List[GradingScriptCommandJSON], 
-    code_files: Dict[CodeFileInfo], file_processor: CodeFileProcessor, 
+    code_files: List[CodeFileInfo], file_processor: CodeFileProcessor, 
     cmd_timeout: int = DEFAULT_COMMAND_TIMEOUT) -> None:
     self.__interpolated_dirs = {
-      "$ASSETS": "/assets",
+      "$ASSETS": "assets",
       "$DOWNLOADED": f"{secret}/downloaded",
       "$EXTRACTED": f"{secret}/extracted",
       "$BUILD": f"{secret}/build"
@@ -37,13 +37,17 @@ class GradingScriptPreprocessor:
     """
     Given a list of CodeFileInfo objects, download and extract (if necessary) each one.
     """
-    for item in self.__interpolated_dirs.items():
-      _, dir = item
-      if not os.path.exists(dir):
-        os.makedirs(dir)
+    self.__create_script_dirs()
+    download_dir = self.__interpolated_dirs["$DOWNLOADED"]
+    extract_dir = self.__interpolated_dirs["$EXTRACTED"]
     for code_file in self.__code_files:
-      self.__file_processing_command.process_file(code_file, self.__interpolated_dirs["$DOWNLOADED"], 
-        self.__interpolated_dirs["EXTRACTED"])
+      source_name = code_file.get_source().value
+      file_download_dir = os.path.join(download_dir, source_name)
+      file_extract_dir = os.path.join(extract_dir, source_name)
+      os.makedirs(file_download_dir)
+      os.makedirs(file_extract_dir)
+      self.__file_processing_command.process_file(code_file, file_download_dir, 
+        file_extract_dir)
 
   def __generate_grading_script(self):
     for i in range(len(self.__cmds)):
@@ -101,3 +105,8 @@ class GradingScriptPreprocessor:
     for var in self.__interpolated_dirs:
       formatted_cmd = formatted_cmd.replace(var, self.__interpolated_dirs[var])
     return formatted_cmd
+  
+  def __create_script_dirs(self) -> None:
+    for item in self.__interpolated_dirs.items():
+      path_var, dir = item
+      os.makedirs(dir, exist_ok=(path_var == "$ASSETS")) # If the download, extract, or build dir already exists, something has gone very wrong...

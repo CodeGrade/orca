@@ -1,5 +1,4 @@
 from subprocess import CalledProcessError, CompletedProcess, run, TimeoutExpired
-from tkinter.font import BOLD
 from typing import List
 from grading_job.grading_job_output import GradingJobOutput
 from grading_job.grading_script.exceptions import CommandFlowIsFinalException
@@ -23,16 +22,16 @@ class BashGradingScriptCommand:
     did_fail: bool = False
     try:
       proc_res: CompletedProcess = run(self.__cmd, timeout=self.__timeout, 
-        shell=True, check=True)
+        shell=True, check=True, capture_output=True)
       responses.append(GradingScriptCommandResponse(False, self.__cmd, proc_res.returncode, 
-        proc_res.stdout))
+        proc_res.stdout.decode()))
     except CalledProcessError as cpe:
       responses.append(GradingScriptCommandResponse(True, self.__cmd, 
-        cpe.returncode, cpe.stdout, cpe.stderr))
+        cpe.returncode, cpe.stdout.decode(), cpe.stderr.decode()))
       did_fail = True
     except TimeoutExpired as te:
       responses.append(GradingScriptCommandResponse(True, self.__cmd, -1, 
-        te.stdout, te.stderr, True))
+        te.stdout.decode(), te.stderr.decode(), True))
       did_fail = True
     
     if did_fail and self.__on_fail:
@@ -42,19 +41,6 @@ class BashGradingScriptCommand:
     elif self.__on_complete:
       return self.__on_complete.execute(responses)
     else:
-      return responses
+      response_with_tap = responses[-1] # If successful, TAP will be stored in last response.
+      return GradingJobOutput(responses, response_with_tap.get_stdout_output())
   
-  # NOTE: Python does not have any implementation of `final` (think Java), so this
-  # is my hack such that I can determine if something goes wrong during prepreocessing
-  # of these commands.
-  def set_on_complete_command(self, command: GradingScriptCommand) -> None:
-    if self.__on_complete is not None:
-      raise CommandFlowIsFinalException("This bash command's on_complete field has already been set.")
-    else:
-      self.__on_complete = command
-  
-  def set_on_fail_command(self, command: GradingScriptCommand) -> None:
-    if self.__on_fail is not None:
-      raise CommandFlowIsFinalException("This bash command's on_fail field has already been set.")
-    else:
-      self.__on_fail = command
