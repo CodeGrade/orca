@@ -1,21 +1,24 @@
 import React from "react";
-import { GradingJobProps } from "../../reducers/grading-job-reducer";
 import { secondsToDhms } from "../../../helpers/time";
-import {
-  GradingTableStatsProps,
-  getGradingTableStats,
-  StatsProps,
-} from "../../../helpers/grading-job-stats";
+import { StatsProps } from "../../../helpers/grading-job-stats";
 
-const AllStats = ({ stats }: { stats: StatsProps }) => {
+const StatsBar = ({
+  label,
+  tooltip,
+  stats,
+}: {
+  label: string;
+  tooltip: string;
+  stats: StatsProps;
+}) => {
   return (
     <ul
       className="list-group list-group-horizontal text-center"
       data-toggle="tooltip"
-      title="Wait Times"
+      title={tooltip}
     >
       <li className="list-group-item list-group-item-primary">
-        <div className="border-bottom border-primary">Total Jobs</div>
+        <div className="border-bottom border-primary">{label} Jobs</div>
         <div>{stats.num}</div>
       </li>
       <li className="list-group-item list-group-item-success">
@@ -33,4 +36,4 @@ const AllStats = ({ stats }: { stats: StatsProps }) => {
     </ul>
   );
 };
-export default AllStats;
+export default StatsBar;

@@ -4,8 +4,7 @@ import {
   GradingTableStatsProps,
   getGradingTableStats,
 } from "../../../helpers/grading-job-stats";
-import ReleasedStats from "./released-stats";
-import AllStats from "./all-stats";
+import StatsBar from "./stats-bar";
 
 const GradingJobTableStats = ({
   grading_job_queue,
@@ -16,8 +15,14 @@ const GradingJobTableStats = ({
 
   return (
     <div className="d-flex flex-column flex-lg-row justify-content-between align-items-center">
-      <AllStats stats={stats && stats["all"]} />
-      <ReleasedStats stats={stats && stats["released"]} />
+      {/* <AllStats stats={stats && stats["all"]} />
+      <ReleasedStats stats={stats && stats["released"]} /> */}
+      <StatsBar label="Total" tooltip="Wait Times" stats={stats["all"]} />
+      <StatsBar
+        label="Released"
+        tooltip="Times Since Release"
+        stats={stats["released"]}
+      />
     </div>
   );
 };
