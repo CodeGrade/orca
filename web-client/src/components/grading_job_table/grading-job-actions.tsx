@@ -42,28 +42,38 @@ const GradingJobActions = ({
     moveGradingJob(dispatch, sub_id, "back", team_id, user_id);
   };
   return (
-    <div className="d-flex justify-content-around">
-      <div
-        className={`bg-success rounded clickable-icon px-2 ${
-          released ? "invisible" : "visible"
-        }`}
-        onClick={() => handleMoveToFront()}
-      >
-        Release
+    <div className="d-flex flex-column align-items-center justify-content-center">
+      <div>
+        <button
+          type="button"
+          className={`btn btn-success rounded ${
+            released ? "d-none" : "d-inline"
+          }`}
+          onClick={() => handleMoveToFront()}
+        >
+          Release
+        </button>
       </div>
-      <div
-        className="bg-danger rounded clickable-icon px-2"
-        onClick={() => handleDelete()}
-      >
-        Delete
+      <div>
+        <button
+          type="button"
+          className="btn btn-danger rounded"
+          onClick={() => handleDelete()}
+        >
+          Delete
+        </button>
       </div>
-      <div
-        className={`bg-warning rounded clickable-icon px-2 ${
-          last || released ? "invisible" : "visible"
-        }`}
-        onClick={() => handleMoveToBack()}
-      >
-        To Back
+
+      <div>
+        <button
+          type="button"
+          className={`btn btn-warning rounded ${
+            last || released ? "d-none" : "d-inline"
+          }`}
+          onClick={() => handleMoveToBack()}
+        >
+          Delay
+        </button>
       </div>
     </div>
   );

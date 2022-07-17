@@ -15,14 +15,16 @@ const GradingJobTableStats = ({
 
   return (
     <div className="d-flex flex-column flex-lg-row justify-content-between align-items-center">
-      {/* <AllStats stats={stats && stats["all"]} />
-      <ReleasedStats stats={stats && stats["released"]} /> */}
-      <StatsBar label="Total" tooltip="Wait Times" stats={stats["all"]} />
-      <StatsBar
-        label="Released"
-        tooltip="Times Since Release"
-        stats={stats["released"]}
-      />
+      <div className="me-lg-3">
+        <StatsBar label="Total" tooltip="Wait Times" stats={stats["all"]} />
+      </div>
+      <div className="mt-lg-0 mt-1">
+        <StatsBar
+          label="Released"
+          tooltip="Times Since Release"
+          stats={stats["released"]}
+        />
+      </div>
     </div>
   );
 };
