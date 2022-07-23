@@ -35,7 +35,7 @@ class NotADAGException(PreprocessingException):
   GradingScriptCommands), it is discovered that the resulting directed graph will contain cycles.
   """
 
-  def __init__(self, msg: str) -> None:
+  def __init__(self, msg: str = "The given grading script forms a cyclic directed graph.") -> None:
     super().__init__(msg)
 
 class InvalidGradingScriptCommand(PreprocessingException):

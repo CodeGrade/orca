@@ -2,7 +2,8 @@ from typing import Dict, List
 import os
 from grading_job.build_script.code_file.code_file_info import CodeFileInfo, json_to_code_file_info
 from grading_job.build_script.code_file.processing.code_file_processing_strategy import CodeFileProcessor
-from grading_job.build_script.exceptions import InvalidGradingScriptCommand
+from grading_job.build_script.cycle_detector import CycleDetector
+from grading_job.build_script.exceptions import InvalidGradingScriptCommand, NotADAGException
 from grading_job.grading_script.bash_grading_script_command import BashGradingScriptCommand
 from grading_job.grading_script.conditional_grading_script_command import ConditionalGradingScriptCommand, GradingScriptPredicate
 from grading_job.grading_script.grading_script_command import GradingScriptCommand
@@ -28,7 +29,8 @@ class GradingScriptPreprocessor:
     self.__cmd_timeout = cmd_timeout
     
   def preprocess_job(self) -> GradingScriptCommand:
-    # TODO: Add CodeFile logic.
+    if CycleDetector.contains_cycle(self.__json_cmds):
+      raise NotADAGException()
     self.__download_and_process_code_files()
     script = self.__generate_grading_script()
     return script

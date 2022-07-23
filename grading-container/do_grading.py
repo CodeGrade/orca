@@ -1,6 +1,5 @@
 import json
 import shutil
-import subprocess
 from typing import Dict, List
 from jsonschema import validate
 from jsonschema.exceptions import ValidationError
