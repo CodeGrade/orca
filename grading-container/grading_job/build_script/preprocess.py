@@ -4,6 +4,7 @@ from grading_job.build_script.code_file.code_file_info import CodeFileInfo, json
 from grading_job.build_script.code_file.processing.code_file_processing_strategy import CodeFileProcessor
 from grading_job.build_script.cycle_detector import CycleDetector
 from grading_job.build_script.exceptions import InvalidGradingScriptCommand, NotADAGException
+from grading_job.build_script.json_helpers.grading_script_command import is_bash_command, is_conditional_command
 from grading_job.grading_script.bash_grading_script_command import BashGradingScriptCommand
 from grading_job.grading_script.conditional_grading_script_command import ConditionalGradingScriptCommand, GradingScriptPredicate
 from grading_job.grading_script.grading_script_command import GradingScriptCommand
@@ -63,9 +64,9 @@ class GradingScriptPreprocessor:
   def __get_grading_command_by_index(self, index: int) -> GradingScriptCommand:
     if self.__cmds[index] is not None:
       return self.__cmds[index]
-    if self.__is_bash_command_json(self.__json_cmds[index]):
+    if is_bash_command(self.__json_cmds[index]):
       return self.__process_bash_command_json(self.__json_cmds[index], index)
-    elif self.__is_conditional_command_json(self.__json_cmds[index], index):
+    elif is_conditional_command(self.__json_cmds[index], index):
       return self.__process_conditional_command_json(self.__json_cmds[index], index)
     else:
       raise InvalidGradingScriptCommand()
@@ -95,12 +96,6 @@ class GradingScriptPreprocessor:
       self.__get_grading_command_by_index(json_command["on_false"]), fs_path, predicate)
     self.__cmds[index] = cmd
     return cmd
-  
-  def __is_conditional_command_json(self, json: GradingScriptCommandJSON):
-    return "on_false" in json and "on_true" in json and "condition" in json
-  
-  def __is_bash_command_json(self, json: GradingScriptCommandJSON):
-    return "on_fail" in json and "on_complete" in json and "cmd" in json
   
   def __add_interpolated_paths(self, cmd: str):
     formatted_cmd = cmd
