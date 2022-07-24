@@ -29,19 +29,11 @@ class CycleDetector:
   
   @staticmethod
   def cmd_has_self_ref(json_command: GradingScriptCommandJSON, index: int) -> bool:
-    return (is_conditional_command(json_command) and CycleDetector.conditional_cmd_has_self_ref(json_command, index)) \
-      or (is_bash_command(json_command) and CycleDetector.bash_cmd_has_self_ref(json_command, index))
-
-  @staticmethod
-  def conditional_cmd_has_self_ref(json_command: GradingScriptCommandJSON, index: int) -> bool:
-    return json_command["on_false"] == index or json_command["on_true"] == index
-
-  @staticmethod
-  def bash_cmd_has_self_ref(json_command: GradingScriptCommandJSON, index: int) -> bool:
-    return (json_command["on_complete"] != "output" and \
-      int(json_command["on_complete"]) == index) or \
-      (json_command["on_fail"] != "abort" and \
-      int(json_command["on_fail"]) == index)
+    for item in json_command.items():
+      k, v = item
+      if "on_" in k and type(v) == int and v == index:
+        return True
+    return False
 
   @staticmethod
   # Integral piece of the algorithm; separated out for testability.
