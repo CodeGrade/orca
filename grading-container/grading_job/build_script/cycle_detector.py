@@ -36,6 +36,7 @@ class CycleDetector:
   def conditional_cmd_has_self_ref(json_command: GradingScriptCommandJSON, index: int) -> bool:
     return json_command["on_false"] == index or json_command["on_true"] == index
 
+  @staticmethod
   def bash_cmd_has_self_ref(json_command: GradingScriptCommandJSON, index: int) -> bool:
     return (json_command["on_complete"] != "output" and \
       int(json_command["on_complete"]) == index) or \
