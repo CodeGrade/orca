@@ -1,5 +1,5 @@
 import React from "react";
-import { secondsToDhms } from "../../../helpers/time";
+import { millisToDHHMMSS } from "../../../helpers/time";
 import { StatsProps } from "../../../helpers/grading-job-stats";
 
 const StatsBar = ({
@@ -23,15 +23,15 @@ const StatsBar = ({
       </li>
       <li className="list-group-item list-group-item-success">
         <div className="border-bottom border-success">Min</div>
-        <div>{stats.num > 0 && secondsToDhms(stats.min)}</div>
+        <div>{stats.num > 0 && millisToDHHMMSS(stats.min)}</div>
       </li>
       <li className="list-group-item list-group-item-info">
         <div className="border-bottom border-info">Avg</div>
-        <div>{stats.num > 0 && secondsToDhms(stats.avg)}</div>
+        <div>{stats.num > 0 && millisToDHHMMSS(stats.avg)}</div>
       </li>
       <li className="list-group-item list-group-item-danger">
         <div className="border-bottom border-danger">Max</div>
-        <div>{stats.num > 0 && secondsToDhms(stats.max)}</div>
+        <div>{stats.num > 0 && millisToDHHMMSS(stats.max)}</div>
       </li>
     </ul>
   );

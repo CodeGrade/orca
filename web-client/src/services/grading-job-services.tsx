@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from "axios";
-const API_BASE = "http://localhost:4000/api/grading_jobs";
+const API_BASE = "http://localhost:4000/api/v1/grading_queue";
 
 export const getGradingJobQueue = async () => {
   const response: AxiosResponse = await axios.get(API_BASE);

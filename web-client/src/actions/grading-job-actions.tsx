@@ -41,7 +41,8 @@ export const moveGradingJob = async (
   // Already at front/back
   if (response.status === 204) return;
 
-  const new_priority: number = response.data.new_priority;
+  const new_priority: number = response.data;
+  console.log(response);
   dispatch({
     type:
       new_position === "front" ? MOVE_GRADING_JOB_FRONT : MOVE_GRADING_JOB_BACK,

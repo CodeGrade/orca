@@ -1,24 +1,25 @@
 import { DateTime } from "luxon";
 
-export const formatReleaseTimestamp = (release_timestamp: number): string => {
-  const release_date = new Date(release_timestamp * 1000); // milliseconds to seconds
-  const date = release_date.toLocaleDateString();
-  const time = release_date.toLocaleTimeString();
-  const datetime = `${date} ${time}`;
-  return datetime;
-};
+// export const formatReleaseTimestamp = (release_timestamp: number): string => {
+//   const release_date = new Date(release_timestamp * 1000); // milliseconds to seconds
+//   const date = release_date.toLocaleDateString();
+//   const time = release_date.toLocaleTimeString();
+//   const datetime = `${date} ${time}`;
+//   return datetime;
+// };
 
-export const convertHHMMSS = (seconds_to_convert: number): string => {
-  const hhmmss: string = new Date(seconds_to_convert * 1000) // milliseconds to seconds
-    .toISOString()
-    .substring(11, 19);
-  return hhmmss;
-};
+// export const convertHHMMSS = (seconds_to_convert: number): string => {
+//   const hhmmss: string = new Date(seconds_to_convert * 1000) // milliseconds to seconds
+//     .toISOString()
+//     .substring(11, 19);
+//   return hhmmss;
+// };
 
-export const secondsToDhms = (
-  seconds: number,
+export const millisToDHHMMSS = (
+  millis: number,
   written: boolean = false
 ): string => {
+  const seconds = millis / 1000;
   const d: number = Math.floor(seconds / (3600 * 24));
   const h: number = Math.floor((seconds % (3600 * 24)) / 3600);
   const m: number = Math.floor((seconds % 3600) / 60);

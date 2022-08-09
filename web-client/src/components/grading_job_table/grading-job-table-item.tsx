@@ -27,12 +27,10 @@ const GradingJobTableItem = ({
   else if (team_id) id_str = `T-${team_id}`;
   else id_str = `S-${sub_id}`;
 
-  const release_time_dt: DateTime = DateTime.fromSeconds(release_time);
-  const wait_time_dt: DateTime = DateTime.fromSeconds(created_at);
-
-  const release_time_ms: number = release_time * 1000;
+  const release_time_dt: DateTime = DateTime.fromMillis(release_time);
+  const wait_time_dt: DateTime = DateTime.fromMillis(created_at);
   const now: number = new Date().getTime();
-  const released: boolean = release_time_ms < now;
+  const released: boolean = release_time < now;
 
   return (
     <tr className={`${released ? "table-info" : "table-dark"}`}>

@@ -1,7 +1,7 @@
 import { GradingJobProps } from "../components/reducers/grading-job-reducer";
 
 export const getTimeInQueue = (created_at: number): number => {
-  const now: number = new Date().getTime() / 1000; // milliseconds to seconds
+  const now: number = new Date().getTime();
   const duration_timestamp: number = now - created_at;
   return duration_timestamp;
 };
@@ -25,13 +25,12 @@ export const getGradingTableStats = (
   let released_wait_times: number[] = [];
   const now: number = new Date().getTime();
   grading_job_queue.map((grading_job: GradingJobProps) => {
-    const release_time_ms: number = grading_job.priority * 1000;
+    const release_time_ms: number = grading_job.priority;
     const released: boolean = release_time_ms < now;
     if (released) {
       // released_wait_times.push(getTimeInQueue(grading_job.created_at)); // Total Wait time of released job
       const wait_time_since_released = now - release_time_ms;
-      // TODO: Make this uniform - Converting milliseconds to seconds
-      released_wait_times.push(wait_time_since_released / 1000);
+      released_wait_times.push(wait_time_since_released);
     }
     return wait_times.push(getTimeInQueue(grading_job.created_at));
   });
@@ -44,8 +43,7 @@ export const getGradingTableStats = (
     released_wait_times.reduce((a, b) => a + b, 0) / released_wait_times.length;
   const released_min_wait = Math.min(...released_wait_times);
   const released_max_wait = Math.max(...released_wait_times);
-
-  // Wait times are in seconds
+  // Wait times are in milliseconds
   return {
     all: {
       avg: avg_wait,
