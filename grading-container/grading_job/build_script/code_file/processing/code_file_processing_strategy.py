@@ -2,6 +2,7 @@ from os.path import basename, join
 from shutil import copyfileobj, copyfile
 import gzip
 import tarfile
+from py7zr import SevenZipFile
 from zipfile import ZipFile
 import requests
 from grading_job.build_script.code_file.code_file_info import CodeFileInfo
@@ -30,6 +31,10 @@ def extract_zip_file(from_path: str, to_path: str) -> None:
   f.extractall(to_path)
   f.close()
 
+def extract_7zip_file(from_path: str, to_path: str) -> None:
+  f = SevenZipFile(from_path, mode='r')
+  f.extractall(path=to_path)
+  f.close()
 
 class CodeFileProcessor:
 
@@ -53,6 +58,7 @@ class CodeFileProcessor:
       SubmissionMIMEType.TAR_GZ: extract_gz_file,
       SubmissionMIMEType.GZ: extract_gz_file,
       SubmissionMIMEType.ZIP: extract_zip_file,
+      SubmissionMIMEType.SEVEN_ZIP: extract_7zip_file
     }
     mime_type = code_file.get_mime_type()
     if mime_type in mime_to_extraction:

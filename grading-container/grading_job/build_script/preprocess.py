@@ -58,7 +58,6 @@ class GradingScriptPreprocessor:
         self.__get_grading_command_by_index(i)
       else:
         continue
-    # TODO: Add check(s) for cycle (aka ensure DAG).
     return self.__cmds[0]
 
   def __get_grading_command_by_index(self, index: int) -> GradingScriptCommand:
