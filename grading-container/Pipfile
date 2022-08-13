@@ -6,10 +6,12 @@ name = "pypi"
 [packages]
 jsonschema = "*"
 redis = "*"
-pottery = "*"
 requests = "*"
 
 [dev-packages]
 
 [requires]
 python_version = "3.8"
+
+[scripts]
+execute = "python3 do_grading.py"
