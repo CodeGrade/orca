@@ -1,10 +1,10 @@
 from time import sleep
 from redis import Redis
 from redis.lock import Lock
+from grading_job.job_retrieval.grading_job_retriever import GradingJobRetriever
+from grading_job.job_retrieval.redis.exceptions import FailedToConnectToRedisException, RedisJobRetrievalException
 
-from .exceptions import FailedToConnectToRedisException, RedisJobRetrievalException
-
-class RedisGradingJobRetriever():
+class RedisGradingJobRetriever(GradingJobRetriever):
 
   LOCK_TIMEOUT = 2
   GET_OR_POP_TIMEOUT = 10
@@ -28,7 +28,7 @@ class RedisGradingJobRetriever():
     while not lock_acquired:
       lock_acquired = queue_lock.acquire()
     next_sub_id = self.__get_next_job_sub_id()
-    grading_job = self.__get_next_job_helper(next_sub_id)
+    grading_job = self.__get_next_job_with_sub_id(next_sub_id)
     queue_lock.release()
     return grading_job
 
