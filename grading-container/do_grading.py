@@ -11,7 +11,6 @@ from grading_job.grading_job_output import GradingJobOutput
 from grading_job.grading_script.grading_script_command import GradingScriptCommand
 from grading_job.job_retrieval.redis.redis_grading_queue import RedisGradingJobRetriever
 from validations.grading_job_json_types import CodeFileInfoJSON, GradingJobJSON, GradingJobOutputJSON, GradingScriptCommandJSON
-from dotenv import load_dotenv
 import os
 
 def push_results_to_bottlenose(grading_job_output: GradingJobOutput) -> bool:
@@ -46,11 +45,11 @@ def do_grading(json_grading_job: GradingJobOutputJSON) -> GradingJobOutput:
 
 
 if __name__ == "__main__":
-  load_dotenv()
   env_redis_url = os.environ.get("REDIS_URL")
   redis_url = env_redis_url if (env_redis_url is not None) else "redis://localhost:6379"
+  print(redis_url)
   job_retriever = RedisGradingJobRetriever(redis_url)
   job_json_string = job_retriever.retrieve_grading_job()
   if job_json_string:
-    job_json = json.load(job_json_string)
+    job_json = json.loads(job_json_string)
     do_grading(job_json)

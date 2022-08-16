@@ -8,7 +8,6 @@ jsonschema = "*"
 redis = "*"
 requests = "*"
 py7zr = "*"
-python-dotenv = "*"
 
 [dev-packages]
 
