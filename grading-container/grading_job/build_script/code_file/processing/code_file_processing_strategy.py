@@ -42,6 +42,8 @@ class CodeFileProcessor:
     downloaded_file_path = self._download_code_file(code_file, download_dir)
     self._extract_code_file(code_file, downloaded_file_path, extraction_dir)
 
+  # Useful to have this method as protected so that it can be overwritten in testing
+  # (i.e., mock behavior for downloading can just be copying from a test fixture path).
   def _download_code_file(self, code_file: CodeFileInfo, download_path: str) -> str:
     file_name = code_file.get_file_name()
     file_path = join(download_path, file_name)

@@ -1,4 +1,3 @@
-from time import sleep
 from redis import Redis
 from redis.lock import Lock
 from grading_job.job_retrieval.grading_job_retriever import GradingJobRetriever
@@ -16,17 +15,14 @@ class RedisGradingJobRetriever(GradingJobRetriever):
       raise FailedToConnectToRedisException(redis_db_url)
     
   def retrieve_grading_job(self):
-    try:
-      return self.__get_next_job_from_queue()
-    except Exception as e:
-      raise RedisJobRetrievalException("The following error was encountered while trying to retrieve a job " \
-        f"from the Redis grading queue:\n{str(e)}")
+    return self.__get_next_job_from_queue()
 
   def __get_next_job_from_queue(self):
-    queue_lock = Lock(self.__redis_client, 'GradingQueue', timeout=self.LOCK_TIMEOUT)
+    queue_lock = Lock(self.__redis_client, 'GradingQueueLock', timeout=self.LOCK_TIMEOUT)
     lock_acquired = False
     while not lock_acquired:
       lock_acquired = queue_lock.acquire()
+      print(("Lock acquired" if lock_acquired else "Lock not acquired."))
     next_sub_id = self.__get_next_job_sub_id()
     grading_job = self.__get_next_job_with_sub_id(next_sub_id)
     queue_lock.release()
@@ -34,7 +30,9 @@ class RedisGradingJobRetriever(GradingJobRetriever):
 
   def __get_next_job_sub_id(self) -> str:
     _, sub_info_raw, _ = self.__redis_client.bzpopmin('GradingQueue')
+    print(sub_info_raw)
     sub_info = sub_info_raw.decode().split('.')
+    print(sub_info)
     if sub_info[0] == "sub":
       sub_id = sub_info[1]
     else:
