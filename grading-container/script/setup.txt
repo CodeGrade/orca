@@ -1,5 +1,0 @@
-NOTE: This is documenting environment dependencies such that the container(s) can be set up appropriately.
-
-- make sure python 3.8 is installed
-- `sudo apt-get install python3-pip`
-- `sudo apt-get install pipenv`

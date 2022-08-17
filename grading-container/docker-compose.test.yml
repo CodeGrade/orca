@@ -1,0 +1,13 @@
+services:
+  redis-test-db:
+    image: redis
+    container_name: redis-test-db
+
+  orca-grading-container:
+    build:
+      context: .
+      dockerfile: container_test.Dockerfile
+      args:
+        REDIS_URL: "redis://redis-test-db:6379"
+    depends_on:
+      - redis-test-db

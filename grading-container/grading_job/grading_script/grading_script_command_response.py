@@ -1,3 +1,6 @@
+from typing import Dict
+
+
 class GradingScriptCommandResponse:
   """
   Response from the execution of a command when running a grading script. 
@@ -10,18 +13,17 @@ class GradingScriptCommandResponse:
     - isError() == false && (next == "output" || next == "<int>")
   """
 
-  def __init__(self, isError: bool, next: str, cmd: str, status_code: int, 
+  def __init__(self, is_error: bool, cmd: str, status_code: int, 
     stdout_output: str = None, stderr_output: str = None, timed_out: bool = False) -> None:
-    self.__isError = isError
+    self.__is_error = is_error
     self.__stdout_output = stdout_output
     self.__stderr_output = stderr_output
-    self.__next = next
     self.__cmd = cmd
     self.__status_code = status_code
     self.__timed_out = timed_out
   
   def is_error(self) -> bool:
-    return self.__isError
+    return self.__is_error
   
   def get_stdout_output(self) -> str:
     return self.__stdout_output
@@ -40,3 +42,15 @@ class GradingScriptCommandResponse:
 
   def did_time_out(self) -> bool:
     return self.__timed_out
+  
+  # TODO: Replace with more accurate type.
+  def to_json(self) -> Dict[str, any]:
+    ans = {
+      "cmd": self.__cmd,
+      "stdout": self.__stdout_output,
+      "stderr": self.__stderr_output,
+      "is_error": self.__is_error,
+      "did_timeout": self.__timed_out,
+      "status_code": self.__status_code
+    }
+    return ans

@@ -5,8 +5,14 @@ name = "pypi"
 
 [packages]
 jsonschema = "*"
+redis = "*"
+requests = "*"
+py7zr = "*"
 
 [dev-packages]
 
 [requires]
 python_version = "3.8"
+
+[scripts]
+execute = "python3 do_grading.py"

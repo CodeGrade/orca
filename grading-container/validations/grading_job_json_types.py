@@ -1,4 +1,6 @@
 from typing import Any, Dict
 
-GradingScriptCommandJSON = Dict[str, str]
-GradingScriptOutputJSON = Dict[str, Any]
+GradingJobJSON = Dict[Any, Any]
+GradingScriptCommandJSON = Dict[str, Any]
+GradingJobOutputJSON = Dict[str, Any]
+CodeFileInfoJSON = Dict[str, str]
