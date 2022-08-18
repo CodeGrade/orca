@@ -1,0 +1,16 @@
+{
+  "target": {
+    "url": "/path/to/student/code",
+    "mime_type": "text"
+  },
+  "script": [
+    {
+      "cmd": "echo hello",
+      "on_complete": "output",
+      "on_fail": "abort"
+    }
+  ],
+  "submission_id": 123,
+  "grade_id": 234,
+  "priority": 0
+}
