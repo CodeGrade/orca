@@ -6,7 +6,12 @@ WORKDIR /usr/local/grading
 
 COPY Pipfile .
 COPY Pipfile.lock .
-COPY . .
+COPY validations/ .
+COPY grading_job/ .
+COPY do_grading.py .
+
+RUN apt-get install -y java javac xvfb xvfb-run racket
+
 
 ENV PYTHONPATH .
 
