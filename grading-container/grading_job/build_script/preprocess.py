@@ -8,7 +8,7 @@ from grading_job.build_script.json_helpers.grading_script_command import is_bash
 from grading_job.grading_script.bash_grading_script_command import BashGradingScriptCommand
 from grading_job.grading_script.conditional_grading_script_command import ConditionalGradingScriptCommand, GradingScriptPredicate
 from grading_job.grading_script.grading_script_command import GradingScriptCommand
-from validations.grading_job_json_types import CodeFileInfoJSON, GradingScriptCommandJSON
+from validations.grading_job_json_types import GradingScriptCommandJSON
 
 DEFAULT_COMMAND_TIMEOUT = 60 # 1 minute
 
@@ -56,8 +56,6 @@ class GradingScriptPreprocessor:
     for i in range(len(self.__cmds)):
       if self.__cmds[i] is None:
         self.__get_grading_command_by_index(i)
-      else:
-        continue
     return self.__cmds[0]
 
   def __get_grading_command_by_index(self, index: int) -> GradingScriptCommand:
