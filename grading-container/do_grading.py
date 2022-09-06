@@ -82,7 +82,7 @@ def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobOutpu
   except Exception as e:
     output = GradingJobOutput(command_responses, [e])
   push_results_to_bottlenose(output)
-  clean_up_folders(secret)
+  clean_up_folders(secret) # This is pointless if Docker can do it anyways.
 
 
 if __name__ == "__main__":
