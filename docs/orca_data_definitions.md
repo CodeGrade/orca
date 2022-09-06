@@ -2,30 +2,34 @@
 
 The following are data definitons to describe the shapes of objects passed around between Bottlenose and Orca, as well as Orca and Grading VMs it spins up.
 
-## `GradingJobConfig`
+## `GradingJob`
 
 <hr>
 
-A `GradingJobConfig` is a JSON object that contains details about how to grade a submission. The following is the basic data structure:
+A `GradingJob` is a JSON object that contains details about how to grade a submission. The following is the basic data structure:
 
 ```typescript
-{
-  submission_id: number,
-  grade_id: number,
-  starter_code?: CodeFileInfo,
-  student_code: CodeFileInfo,
-  professor_code?: CodeFileInfo,
-  priority: integer,
-  max_retries?: number,
-  script: [GradingScriptCommand],
-  team_id?: number,
-  user_id?: number
+interface GradingJob {
+  submission_id: number;
+  grade_id: number;
+  grader_id: number;
+  course_id: number;
+  starter_code?: CodeFileInfo;
+  student_code: CodeFileInfo;
+  professor_code?: CodeFileInfo;
+  priority: integer;
+  max_retries?: number;
+  script: [GradingScriptCommand];
+  team_id?: number;
+  user_id?: number;
+  user_names?: [string];
+  submitter_name: string;
 }
 ```
 
 [comment]: <> (Add description for team/user id.)
 
-`GradingJobConfig`s require a Grade Id and Submission Id (pulled from Bottlenose), as well as details about a student's code files (in the form of a `CodeFileInfo` object) to be autograded. These are mapped to the `grade_id`, `submission_id`, and `student_code` keys, respectively.
+`GradingJob`s require a Grade Id and Submission Id (pulled from Bottlenose), as well as details about a student's code files (in the form of a `CodeFileInfo` object) to be autograded. These are mapped to the `grade_id`, `submission_id`, and `student_code` keys, respectively.
 
 <hr>
 
@@ -52,10 +56,10 @@ Grading jobs have a priority in the form of a timestamp `int`. The object must a
 A `GradingScriptCommand` defines an execution step during the autograding process, and takes the following shape:
 
 ```typescript
-{
-  cmd: string,
-  on_fail: "abort" | "<number>",
-  on_complete: "output" | "<number>"
+interface BashGradingScriptCommand {
+  cmd: string;
+  on_fail: 'abort' | '<number>';
+  on_complete: 'output' | '<number>';
 }
 ```
 
@@ -67,13 +71,13 @@ The `on_complete` key serves a similar purpose to `on_fail`, but now we exit the
 
 <hr>
 
-A `GradingJobConfig` may optionally also specify the following keys and their respective values:
+A `GradingJob` may optionally also specify the following keys and their respective values:
 
 - `starter_code` : A file path to starter code files provided by the assignment. Starter exists **iff** professor code also exists.
 - `professor_code` : A file path to professor code, a.k.a. tests used for grading an assignment. Professor code exists **iff** starter code also exists for an assignment.
 - `max_retries` : The number of times a grading script can attempt to re-execute steps in the event it back-tracks to an index specified by the `on_fail` key of a `GradingScriptCommand`.
 
-Finally, a `GradingJobConfig` may specify either a `team_id`, `student_id`, or neither. This is based on whether the submission to be graded was submitted by a team, individual student, or a professor, respectively.
+Finally, a `GradingJob` may specify either a `team_id`, `student_id`, or neither. This is based on whether the submission to be graded was submitted by a team, individual student, or a professor, respectively.
 
 ## `GradingJob` - (**Orca** Database Model)
 
@@ -81,7 +85,7 @@ A `GradingJob` is a class (through Rails' `ActiveRecord`) which contains the fol
 
 ```typescript
 class GradingJob {
-  gradingJobConfig: GradingJobConfig;
+  GradingJob: GradingJob;
   priority: integer;
   submission_id: integer;
   grade_id: integer;
@@ -90,7 +94,7 @@ class GradingJob {
 }
 ```
 
-The `GradingJobConfig` here contains the same shape described above, specifically post-JSON-decoding and represented using Ruby hashes, arrays, and primitives.
+The `GradingJob` here contains the same shape described above, specifically post-JSON-decoding and represented using Ruby hashes, arrays, and primitives.
 
 Notice we've pulled out values specified in the job configuration (i.e., `priority`, `submission_id`, etc.) This is because we want to be able to query jobs in the PostgreSQL database by their information.
 
@@ -125,5 +129,5 @@ With the data definitions laid out above, here are some remaining questions to d
 
 - Is the shape of jobs put in a Task Queue anything more than a _reference_ to a `GradingJob` in the database?
   - Yes; we are putting the entire configuration inside of Redis such that grading containers can directly pull it from the queue.
-- Is the configuration we pass to the Grading VM any different from the `GradingJobConfig` described above (i.e., the one Bottlenose sends to Orca)?
+- Is the configuration we pass to the Grading VM any different from the `GradingJob` described above (i.e., the one Bottlenose sends to Orca)?
   - No.
