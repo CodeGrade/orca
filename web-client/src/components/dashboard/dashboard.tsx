@@ -14,7 +14,6 @@ const Dashboard = () => {
   useEffect(() => {
     getGradingJobQueue(dispatch);
   }, [dispatch]);
-  console.log(grading_job_queue);
   return (
     <div className="container">
       <div className="row">

@@ -1,5 +1,5 @@
 import React from "react";
-import { GradingJobProps } from "../../reducers/grading-job-reducer";
+import { GradingJob } from "../../reducers/grading-job-reducer";
 import {
   GradingTableStatsProps,
   getGradingTableStats,
@@ -9,7 +9,7 @@ import StatsBar from "./stats-bar";
 const GradingJobTableStats = ({
   grading_job_queue,
 }: {
-  grading_job_queue: GradingJobProps[];
+  grading_job_queue: GradingJob[];
 }) => {
   const stats: GradingTableStatsProps = getGradingTableStats(grading_job_queue);
 

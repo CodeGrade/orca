@@ -2,41 +2,41 @@ import React from "react";
 import { describeTime, makeReadableDate } from "../../helpers/time";
 import GradingJobActions from "./grading-job-actions";
 import { DateTime } from "luxon";
+import { GradingJob } from "../reducers/grading-job-reducer";
+import GradingJobSubmitter from "./grading-job-submitter";
 
-type GradingJobTableItemProps = {
-  sub_id: number;
-  grade_id: number;
-  user_id?: number;
-  team_id?: number;
-  created_at: number;
-  release_time: number;
+interface GradingJobTableItem {
+  grading_job: GradingJob;
   last: boolean;
-};
+}
 
-const GradingJobTableItem = ({
-  sub_id,
-  grade_id,
-  user_id,
-  team_id,
-  created_at,
-  release_time,
-  last,
-}: GradingJobTableItemProps) => {
+const GradingJobTableItem = ({ grading_job, last }: GradingJobTableItem) => {
+  /*
   let id_str: string = "";
-  if (user_id) id_str = `U-${user_id}`;
-  else if (team_id) id_str = `T-${team_id}`;
-  else id_str = `S-${sub_id}`;
+  if (grading_job.user_id) id_str = `U-${grading_job.user_id}`;
+  else if (grading_job.team_id) id_str = `T-${grading_job.team_id}`;
+  else id_str = `S-${grading_job.submission_id}`;
+  */
 
-  const release_time_dt: DateTime = DateTime.fromMillis(release_time);
-  const wait_time_dt: DateTime = DateTime.fromMillis(created_at);
+  const user_names: string[] = grading_job.user_names
+    ? [grading_job.submitter_name, ...grading_job.user_names]
+    : [grading_job.submitter_name];
+
+  const release_time_dt: DateTime = DateTime.fromMillis(grading_job.priority);
+  const wait_time_dt: DateTime = DateTime.fromMillis(grading_job.created_at);
   const now: number = new Date().getTime();
-  const released: boolean = release_time < now;
+  const released: boolean = grading_job.priority < now;
 
   return (
-    <tr className={`${released ? "table-info" : "table-dark"}`}>
-      <td>{id_str}</td>
-      <td>{grade_id}</td>
-      <td>LINK</td>
+    <tr className={`text-wrap ${released ? "table-success" : "table-primary"}`}>
+      <td>
+        <GradingJobSubmitter user_names={user_names} />
+      </td>
+      <td>{grading_job.grader_id}</td>
+      <td>{grading_job.course_id}</td>
+      <td>
+        <a href={grading_job.student_code}>View</a>
+      </td>
       {/* Remove 'ago' from described time*/}
       <td>{describeTime(wait_time_dt).slice(0, -4)}</td>
       <td
@@ -47,9 +47,9 @@ const GradingJobTableItem = ({
       </td>
       <td>
         <GradingJobActions
-          sub_id={sub_id}
-          user_id={user_id ? user_id : undefined}
-          team_id={team_id ? team_id : undefined}
+          submission_id={grading_job.submission_id}
+          user_id={grading_job.user_id ? grading_job.user_id : undefined}
+          team_id={grading_job.team_id ? grading_job.team_id : undefined}
           last={last}
           released={released}
         />

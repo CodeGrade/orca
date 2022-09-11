@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { GradingJobProps } from "../reducers/grading-job-reducer";
+import { GradingJob } from "../reducers/grading-job-reducer";
 import GradingJobTableBody from "./grading-job-table-body";
 import SortableHeaderItem from "./sortable-header-item";
 import "../../stylesheets/grading-job-table.css";
@@ -7,7 +7,7 @@ import "../../stylesheets/grading-job-table.css";
 const GradingJobTable = ({
   grading_job_queue,
 }: {
-  grading_job_queue: GradingJobProps[];
+  grading_job_queue: GradingJob[];
 }) => {
   const [sortBy, setSortBy] = useState({ type: "release_time", order: -1 });
   const handleSetSortBy = (sort_type: string) => {
@@ -21,12 +21,25 @@ const GradingJobTable = ({
   return (
     <table className="table table-hover text-center">
       <thead className="m-auto">
-        <tr className="table-primary">
-          <th scope="col">Submitter ID</th>
-          <th scope="col" onClick={() => handleSetSortBy("grade_id")}>
+        <tr className="table-dark">
+          <th scope="col" onClick={() => handleSetSortBy("submitter_name")}>
             <SortableHeaderItem
-              label={"Grade ID"}
-              active={sortBy["type"] === "grade_id"}
+              label={"Submitter(s)"}
+              active={sortBy["type"] === "submitter_name"}
+              order={sortBy["order"]}
+            />
+          </th>
+          <th scope="col" onClick={() => handleSetSortBy("grader_id")}>
+            <SortableHeaderItem
+              label={"Grader"}
+              active={sortBy["type"] === "grader_id"}
+              order={sortBy["order"]}
+            />
+          </th>
+          <th scope="col" onClick={() => handleSetSortBy("course_id")}>
+            <SortableHeaderItem
+              label={"Course ID"}
+              active={sortBy["type"] === "course_id"}
               order={sortBy["order"]}
             />
           </th>

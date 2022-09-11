@@ -21,15 +21,15 @@ const StatsBar = ({
         <div className="border-bottom border-primary">{label} Jobs</div>
         <div>{stats.num}</div>
       </li>
-      <li className="list-group-item list-group-item-success">
+      <li className="list-group-item list-group-item-dark">
         <div className="border-bottom border-success">Min</div>
         <div>{stats.num > 0 && millisToDHHMMSS(stats.min)}</div>
       </li>
-      <li className="list-group-item list-group-item-info">
-        <div className="border-bottom border-info">Avg</div>
+      <li className="list-group-item list-group-item-dark">
+        <div className="border-bottom border-warning">Avg</div>
         <div>{stats.num > 0 && millisToDHHMMSS(stats.avg)}</div>
       </li>
-      <li className="list-group-item list-group-item-danger">
+      <li className="list-group-item list-group-item-dark">
         <div className="border-bottom border-danger">Max</div>
         <div>{stats.num > 0 && millisToDHHMMSS(stats.max)}</div>
       </li>

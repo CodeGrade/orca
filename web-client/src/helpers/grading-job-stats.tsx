@@ -1,4 +1,4 @@
-import { GradingJobProps } from "../components/reducers/grading-job-reducer";
+import { GradingJob } from "../components/reducers/grading-job-reducer";
 
 export const getTimeInQueue = (created_at: number): number => {
   const now: number = new Date().getTime();
@@ -19,12 +19,12 @@ export type GradingTableStatsProps = {
 };
 
 export const getGradingTableStats = (
-  grading_job_queue: GradingJobProps[]
+  grading_job_queue: GradingJob[]
 ): GradingTableStatsProps => {
   let wait_times: number[] = [];
   let released_wait_times: number[] = [];
   const now: number = new Date().getTime();
-  grading_job_queue.map((grading_job: GradingJobProps) => {
+  grading_job_queue.map((grading_job: GradingJob) => {
     const release_time_ms: number = grading_job.priority;
     const released: boolean = release_time_ms < now;
     if (released) {
