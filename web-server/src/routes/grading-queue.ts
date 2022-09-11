@@ -1,6 +1,6 @@
 import Router, { Request, Response } from "express";
 import { client } from "../index";
-import getGradingQueue from "../grading-queue/get";
+import getGradingJobs from "../grading-queue/get";
 import createGradingJob from "../grading-queue/create";
 import moveGradingJob from "../grading-queue/move";
 import deleteGradingJob from "../grading-queue/delete";
@@ -10,8 +10,8 @@ const gradingQueueRouter = Router();
 // TODO: Error checking
 
 // TODO: Move methods to controller/respective files
-const getGradingQueueHandler = async (req: Request, res: Response) => {
-  const grading_jobs = await getGradingQueue();
+const getGradingJobsHandler = async (req: Request, res: Response) => {
+  const grading_jobs = await getGradingJobs();
   res.json(grading_jobs);
 };
 
@@ -36,7 +36,7 @@ const deleteGradingJobInQueue = async (req: Request, res: Response) => {
 };
 
 // TODO: Abstract handlers and add them to the route handlers
-gradingQueueRouter.get("/grading_queue", getGradingQueueHandler);
+gradingQueueRouter.get("/grading_queue", getGradingJobsHandler);
 gradingQueueRouter.post("/grading_queue", addGradingJobToQueue);
 gradingQueueRouter.put("/grading_queue/:sub_id", moveGradingJobInQueue);
 gradingQueueRouter.delete("/grading_queue/:sub_id", deleteGradingJobInQueue);

@@ -10,13 +10,16 @@ type SortByProps = {
   order: number;
 };
 
+interface GradingJobTableBodyProps {
+  grading_job_queue: GradingJobProps[];
+  sort_by: SortByProps;
+}
+
 const GradingJobTableBody = ({
   grading_job_queue,
   sort_by,
-}: {
-  grading_job_queue: GradingJobProps[];
-  sort_by: SortByProps;
-}) => {
+}: GradingJobTableBodyProps) => {
+  // Grading job queue in original order (unaffected by user sort)
   const true_grading_job_queue = useSelector(
     (state: State) => state.grading_job_queue
   );
