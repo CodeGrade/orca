@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { GradingJob } from "../reducers/grading-job-reducer";
+import { GradingJob } from "./types";
 import GradingJobTableBody from "./grading-job-table-body";
 import SortableHeaderItem from "./sortable-header-item";
 import "../../stylesheets/grading-job-table.css";

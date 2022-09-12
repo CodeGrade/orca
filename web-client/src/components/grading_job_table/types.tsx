@@ -1,21 +1,7 @@
-export type SubmitterInfoObj = {
-  submitter: string;
-  submissions: string[];
-};
-
-export type SubmitterInfo = {
-  [submitter: string]: string[];
-};
-
 type GradingScriptCommand = {
   cmd: string;
   on_fail: string;
   on_complete: string;
-};
-
-export type GradingQueueEntry = {
-  value: string;
-  score: number;
 };
 
 export interface GradingJob {
@@ -32,26 +18,14 @@ export interface GradingJob {
   script: [GradingScriptCommand];
   team_id?: number;
   user_id?: number;
-  user_names?: [string];
+  user_names?: string[];
   submitter_name: string;
+  nonce: string; // Used for redis operations
 }
 
-export type MoveConfig = {
-  priority: string;
-  nonce: string;
-  team_id?: string;
-  user_id?: string;
-};
-
 export type PaginationInfo = {
-  offset: number;
   limit: number;
-};
-
-export type PaginationData = {
-  prev: PaginationInfo | null;
-  next: PaginationInfo | null;
-  data: GradingJob[];
+  offset: number;
 };
 
 export type TimeStats = {
@@ -64,4 +38,16 @@ export type TimeStats = {
 export type GradingQueueStats = {
   all: TimeStats;
   released: TimeStats;
+};
+
+export type GradingQueue = {
+  grading_jobs: GradingJob[];
+  prev: PaginationInfo | null;
+  next: PaginationInfo | null;
+  total: number;
+  stats: GradingQueueStats;
+};
+
+export type State = {
+  grading_queue: GradingQueue;
 };

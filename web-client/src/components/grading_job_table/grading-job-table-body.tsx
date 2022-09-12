@@ -1,5 +1,5 @@
 import React from "react";
-import { GradingJob } from "../reducers/grading-job-reducer";
+import { GradingJob } from "./types";
 import GradingJobTableItem from "./grading-job-table-item";
 import "../../stylesheets/grading-job-table.css";
 

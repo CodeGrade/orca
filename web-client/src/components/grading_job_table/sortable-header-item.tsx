@@ -1,14 +1,16 @@
 import React from "react";
 
+type SortableHeaderItemProps = {
+  label: string;
+  active: boolean;
+  order: number;
+};
+
 const SortableHeaderItem = ({
   label,
   active,
   order,
-}: {
-  label: string;
-  active: boolean;
-  order: number;
-}) => {
+}: SortableHeaderItemProps) => {
   return (
     <div>
       <span>{label}</span>

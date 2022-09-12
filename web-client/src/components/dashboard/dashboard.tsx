@@ -2,11 +2,7 @@ import React, { useEffect, useState } from "react";
 import { getGradingJobQueue } from "../../actions/grading-job-actions";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch } from "redux";
-import {
-  GradingJob,
-  GradingQueue,
-  State,
-} from "../reducers/grading-job-reducer";
+import { GradingJob, GradingQueue, State } from "../grading_job_table/types";
 import GradingJobTableStats from "../grading_job_table/grading_job_table_stats/grading-job-table-stats";
 import GradingJobTable from "../grading_job_table/grading-job-table";
 import { OFFSET_START, LIMIT } from "../../utils/constants";
@@ -24,7 +20,7 @@ const Dashboard = () => {
   }, [dispatch, offset]);
 
   const grading_jobs: GradingJob[] = grading_queue.grading_jobs;
-  const { prev, next, total } = grading_queue;
+  const { prev, next, total, stats } = grading_queue;
 
   const handleNextPage = () => {
     setOffset(offset + LIMIT);
@@ -38,7 +34,7 @@ const Dashboard = () => {
       <div className="row">
         <div className="mt-2">
           <div>
-            <GradingJobTableStats grading_jobs={grading_jobs && grading_jobs} />
+            <GradingJobTableStats stats={stats && stats} />
           </div>
 
           <div className="mt-3 d-flex flex-column">

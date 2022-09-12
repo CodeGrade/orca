@@ -1,10 +1,10 @@
 import React from "react";
 
-interface GradingJobSubmitter {
+type GradingJobSubmitterProps = {
   user_names: string[];
-}
+};
 
-const GradingJobSubmitter = ({ user_names }: GradingJobSubmitter) => {
+const GradingJobSubmitter = ({ user_names }: GradingJobSubmitterProps) => {
   return (
     <div className="text-wrap">
       {user_names.map((user_name) => {

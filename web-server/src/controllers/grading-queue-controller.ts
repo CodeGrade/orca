@@ -8,7 +8,12 @@ import {
   formatOffsetAndLimit,
   getPageFromGradingQueue as getPageFromGradingJobs,
 } from "../utils/pagination";
-import { GradingJob, PaginationData } from "../grading-queue/types";
+import {
+  GradingJob,
+  PaginationData,
+  GradingQueueStats,
+} from "../grading-queue/types";
+import { getGradingQueueStats } from "../grading-queue/stats";
 
 // TODO: Typing and Error handling
 // TODO: Add res.status for all
@@ -25,6 +30,7 @@ export const getGradingQueue = async (req: Request, res: Response) => {
     return;
   }
 
+  // Get Pagination Data
   const [offset, limit]: [number, number] = formatOffsetAndLimit(
     req.query.offset,
     req.query.limit
@@ -50,13 +56,16 @@ export const getGradingQueue = async (req: Request, res: Response) => {
   const { next, prev } = pagination_data;
   const grading_jobs_slice = pagination_data.data;
 
+  // Calculate Stats for entire grading queue
+  const stats: GradingQueueStats = getGradingQueueStats(grading_jobs);
+
   res.status(200);
-  // TODO: Calculate stats and include them here
   res.json({
     grading_jobs: grading_jobs_slice,
     next,
     prev,
     total: grading_jobs_slice.length,
+    stats,
   });
 };
 

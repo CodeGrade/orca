@@ -1,18 +1,8 @@
 import React from "react";
-import { GradingJob } from "../../reducers/grading-job-reducer";
-import {
-  GradingTableStatsProps,
-  getGradingTableStats,
-} from "../../../utils/grading-job-stats";
 import StatsBar from "./stats-bar";
+import { GradingQueueStats } from "../types";
 
-const GradingJobTableStats = ({
-  grading_jobs,
-}: {
-  grading_jobs: GradingJob[];
-}) => {
-  const stats: GradingTableStatsProps = getGradingTableStats(grading_jobs);
-
+const GradingJobTableStats = ({ stats }: { stats: GradingQueueStats }) => {
   return (
     <div className="d-flex flex-column flex-lg-row justify-content-between align-items-center">
       <div className="me-lg-3">

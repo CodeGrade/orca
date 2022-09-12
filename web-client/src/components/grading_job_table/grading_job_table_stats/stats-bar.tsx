@@ -1,6 +1,6 @@
 import React from "react";
 import { millisToDHHMMSS } from "../../../utils/time";
-import { StatsProps } from "../../../utils/grading-job-stats";
+import { TimeStats } from "../types";
 
 const StatsBar = ({
   label,
@@ -9,7 +9,7 @@ const StatsBar = ({
 }: {
   label: string;
   tooltip: string;
-  stats: StatsProps;
+  stats: TimeStats;
 }) => {
   return (
     <ul

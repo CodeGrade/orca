@@ -5,53 +5,22 @@ import {
   MOVE_GRADING_JOB_BACK,
   MOVE_GRADING_JOB_FRONT,
 } from "../../actions/grading-job-actions";
+import { State, GradingJob } from "../grading_job_table/types";
 
-type GradingScriptCommand = {
-  cmd: string;
-  on_fail: string;
-  on_complete: string;
+const initial_state: State = {
+  grading_queue: {
+    grading_jobs: [],
+    prev: null,
+    next: null,
+    total: 0,
+    stats: {
+      all: { avg: 0, min: 0, max: 0, num: 0 },
+      released: { avg: 0, min: 0, max: 0, num: 0 },
+    },
+  },
 };
 
-export interface GradingJob {
-  created_at: number;
-  submission_id: number;
-  grade_id: number;
-  grader_id: number;
-  course_id: number;
-  starter_code?: string; // CodeFileInfo;
-  student_code: string; // CodeFileInfo;
-  professor_code?: string; // CodeFileInfo;
-  priority: number;
-  max_retries?: number;
-  script: [GradingScriptCommand];
-  team_id?: number;
-  user_id?: number;
-  user_names?: string[];
-  submitter_name: string;
-  nonce: string; // Used for redis operations
-}
-
-export type PaginationInfo = {
-  limit: number;
-  offset: number;
-};
-
-export interface GradingQueue {
-  grading_jobs: GradingJob[];
-  prev: PaginationInfo | null;
-  next: PaginationInfo | null;
-  total: number;
-}
-
-export type State = {
-  grading_queue: GradingQueue;
-};
-
-const initialState: State = {
-  grading_queue: { grading_jobs: [], prev: null, next: null, total: 0 },
-};
-
-const gradingJobReducer = (state: State = initialState, action: AnyAction) => {
+const gradingJobReducer = (state: State = initial_state, action: AnyAction) => {
   switch (action.type) {
     case GET_GRADING_JOB_QUEUE:
       return (state = {
