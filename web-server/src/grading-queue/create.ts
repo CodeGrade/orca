@@ -2,7 +2,7 @@ import { client } from "../index";
 import { GradingJob } from "./types";
 import { LIFETIME_BUFFER } from "./constants";
 
-const createGradingJob = async (grading_job_config: Object) => {
+const createGradingJob = async (grading_job_config: GradingJob) => {
   // TODO: Check if valid using GradingJob interface
 
   const sub_id = grading_job_config["submission_id"];

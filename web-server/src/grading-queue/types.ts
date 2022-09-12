@@ -41,3 +41,14 @@ export type MoveConfig = {
   team_id?: string;
   user_id?: string;
 };
+
+export type PaginationInfo = {
+  offset: number;
+  limit: number;
+};
+
+export type PaginationData = {
+  prev: PaginationInfo | null;
+  next: PaginationInfo | null;
+  data: GradingJob[];
+};

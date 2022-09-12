@@ -1,6 +1,6 @@
 import React from "react";
-import { millisToDHHMMSS } from "../../../helpers/time";
-import { StatsProps } from "../../../helpers/grading-job-stats";
+import { millisToDHHMMSS } from "../../../utils/time";
+import { StatsProps } from "../../../utils/grading-job-stats";
 
 const StatsBar = ({
   label,

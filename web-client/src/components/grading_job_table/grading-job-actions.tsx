@@ -11,7 +11,6 @@ type GradingJobActionsProps = {
   nonce: string;
   team_id?: number;
   user_id?: number;
-  last: boolean;
   released: boolean;
 };
 
@@ -20,7 +19,6 @@ const GradingJobActions = ({
   nonce,
   team_id,
   user_id,
-  last,
   released,
 }: GradingJobActionsProps) => {
   const dispatch: Dispatch = useDispatch();
@@ -36,9 +34,9 @@ const GradingJobActions = ({
     moveGradingJob(dispatch, submission_id, nonce, "front", team_id, user_id);
   };
   const handleMoveToBack = () => {
-    if (last || released) {
+    if (released) {
       // Should never need this
-      alert("Job is already last in queue");
+      // Job already release
       return;
     }
     moveGradingJob(dispatch, submission_id, nonce, "back", team_id, user_id);
@@ -70,7 +68,7 @@ const GradingJobActions = ({
         <button
           type="button"
           className={`btn btn-warning rounded ${
-            last || released ? "d-none" : "d-inline"
+            released ? "d-none" : "d-inline"
           }`}
           onClick={() => handleMoveToBack()}
         >

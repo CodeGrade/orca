@@ -1,16 +1,11 @@
 import React from "react";
-import { describeTime, makeReadableDate } from "../../helpers/time";
+import { describeTime, makeReadableDate } from "../../utils/time";
 import GradingJobActions from "./grading-job-actions";
 import { DateTime } from "luxon";
 import { GradingJob } from "../reducers/grading-job-reducer";
 import GradingJobSubmitter from "./grading-job-submitter";
 
-interface GradingJobTableItem {
-  grading_job: GradingJob;
-  last: boolean;
-}
-
-const GradingJobTableItem = ({ grading_job, last }: GradingJobTableItem) => {
+const GradingJobTableItem = ({ grading_job }: { grading_job: GradingJob }) => {
   /*
   let id_str: string = "";
   if (grading_job.user_id) id_str = `U-${grading_job.user_id}`;
@@ -51,7 +46,6 @@ const GradingJobTableItem = ({ grading_job, last }: GradingJobTableItem) => {
           nonce={grading_job.nonce}
           user_id={grading_job.user_id ? grading_job.user_id : undefined}
           team_id={grading_job.team_id ? grading_job.team_id : undefined}
-          last={last}
           released={released}
         />
       </td>

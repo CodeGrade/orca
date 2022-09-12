@@ -3,15 +3,15 @@ import { GradingJob } from "../../reducers/grading-job-reducer";
 import {
   GradingTableStatsProps,
   getGradingTableStats,
-} from "../../../helpers/grading-job-stats";
+} from "../../../utils/grading-job-stats";
 import StatsBar from "./stats-bar";
 
 const GradingJobTableStats = ({
-  grading_job_queue,
+  grading_jobs,
 }: {
-  grading_job_queue: GradingJob[];
+  grading_jobs: GradingJob[];
 }) => {
-  const stats: GradingTableStatsProps = getGradingTableStats(grading_job_queue);
+  const stats: GradingTableStatsProps = getGradingTableStats(grading_jobs);
 
   return (
     <div className="d-flex flex-column flex-lg-row justify-content-between align-items-center">

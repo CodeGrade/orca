@@ -4,11 +4,7 @@ import GradingJobTableBody from "./grading-job-table-body";
 import SortableHeaderItem from "./sortable-header-item";
 import "../../stylesheets/grading-job-table.css";
 
-const GradingJobTable = ({
-  grading_job_queue,
-}: {
-  grading_job_queue: GradingJob[];
-}) => {
+const GradingJobTable = ({ grading_jobs }: { grading_jobs: GradingJob[] }) => {
   const [sortBy, setSortBy] = useState({ type: "release_time", order: -1 });
   const handleSetSortBy = (sort_type: string) => {
     if (sort_type === sortBy["type"]) {
@@ -19,7 +15,7 @@ const GradingJobTable = ({
   };
 
   return (
-    <table className="table table-hover text-center">
+    <table className="table table-hover text-center mb-2">
       <thead className="m-auto">
         <tr className="table-dark">
           <th scope="col" onClick={() => handleSetSortBy("submitter_name")}>
@@ -63,7 +59,7 @@ const GradingJobTable = ({
       </thead>
       <GradingJobTableBody
         sort_by={sortBy}
-        grading_job_queue={grading_job_queue && [...grading_job_queue]}
+        grading_jobs={grading_jobs && [...grading_jobs]}
       />
     </table>
   );

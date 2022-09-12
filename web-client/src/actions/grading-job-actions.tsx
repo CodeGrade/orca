@@ -1,13 +1,21 @@
 import { Dispatch } from "redux";
 import * as service from "../services/grading-job-services";
+import { LIMIT, OFFSET_START } from "../utils/constants";
 
 export const GET_GRADING_JOB_QUEUE = "GET_GRADING_JOB_QUEUE";
 export const DELETE_GRADING_JOB = "DELETE_GRADING_JOB";
 export const MOVE_GRADING_JOB_FRONT = "MOVE_GRADING_JOB_FRONT";
 export const MOVE_GRADING_JOB_BACK = "MOVE_GRADING_JOB_BACK";
 
-export const getGradingJobQueue = async (dispatch: Dispatch) => {
-  const grading_job_queue = await service.getGradingJobQueue();
+// TODO: Check responses/status codes
+
+export const getGradingJobQueue = async (
+  dispatch: Dispatch,
+  offset?: number,
+  limit: number = LIMIT
+) => {
+  if (!offset) offset = OFFSET_START;
+  const grading_job_queue = await service.getGradingJobQueue(limit, offset);
   dispatch({
     type: GET_GRADING_JOB_QUEUE,
     grading_job_queue,

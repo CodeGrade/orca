@@ -31,12 +31,24 @@ export interface GradingJob {
   nonce: string; // Used for redis operations
 }
 
+export type PaginationInfo = {
+  limit: number;
+  offset: number;
+};
+
+export interface GradingQueue {
+  grading_jobs: GradingJob[];
+  prev: PaginationInfo | null;
+  next: PaginationInfo | null;
+  total: number;
+}
+
 export type State = {
-  grading_job_queue: GradingJob[];
+  grading_queue: GradingQueue;
 };
 
 const initialState: State = {
-  grading_job_queue: [],
+  grading_queue: { grading_jobs: [], prev: null, next: null, total: 0 },
 };
 
 const gradingJobReducer = (state: State = initialState, action: AnyAction) => {
@@ -44,19 +56,24 @@ const gradingJobReducer = (state: State = initialState, action: AnyAction) => {
     case GET_GRADING_JOB_QUEUE:
       return (state = {
         ...state,
-        grading_job_queue: action.grading_job_queue,
+        grading_queue: action.grading_job_queue,
       });
     case DELETE_GRADING_JOB:
-      return (state = {
-        ...state,
-        grading_job_queue: state.grading_job_queue.filter(
+      const updated_queue_deleted = [
+        ...state.grading_queue.grading_jobs.filter(
           (grading_job: GradingJob) =>
             grading_job.submission_id !== action.grading_job_submission_id
         ),
+      ];
+      return (state = {
+        grading_queue: {
+          ...state.grading_queue,
+          grading_jobs: updated_queue_deleted,
+        },
       });
     // TODO: Abstract from moving back/front
     case MOVE_GRADING_JOB_BACK:
-      const job_to_move_back = state.grading_job_queue.find(
+      const job_to_move_back = state.grading_queue.grading_jobs.find(
         (job) => job.submission_id === action.grading_job_submission_id
       );
       if (!job_to_move_back) return state;
@@ -67,17 +84,19 @@ const gradingJobReducer = (state: State = initialState, action: AnyAction) => {
         priority: action.new_priority,
       };
       const updated_queue_back = [
-        ...state.grading_job_queue.filter(
+        ...state.grading_queue.grading_jobs.filter(
           (job) => job.submission_id !== action.grading_job_submission_id
         ),
         updated_job_back,
       ];
       return (state = {
-        ...state,
-        grading_job_queue: updated_queue_back,
+        grading_queue: {
+          ...state.grading_queue,
+          grading_jobs: updated_queue_back,
+        },
       });
     case MOVE_GRADING_JOB_FRONT:
-      const job_to_move_front = state.grading_job_queue.find(
+      const job_to_move_front = state.grading_queue.grading_jobs.find(
         (job) => job.submission_id === action.grading_job_submission_id
       );
       if (!job_to_move_front) return state;
@@ -89,8 +108,8 @@ const gradingJobReducer = (state: State = initialState, action: AnyAction) => {
 
       const now: number = new Date().getTime();
       let released_ind = 0;
-      for (let i = 0; i < state.grading_job_queue.length; i++) {
-        const grading_job = state.grading_job_queue[i];
+      for (let i = 0; i < state.grading_queue.grading_jobs.length; i++) {
+        const grading_job = state.grading_queue.grading_jobs[i];
         const release_time_ms: number = grading_job.priority * 1000;
         const is_released: boolean = release_time_ms < now;
         if (!is_released) {
@@ -98,15 +117,17 @@ const gradingJobReducer = (state: State = initialState, action: AnyAction) => {
           break;
         }
       }
-      const updated_queue = [
-        ...state.grading_job_queue.filter(
+      const updated_queue_front = [
+        ...state.grading_queue.grading_jobs.filter(
           (job) => job.submission_id !== action.grading_job_submission_id
         ),
       ];
-      updated_queue.splice(released_ind, 0, updated_job);
+      updated_queue_front.splice(released_ind, 0, updated_job);
       return (state = {
-        ...state,
-        grading_job_queue: updated_queue,
+        grading_queue: {
+          ...state.grading_queue,
+          grading_jobs: updated_queue_front,
+        },
       });
     default:
       return state;
