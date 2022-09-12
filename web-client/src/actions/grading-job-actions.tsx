@@ -16,9 +16,13 @@ export const getGradingJobQueue = async (dispatch: Dispatch) => {
 
 export const deleteGradingJob = async (
   dispatch: Dispatch,
-  grading_job_submission_id: number
+  grading_job_submission_id: number,
+  nonce: string
 ) => {
-  const response = await service.deleteGradingJob(grading_job_submission_id);
+  const response = await service.deleteGradingJob(
+    grading_job_submission_id,
+    nonce
+  );
   dispatch({
     type: DELETE_GRADING_JOB,
     grading_job_submission_id,
@@ -28,12 +32,14 @@ export const deleteGradingJob = async (
 export const moveGradingJob = async (
   dispatch: Dispatch,
   grading_job_submission_id: number,
+  nonce: string,
   new_position: string,
   team_id?: number,
   user_id?: number
 ) => {
   const response = await service.moveGradingJob(
     grading_job_submission_id,
+    nonce,
     new_position,
     team_id,
     user_id
@@ -42,7 +48,6 @@ export const moveGradingJob = async (
   if (response.status === 204) return;
 
   const new_priority: number = response.data;
-  console.log(response);
   dispatch({
     type:
       new_position === "front" ? MOVE_GRADING_JOB_FRONT : MOVE_GRADING_JOB_BACK,

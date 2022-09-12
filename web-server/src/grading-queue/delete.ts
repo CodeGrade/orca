@@ -2,6 +2,8 @@ import { client } from "../index";
 
 // Removing Jobs from the Redis Grading Queue
 
+// TODO: Update/Fix using nonce
+
 const deleteGradingJob = async (sub_id: string) => {
   const grading_job_to_delete = await client.get(`QueuedGradingInfo.${sub_id}`);
   if (!grading_job_to_delete) {

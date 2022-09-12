@@ -6,7 +6,11 @@ export const getGradingJobQueue = async () => {
   return response.data;
 };
 
-export const deleteGradingJob = async (grading_job_submission_id: number) => {
+// TODO: Update/Fix depending on how we decide to handle delete
+export const deleteGradingJob = async (
+  grading_job_submission_id: number,
+  nonce: string
+) => {
   // if not using redux then maybe have it hand back the new queue
   const response = await axios.delete(
     `${API_BASE}/${grading_job_submission_id}`
@@ -16,11 +20,13 @@ export const deleteGradingJob = async (grading_job_submission_id: number) => {
 
 export const moveGradingJob = async (
   grading_job_submission_id: number,
+  nonce: string,
   new_position: string,
   team_id?: number,
   user_id?: number
 ) => {
   const response = await axios.put(`${API_BASE}/${grading_job_submission_id}`, {
+    nonce: nonce,
     priority: new_position,
     team_id: team_id,
     user_id: user_id,

@@ -8,6 +8,7 @@ import {
 
 type GradingJobActionsProps = {
   submission_id: number;
+  nonce: string;
   team_id?: number;
   user_id?: number;
   last: boolean;
@@ -16,6 +17,7 @@ type GradingJobActionsProps = {
 
 const GradingJobActions = ({
   submission_id,
+  nonce,
   team_id,
   user_id,
   last,
@@ -23,7 +25,7 @@ const GradingJobActions = ({
 }: GradingJobActionsProps) => {
   const dispatch: Dispatch = useDispatch();
   const handleDelete = () => {
-    deleteGradingJob(dispatch, submission_id);
+    deleteGradingJob(dispatch, submission_id, nonce);
   };
   const handleMoveToFront = () => {
     if (released) {
@@ -31,7 +33,7 @@ const GradingJobActions = ({
       alert("Job is already released");
       return;
     }
-    moveGradingJob(dispatch, submission_id, "front", team_id, user_id);
+    moveGradingJob(dispatch, submission_id, nonce, "front", team_id, user_id);
   };
   const handleMoveToBack = () => {
     if (last || released) {
@@ -39,7 +41,7 @@ const GradingJobActions = ({
       alert("Job is already last in queue");
       return;
     }
-    moveGradingJob(dispatch, submission_id, "back", team_id, user_id);
+    moveGradingJob(dispatch, submission_id, nonce, "back", team_id, user_id);
   };
   return (
     <div className="d-flex flex-column align-items-center justify-content-center">

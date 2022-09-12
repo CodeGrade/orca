@@ -1,14 +1,9 @@
 import { client } from "../index";
+import { GradingJob } from "./types";
+import { LIFETIME_BUFFER } from "./constants";
 
-// TODO: Implement logic for adding GradingJobs to the Redis Queue.
-
-const LIFETIME_BUFFER = 86400; // 1 day in seconds
-
-// TODO: Check out to use zAdd with this redis library
-
-// TODO: type grading_job
 const createGradingJob = async (grading_job_config: Object) => {
-  // TODO: Check if valid
+  // TODO: Check if valid using GradingJob interface
 
   const sub_id = grading_job_config["submission_id"];
   const priority = grading_job_config["priority"];
@@ -26,8 +21,7 @@ const createGradingJob = async (grading_job_config: Object) => {
 
   let next_task: string = "";
 
-  // TODO: Test this
-  // Submission timestamp to add at end of GradingQueue entry key string
+  // Submission timestamp nonce to add at end of GradingQueue entry key string
   const now = new Date().getTime();
 
   if (grading_job_config["user_id"]) {

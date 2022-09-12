@@ -48,6 +48,7 @@ const GradingJobTableItem = ({ grading_job, last }: GradingJobTableItem) => {
       <td>
         <GradingJobActions
           submission_id={grading_job.submission_id}
+          nonce={grading_job.nonce}
           user_id={grading_job.user_id ? grading_job.user_id : undefined}
           team_id={grading_job.team_id ? grading_job.team_id : undefined}
           last={last}

@@ -1,4 +1,5 @@
 import { client } from "../index";
+import { GradingJob, SubmitterInfo, SubmitterInfoObj } from "./types";
 
 const DELIM = ".";
 
@@ -34,14 +35,6 @@ const getUniqueSubmitters = (grading_queue: string[]): string[] => {
   return unique_submitters;
 };
 
-type SubmitterInfoObj = {
-  submitter: string;
-  submissions: string[];
-};
-type SubmitterInfo = {
-  [submitter: string]: string[];
-};
-
 const getSubmitterInfo = async (
   submitters: string[]
 ): Promise<SubmitterInfo> => {
@@ -65,51 +58,33 @@ const getSubmitterInfo = async (
   return submitter_info;
 };
 
-// TODO: Type this
-const getGradingJobs = async () => {
+const getGradingJobs = async (): Promise<GradingJob[]> => {
   const grading_queue: string[] = await getGradingQueue();
   const submitters: string[] = getUniqueSubmitters(grading_queue);
-  const submitter_info = await getSubmitterInfo(submitters);
+  const submitter_info: SubmitterInfo = await getSubmitterInfo(submitters);
 
   // Grading queue is in order of increasing release timestamp
-  const grading_jobs = grading_queue.map(async (key: string) => {
-    const key_split: string[] = key.split(DELIM);
-    const nonce: string = key_split.pop()!;
-    const submitter: string = key_split.join(DELIM);
-    const submission_id: string = submitter_info[submitter].pop()!;
-    const grading_job = await getGradingJobFromSubmissionId(submission_id);
-    if (!grading_job) {
-      // Error
-      return;
+  const grading_jobs: Promise<GradingJob>[] = grading_queue.map(
+    async (key: string) => {
+      const key_split: string[] = key.split(DELIM);
+      const nonce: string = key_split.pop()!;
+      const submitter: string = key_split.join(DELIM);
+      const submission_id: string = submitter_info[submitter].pop()!;
+      const grading_job = await getGradingJobFromSubmissionId(submission_id);
+      if (!grading_job) {
+        // TODO: Error
+      }
+      const json_grading_job: GradingJob = {
+        nonce: nonce,
+        ...JSON.parse(grading_job),
+      };
+      return json_grading_job;
     }
-    const json_grading_job = { nonce: nonce, ...JSON.parse(grading_job) };
-    return json_grading_job;
-  });
+  );
 
-  const results = await Promise.all(grading_jobs);
+  const results: GradingJob[] = await Promise.all(grading_jobs);
+  results.sort((a, b) => (a.priority > b.priority ? 1 : -1));
   return results;
 };
-
-// const getGradingQueue = async () => {
-/*
-  const grading_info_keys: string[] = await client.keys("QueuedGradingInfo.*");
-  // TODO: Make and enforce interface model for grading job info
-  //   const grading_jobs = await getGradingJobsFromKeys(grading_info_keys);
-  let grading_jobs: Object[] = [];
-  for (let i = 0; i < grading_info_keys.length; i++) {
-    const key = grading_info_keys[i];
-    const redis_grading_job = await client.get(key);
-    if (!redis_grading_job) {
-      // Error retrieving grading job
-      // TODO: If getting a key fails for some reason -- returns null
-      // do we want the rest of the list?  Or just say it failed?
-      return;
-    }
-    const grading_job = JSON.parse(redis_grading_job);
-    grading_jobs.push(grading_job);
-  }
-  grading_jobs.sort((a, b) => (a["priority"] > b["priority"] ? 1 : -1));
-  return grading_jobs;
-  */
 
 export default getGradingJobs;
