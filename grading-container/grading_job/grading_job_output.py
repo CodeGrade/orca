@@ -22,7 +22,7 @@ class GradingJobOutput:
   def to_json(self) -> GradingJobOutputJSON:
     ans = dict()
     json_responses = list(map(lambda c: c.to_json(), self.__command_responses))
-    ans["command_responses"] = json_responses
+    ans["shell_responses"] = json_responses
     if self.__execution_errors is not None:
       ans["execution_errors"] = list(map(lambda e: str(e)))
     if self.__tap_output is not None:
