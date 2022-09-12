@@ -1,12 +1,17 @@
 # Data Definitions - Orca/Grading VMs
 
-The following are data definitons to describe the shapes of objects passed around between Bottlenose and Orca, as well as Orca and Grading VMs it spins up.
+This document explores the shape of data passed between various points in the Orca workflow, where JSON objects are passed:
+
+1. From Bottlenose to the Orca Web Server
+2. From the Orca Web Server to the Redis Grading Queue
+3. From the Redis Grading Queue to the Orca Grading VM
+4. From the Orca VM to Bottlenose
 
 ## `GradingJob`
 
 <hr>
 
-A `GradingJob` is a JSON object that contains details about how to grade a submission. The following is the basic data structure:
+A `GradingJob` is a JSON object containing details about how to grade a submission following this basic data structure:
 
 ```typescript
 interface GradingJob {
@@ -26,33 +31,32 @@ interface GradingJob {
 }
 ```
 
-`GradingJob`s require a Grade Id and Submission Id (pulled from Bottlenose), as well as details about a student's code files (in the form of a `CodeFileInfo` object) to be autograded. These are mapped to the `grade_id`, `submission_id`, and `target_code` keys, respectively.
+`GradingJob`s require a Grade Id and Submission Id (pulled from Bottlenose), as well as student code to be autograded as a `CodeFileInfo` structure. These are mapped to the `grade_id`, `submission_id`, and `target_code` keys, respectively.
 
 <hr>
 
 ### `CodeFileInfo`
 
-A `CodeFileInfo` is simply a JSON object that contains the URL to an assignment starter, submission,
-or test file, as well as the MIME type of the file.
+A `CodeFileInfo` contains the URL to the file containing submission code, as well as the MIME type of the file.
 
 ```typescript
-{
-  "url": string,
-  "mime_type": string
+interface CodeFileInfo {
+  url: string;
+  mime_type: string;
 }
 ```
 
 <hr>
 
-Starter code and/or professor code may also be provided by Bottlenose as `CodeFileInfo` objects.
+Starter code and/or professor code may also be provided by Bottlenose also as `CodeFileInfo` objects.
 
-Grading jobs have a priority `int`, which is a _delay_ (determined by Bottlenose) to be placed on the job when added to the queue. The object must also contain a grading script (specified by the `grading_script` key), which are a specification of `GradingScriptCommand` objects.
+Grading jobs have a priority `int`, which is a _delay_ (determined by Bottlenose) to be placed on the job when added to the queue. The object must also have a grading script as an array of `GradingScriptCommand` objects.
 
 <hr>
 
 ### `GradingScriptCommand`
 
-A `GradingScriptCommand` is an interface that defines an execution step during the autograding process. It can take the shape of one of the following:
+A `GradingScriptCommand` is an interface that defines an execution step during the autograding process. It takes one of the following shapes:
 
 ```typescript
 interface BashGradingScriptCommand {
@@ -62,13 +66,11 @@ interface BashGradingScriptCommand {
 }
 ```
 
-A `BashGradingScriptCommand` describes a step in the GradingScript where there is an interaction with the shell itself. This can be compilation, running grader tests, etc.
+A `BashGradingScriptCommand` describes a step in the grading script that requires interaction with the shell. This can be compilation, running grader tests, etc. The `cmd` key points to the bash command to run.
 
-The `cmd` key holds a string which is a shell command to be executed by the autograding program. Commands include but are not limited to copying contents, compiling code, or running tests.
+The `on_fail` value is either `"abort"` or a number >= 0 that maps to another command in the list. When executing the script, if the command fails it will either exit the script if `on_fail` is set to `"abort"` or go to the command at the specified index.
 
-The `on_fail` value is a string of either `"abort"` or an integer that maps to another command in the list. When executing the script, if the command fails it will either exit the script if `on_fail` is set to `"abort"`, or will go to the command at the specified index.
-
-The `on_complete` key serves a similar purpose to `on_fail`, but now we exit the script successfully upon the key word `"output"`. If the key maps to an integer, we instead go to that index in the script. Usually, this will just be the next command in the array.
+The `on_complete` key serves a similar purpose to `on_fail`, but instead we exit the script (successfully) on the string `"output"`. Otherwise, we navigate to the given index.
 
 ```typescript
 interface GradingScriptCondition {
@@ -83,24 +85,19 @@ interface ConditionalGradingScriptCommand {
 }
 ```
 
-A `ConditionalGradingScriptCommand` is essentially an _if-else_ statement implementation that dictates the flow of the script based on the file system.
+A `ConditionalGradingScriptCommand` is, in essence, an _if-else_ statement implementation that dictates the flow of the script based on the file system.
 
-The `GradingScriptCondition` defines how to check for the existence of an object in the file path: either as a file (`'file'`), a directory (`'dir'`), or as either one (`'exists'`). This existence query of the file system will decide which command to move onto next, specified by keys `on_true` and `on_false`.
-
-What this list is forming is a graph of commands, where our on\_\* keys will serve as an edge to the next command. Currently, these scripts will be auto-generated on the Bottlenose side as **Directed Acyclic Graphs**, which will be our means of preventing an infinite loop of execution given a grading script.
+The `GradingScriptCondition` defines how to check for the existence of an object in the file path: either as a file (`'file'`), a directory (`'dir'`), or as either one (`'exists'`). This existence query will decide which command to move onto next, specified by keys `on_true` and `on_false`.
 
 <hr>
 
-A `GradingJob` may optionally also specify the following keys and their respective values:
+This array represents a graph of commands -- where the on\_\* keys are edges to the next command. These scripts will be auto-generated on the Bottlenose side as **Directed Acyclic Graphs** (DAG). Using a DAG ensures execution will not enter an infinite loop of retrying a subset of commands, which would otherwise require more computations to prevent.
 
-- `starter_code` : A file path to starter code files provided by the assignment. Starter exists **iff** professor code also exists.
-- `professor_code` : A file path to professor code, a.k.a. tests used for grading an assignment. Professor code exists **iff** starter code also exists for an assignment.
-
-Finally, a `GradingJob` may specify either a `team_id`, `student_id`, or neither. This is based on whether the submission to be graded was submitted by a team, individual student, or a professor, respectively.
+Finally, a `GradingJob` may specify either a `team_id`, `student_id`, or neither. This is based on whether the job was submitted by a team, individual student, or a professor, respectively.
 
 ## `GradingJobOutput`
 
-Once a grading job has been completed on the VM, we use a `GradingJobOutput` object to send back the data to Bottlenose. Let's take a look at its shape and break down the required and optional keys:
+Execution of a grading job will result in a `GradingJobOutput` object to send back data to Bottlenose.
 
 ```typescript
 interface GradingScriptCommandResponse {
@@ -113,7 +110,7 @@ interface GradingScriptCommandResponse {
 
 interface GradingJobOutput {
   tap_output?: string;
-  shell_responses: [string];
+  shell_responses: [GradingScriptCommandResponse];
   errors?: [string];
   grade_id: number;
   submission_id: number;
@@ -122,9 +119,9 @@ interface GradingJobOutput {
 }
 ```
 
-The required fields for the output include the grade ID and the submission ID associated with the job, as well as `shell_responses`, which maps to an array of `GradingScriptCommandResponse`s. These response objects are generated by execution of a `BashGradingScriptCommand`, and contain the original command, a boolean denoting whether or not the command timed out, the command's status code (if applicable), and the resulting STDOUT and STDERR content.
+The required fields for the output include the grade ID and the submission ID associated with the job, as well as `shell_responses`: an array of `GradingScriptCommandResponse`s. These objects are generated by execution of a `BashGradingScriptCommand` and contain the original command, a boolean denoting whether or not the command timed out, the command's status code (if applicable), and the resulting STDOUT and STDERR content.
 
-The optional fields are the following:
+`GradingJobOutput`s may also _potentially_ contain:
 
 - `tap_output` : The Test Anything Protocol (TAP) contents from a successful test execution.
 - `errors` : An array of execution error messages (i.e., in the VM program) received from executing the grading script.
