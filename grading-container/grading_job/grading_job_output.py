@@ -19,7 +19,7 @@ class GradingJobOutput:
   
   def to_json(self) -> GradingJobOutputJSON:
     json_responses = list(map(lambda c: c.to_json(), self.__command_responses))
-    ans = { "execution_responses": json_responses }
+    ans = { "shell_responses": json_responses }
     if self.has_tap_output():
       ans["tap_output"] = self.__tap_output
     return ans

@@ -88,7 +88,7 @@ class GradingScriptPreprocessor:
     return cmd
   
   def __process_conditional_command_json(self, json_command: GradingScriptCommandJSON, index: int):
-    conditional: Dict[str, str] = json_command["conditional"]
+    conditional: Dict[str, str] = json_command["condition"]
     predicate: GradingScriptPredicate = GradingScriptPredicate(conditional["predicate"])
     fs_path: str = self.__add_interpolated_paths(conditional["path"])
     cmd: ConditionalGradingScriptCommand = ConditionalGradingScriptCommand(self.__get_grading_command_by_index(json_command["on_true"]), 
