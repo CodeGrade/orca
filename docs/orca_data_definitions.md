@@ -1,6 +1,6 @@
 # Data Definitions - Orca/Grading VMs
 
-This document explores the shape of data passed between various points in the Orca workflow, where JSON objects are passed:
+This document explores the shape of data exchanged between various points in the Orca workflow, where JSON objects are passed:
 
 1. From Bottlenose to the Orca Web Server
 2. From the Orca Web Server to the Redis Grading Queue
