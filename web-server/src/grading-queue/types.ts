@@ -1,4 +1,4 @@
-export type SubmitterInfoObj = {
+export type SubmitterInfoData = {
   submitter: string;
   submissions: string[];
 };
@@ -29,10 +29,10 @@ export interface GradingJob {
   professor_code?: string; // CodeFileInfo;
   priority: number;
   max_retries?: number;
-  script: [GradingScriptCommand];
+  script: GradingScriptCommand[];
   team_id?: number;
   user_id?: number;
-  user_names?: [string];
+  user_names?: string[];
   submitter_name: string;
 }
 

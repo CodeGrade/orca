@@ -8,11 +8,6 @@ import {
   formatOffsetAndLimit,
   getPageFromGradingQueue as getPageFromGradingJobs,
 } from "../utils/pagination";
-import {
-  GradingJob,
-  PaginationData,
-  GradingQueueStats,
-} from "../grading-queue/types";
 import { getGradingQueueStats } from "../grading-queue/stats";
 
 // TODO: Typing and Error handling
@@ -31,12 +26,21 @@ export const getGradingQueue = async (req: Request, res: Response) => {
   }
 
   // Get Pagination Data
-  const [offset, limit]: [number, number] = formatOffsetAndLimit(
+  const [offset, limit] = formatOffsetAndLimit(
     req.query.offset,
     req.query.limit
   );
 
-  const grading_jobs: GradingJob[] = await getGradingJobs();
+  const [grading_jobs, grading_jobs_error] = await getGradingJobs();
+  if (grading_jobs_error || !grading_jobs) {
+    res.status(500);
+    res.json({
+      errors: [
+        "An internal server error occurred while trying to retrieve the grading queue.  Please try again or contact an administrator",
+      ],
+    });
+    return;
+  }
 
   if (offset > 0 && offset >= grading_jobs.length) {
     res.status(400);
@@ -48,16 +52,12 @@ export const getGradingQueue = async (req: Request, res: Response) => {
     return;
   }
 
-  const pagination_data: PaginationData = getPageFromGradingJobs(
-    grading_jobs,
-    offset,
-    limit
-  );
+  const pagination_data = getPageFromGradingJobs(grading_jobs, offset, limit);
   const { next, prev } = pagination_data;
   const grading_jobs_slice = pagination_data.data;
 
   // Calculate Stats for entire grading queue
-  const stats: GradingQueueStats = getGradingQueueStats(grading_jobs);
+  const stats = getGradingQueueStats(grading_jobs);
 
   res.status(200);
   res.json({
@@ -71,9 +71,30 @@ export const getGradingQueue = async (req: Request, res: Response) => {
 
 export const addGradingJobToQueue = async (req: Request, res: Response) => {
   const grading_job_config = req.body;
-  // TODO: Do something with status
-  const status: number = await createGradingJob(grading_job_config);
-  res.json(status);
+  const status = await createGradingJob(grading_job_config);
+  let json_response = {};
+  switch (status) {
+    case 200:
+      json_response = { message: "OK" };
+      break;
+    case 202:
+      json_response = {
+        message: "A Grading Job already exists with that submission id",
+      };
+      break;
+    case 400:
+      json_response = { errors: ["Invalid grading job configuration"] };
+      break;
+    case 500:
+      json_response = {
+        errors: [
+          "An internal server error occurred while trying to create the grading job.  Please try again or contact an administrator",
+        ],
+      };
+      break;
+  }
+  res.status(status);
+  res.json(json_response);
 };
 
 export const moveGradingJobInQueue = async (req: Request, res: Response) => {
