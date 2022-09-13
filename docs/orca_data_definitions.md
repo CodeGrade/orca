@@ -11,7 +11,7 @@ This document explores the shape of data exchanged between various points in the
 
 <hr>
 
-A `GradingJob` is a JSON object containing details about how to grade a submission following this basic data structure:
+A `GradingJob` contains details about how to grade a submission.
 
 ```typescript
 interface GradingJob {
@@ -31,13 +31,19 @@ interface GradingJob {
 }
 ```
 
-`GradingJob`s require a Grade Id and Submission Id (pulled from Bottlenose), as well as student code to be autograded as a `CodeFileInfo` structure. These are mapped to the `grade_id`, `submission_id`, and `target_code` keys, respectively.
+**TODO: Why the hell did we use grader_id in here and NOT grader type?**
+
+The grade ID and submission ID _alone_ are sufficient to send the grading results back to Bottlenose. The course ID, submitter name, usernames, user ID, and team ID are included to provide useful metadata in the Orca UI.
+
+The fixture code, target code, and test code provide the setup, student code, and test cases (if any) for this submission.
+
+The script defines the actual grading process, as a state machine specified below.
 
 <hr>
 
 ### `CodeFileInfo`
 
-A `CodeFileInfo` contains the URL to the file containing submission code, as well as the MIME type of the file.
+A `CodeFileInfo` contains a URL to files necessary to grade this submission. A MIME type is also included so that the grading VM can download and extract (as necessary) files correctly.
 
 ```typescript
 interface CodeFileInfo {
@@ -48,15 +54,15 @@ interface CodeFileInfo {
 
 <hr>
 
-Starter code and/or professor code may also be provided by Bottlenose also as `CodeFileInfo` objects.
-
-Grading jobs have a priority `int`, which is a _delay_ (determined by Bottlenose) to be placed on the job when added to the queue. The object must also have a grading script as an array of `GradingScriptCommand` objects.
+Grading jobs have a numeric priority determined by Bottlenose, which is interpreted as a _delay_ to be applied to the job when added to the queue.
 
 <hr>
 
 ### `GradingScriptCommand`
 
-A `GradingScriptCommand` is an interface that defines an execution step during the autograding process. It takes one of the following shapes:
+A grading script takes many steps to complete, and the output of these steps needs to be captured in a useful way to send back to Bottlenose. Orca internalizes these steps as a list of `GradingScriptCommand`s rather than using a `Makefile` as a means of execution. This list encodes a control flow graph, and Orca requires this graph be **acyclic**.
+
+`GradingScriptCommand`s can take on either of the following representations:
 
 ```typescript
 interface BashGradingScriptCommand {
@@ -68,46 +74,32 @@ interface BashGradingScriptCommand {
 
 A `BashGradingScriptCommand` describes a step in the grading script that requires interaction with the shell. This can be compilation, running grader tests, etc. The `cmd` key points to the bash command to run.
 
-The `on_fail` value is either `"abort"` or a number >= 0 that maps to another command in the list. When executing the script, if the command fails it will either exit the script if `on_fail` is set to `"abort"` or go to the command at the specified index.
-
-The `on_complete` key serves a similar purpose to `on_fail`, but instead we exit the script (successfully) on the string `"output"`. Otherwise, we navigate to the given index.
+Each command could either succeed or fail. If successful and `on_complete` says to _output_, or if failed and `on_fail` says to _abort_, then the script exits and sends the results back to Bottlenose. Otherwise, the `on_fail` and `on_complete` keys specify the index of the next `GradingScriptCommand` to execute.
 
 ```typescript
-interface GradingScriptCondition {
-  predicate: 'exists' | 'file' | 'dir';
-  path: string;
-}
-
 interface ConditionalGradingScriptCommand {
   condition: GradingScriptCondition;
   on_true: number;
   on_false: number;
 }
+
+interface GradingScriptCondition {
+  predicate: 'exists' | 'file' | 'dir';
+  path: string;
+}
 ```
 
-A `ConditionalGradingScriptCommand` is, in essence, an _if-else_ statement implementation that dictates the flow of the script based on the file system.
+A `ConditionalGradingScriptCommand` allows the control flow of a script to branch. Currently, the only predicates we support test for various file system contents.
 
-The `GradingScriptCondition` defines how to check for the existence of an object in the file path: either as a file (`'file'`), a directory (`'dir'`), or as either one (`'exists'`). This existence query will decide which command to move onto next, specified by keys `on_true` and `on_false`.
+The `GradingScriptCondition` defines how to check for the existence of an object in the file path: either as a file (`'file'`), a directory (`'dir'`), or as either one (`'exists'`). The `on_true` and `on_false` keys specify which command to run next, accordingly.
 
 <hr>
-
-This array represents a graph of commands -- where the on\_\* keys are edges to the next command. These scripts will be auto-generated on the Bottlenose side as **Directed Acyclic Graphs** (DAG). Using a DAG ensures execution will not enter an infinite loop of retrying a subset of commands, which would otherwise require more computations to prevent.
-
-Finally, a `GradingJob` may specify either a `team_id`, `student_id`, or neither. This is based on whether the job was submitted by a team, individual student, or a professor, respectively.
 
 ## `GradingJobOutput`
 
 Execution of a grading job will result in a `GradingJobOutput` object to send back data to Bottlenose.
 
 ```typescript
-interface GradingScriptCommandResponse {
-  stdout: string;
-  stderr: string;
-  status_code?: int;
-  timed_out: boolean;
-  cmd: string;
-}
-
 interface GradingJobOutput {
   tap_output?: string;
   shell_responses: [GradingScriptCommandResponse];
@@ -117,11 +109,16 @@ interface GradingJobOutput {
   user_id?: number;
   team_id?: number;
 }
+
+interface GradingScriptCommandResponse {
+  stdout: string;
+  stderr: string;
+  status_code?: int;
+  timed_out: boolean;
+  cmd: string;
+}
 ```
 
-The required fields for the output include the grade ID and the submission ID associated with the job, as well as `shell_responses`: an array of `GradingScriptCommandResponse`s. These objects are generated by execution of a `BashGradingScriptCommand` and contain the original command, a boolean denoting whether or not the command timed out, the command's status code (if applicable), and the resulting STDOUT and STDERR content.
+The output includes the grade ID and the submission ID associated with the job. The `shell_responses` array contains a transcript of the output from each `GradingScriptCommand`.
 
-`GradingJobOutput`s may also _potentially_ contain:
-
-- `tap_output` : The Test Anything Protocol (TAP) contents from a successful test execution.
-- `errors` : An array of execution error messages (i.e., in the VM program) received from executing the grading script.
+A successful `GradingJobOutput` will _always_ contain TAP output. An unsuccessful `GradingJobOutput` will still contain any responses of commands executed by the script; if the Orca VM harness fails (e.g., due to resource limits) the `errors` array will be non-empty.
