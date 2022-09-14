@@ -91,8 +91,8 @@ const createGradingJob = async (grading_job_config: any) => {
       await client.expireTime(grading_info_key)
     );
 
-    // TODO: Should I do this? Do we care about having the original delay submitted or do
-    // we now just care when the job is released?
+    // TODO: Change this?
+    // Update priority to reflect release timestamp rather than just the delay
     grading_job_config.priority = priority;
     await client.set(grading_info_key, JSON.stringify(grading_job_config));
     await client.expireAt(grading_info_key, lifetime);
@@ -106,7 +106,8 @@ const createGradingJob = async (grading_job_config: any) => {
       const team_id = grading_job_config["team_id"];
       next_task = `team.${team_id}`;
     } else {
-      // Jobs with just sub id go to priority now (lowest delay) - professor requests (assuming this is given correctly)
+      // Jobs with just sub id go to priority now (lowest delay)
+      // - professor requests (assuming this is given correctly)
       await client.zAdd("GradingQueue", [
         { score: priority, value: `sub.${sub_id}.${now}` },
       ]);

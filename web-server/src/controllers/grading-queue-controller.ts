@@ -93,7 +93,20 @@ export const addGradingJobToQueue = async (req: Request, res: Response) => {
 
 export const moveGradingJobInQueue = async (req: Request, res: Response) => {
   const submission_id: string = req.params.sub_id;
-  const new_priority: number = await moveGradingJob(submission_id, req.body);
+  // TODO: Validate request format (req.body)
+  const [new_priority, move_grading_job_err] = await moveGradingJob(
+    submission_id,
+    req.body
+  );
+  if (move_grading_job_err || !new_priority) {
+    res.status(500);
+    res.json({
+      errors: [
+        "An internal server error occurred while trying to move the grading job.  Please try again or contact an administrator",
+      ],
+    });
+  }
+
   res.status(200);
   res.json(new_priority);
 };
