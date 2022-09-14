@@ -1,8 +1,8 @@
-import { GradingJob, TimeStats, GradingQueueStats } from "./types";
+import { StoredGradingJob, TimeStats, GradingQueueStats } from "./types";
 
-export const getTimeInQueue = (created_at: number): number => {
+export const getTimeInQueue = (timestamp: number): number => {
   const now: number = new Date().getTime();
-  const duration_timestamp: number = now - created_at;
+  const duration_timestamp: number = now - timestamp;
   return duration_timestamp;
 };
 
@@ -20,20 +20,20 @@ const calculateTimeStats = (times: number[]): TimeStats => {
 };
 
 export const getGradingQueueStats = (
-  grading_job_queue: GradingJob[]
+  grading_job_queue: StoredGradingJob[]
 ): GradingQueueStats => {
   let wait_times: number[] = [];
   let released_wait_times: number[] = [];
   const now: number = new Date().getTime();
-  grading_job_queue.map((grading_job: GradingJob) => {
-    const release_time_ms: number = grading_job.priority;
-    const released: boolean = release_time_ms < now;
+  grading_job_queue.map((grading_job: StoredGradingJob) => {
+    const release_time: number = grading_job.priority;
+    const released: boolean = release_time < now;
     if (released) {
-      // released_wait_times.push(getTimeInQueue(grading_job.created_at)); // Total Wait time of released job
-      const wait_time_since_released = now - release_time_ms;
+      // released_wait_times.push(getTimeInQueue(grading_job.timestamp)); // Total Wait time of released job
+      const wait_time_since_released = now - release_time;
       released_wait_times.push(wait_time_since_released);
     }
-    return wait_times.push(getTimeInQueue(grading_job.created_at));
+    return wait_times.push(getTimeInQueue(grading_job.timestamp));
   });
 
   // Wait times are in milliseconds

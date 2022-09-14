@@ -25,7 +25,7 @@ export const getGradingJobQueue = async (
 export const deleteGradingJob = async (
   dispatch: Dispatch,
   grading_job_submission_id: number,
-  nonce: string
+  nonce: number
 ) => {
   const response = await service.deleteGradingJob(
     grading_job_submission_id,
@@ -40,7 +40,7 @@ export const deleteGradingJob = async (
 export const moveGradingJob = async (
   dispatch: Dispatch,
   grading_job_submission_id: number,
-  nonce: string,
+  nonce: number,
   new_position: string,
   team_id?: number,
   user_id?: number

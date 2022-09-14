@@ -6,22 +6,14 @@ import { GradingJob } from "./types";
 import GradingJobSubmitter from "./grading-job-submitter";
 
 const GradingJobTableItem = ({ grading_job }: { grading_job: GradingJob }) => {
-  /*
-  let id_str: string = "";
-  if (grading_job.user_id) id_str = `U-${grading_job.user_id}`;
-  else if (grading_job.team_id) id_str = `T-${grading_job.team_id}`;
-  else id_str = `S-${grading_job.submission_id}`;
-  */
-
   const user_names: string[] = grading_job.user_names
     ? [grading_job.submitter_name, ...grading_job.user_names]
     : [grading_job.submitter_name];
 
   const release_time_dt: DateTime = DateTime.fromMillis(grading_job.priority);
-  const wait_time_dt: DateTime = DateTime.fromMillis(grading_job.created_at);
+  const wait_time_dt: DateTime = DateTime.fromMillis(grading_job.timestamp);
   const now: number = new Date().getTime();
   const released: boolean = grading_job.priority < now;
-
   return (
     <tr className={`text-wrap ${released ? "table-success" : "table-primary"}`}>
       <td>
@@ -43,7 +35,7 @@ const GradingJobTableItem = ({ grading_job }: { grading_job: GradingJob }) => {
       <td>
         <GradingJobActions
           submission_id={grading_job.submission_id}
-          nonce={grading_job.nonce}
+          nonce={grading_job.timestamp}
           user_id={grading_job.user_id ? grading_job.user_id : undefined}
           team_id={grading_job.team_id ? grading_job.team_id : undefined}
           released={released}

@@ -5,7 +5,7 @@ type GradingScriptCommand = {
 };
 
 export interface GradingJob {
-  created_at: number;
+  timestamp: number;
   submission_id: number;
   grade_id: number;
   grader_id: number;
@@ -20,7 +20,6 @@ export interface GradingJob {
   user_id?: number;
   user_names?: string[];
   submitter_name: string;
-  nonce: string; // Used for redis operations
 }
 
 export type PaginationInfo = {

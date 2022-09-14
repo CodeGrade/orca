@@ -1,5 +1,10 @@
 import { client } from "../index";
-import { GradingJob, SubmitterInfo, SubmitterInfoData } from "./types";
+import {
+  GradingJob,
+  StoredGradingJob,
+  SubmitterInfo,
+  SubmitterInfoData,
+} from "./types";
 import { filterNull } from "../utils/filter";
 
 const DELIM = ".";
@@ -106,7 +111,7 @@ const getSubmitterInfo = async (
 };
 
 const getGradingJobs = async (): Promise<
-  [GradingJob[] | null, Error | null]
+  [StoredGradingJob[] | null, Error | null]
 > => {
   const [grading_queue, grading_queue_error] = await getGradingQueue();
   if (grading_queue_error) {
@@ -131,10 +136,14 @@ const getGradingJobs = async (): Promise<
   }
 
   // Grading queue is in order of increasing release timestamp
-  const grading_jobs: Promise<GradingJob | null>[] = grading_queue.map(
+  const grading_jobs: Promise<StoredGradingJob | null>[] = grading_queue.map(
     async (key: string) => {
       const key_split: string[] = key.split(DELIM);
-      const nonce: string = key_split.pop()!;
+
+      // Retrieve timestamp from key
+      const timestamp_str: string = key_split.pop()!;
+      const timestamp: number = parseInt(timestamp_str);
+      if (!timestamp) return null;
 
       let submission_id: string;
       if (key_split[0] === "sub") {
@@ -150,17 +159,29 @@ const getGradingJobs = async (): Promise<
       if (grading_job_error || !grading_job) {
         return null;
       }
-      const json_grading_job: GradingJob = {
-        nonce: nonce,
-        ...JSON.parse(grading_job!),
-      };
-      return json_grading_job;
+
+      // Store the score (priority) from GradingQueue since priority in QueuedGradingInfo can be overwritten by duplicate submission_id
+      try {
+        const priority = await client.zScore("GradingQueue", key);
+        if (!priority) return null;
+
+        const json_grading_job: StoredGradingJob = {
+          ...JSON.parse(grading_job!),
+          timestamp: timestamp,
+          priority: priority,
+        };
+        return json_grading_job;
+      } catch (error) {
+        return null;
+      }
     }
   );
 
   try {
-    const results: (GradingJob | null)[] = await Promise.all(grading_jobs);
-    const filtered_results: GradingJob[] = filterNull(results);
+    const results: (StoredGradingJob | null)[] = await Promise.all(
+      grading_jobs
+    );
+    const filtered_results: StoredGradingJob[] = filterNull(results);
     filtered_results.sort((a, b) => (a!.priority > b!.priority ? 1 : -1));
     return [filtered_results, null];
   } catch (error) {

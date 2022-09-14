@@ -83,7 +83,6 @@ const moveGradingJobToFront = async (
   const submitter_key_str =
     getSubmitterKeyFromConfig(config) || `sub.${submission_id}`;
 
-  // TODO: Error handling
   await updateGradingQueue(`${submitter_key_str}.${nonce}`, new_priority);
   // Get current expireTime since updating entry removes it
   // TODO: Set this to something lower?

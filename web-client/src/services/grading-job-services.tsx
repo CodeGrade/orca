@@ -11,7 +11,7 @@ export const getGradingJobQueue = async (limit: number, offset: number) => {
 // TODO: Update/Fix depending on how we decide to handle delete
 export const deleteGradingJob = async (
   grading_job_submission_id: number,
-  nonce: string
+  nonce: number
 ) => {
   // if not using redux then maybe have it hand back the new queue
   const response = await axios.delete(
@@ -22,7 +22,7 @@ export const deleteGradingJob = async (
 
 export const moveGradingJob = async (
   grading_job_submission_id: number,
-  nonce: string,
+  nonce: number,
   new_position: string,
   team_id?: number,
   user_id?: number

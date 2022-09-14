@@ -19,7 +19,6 @@ export type GradingQueueEntry = {
 };
 
 export interface GradingJob {
-  created_at: number;
   submission_id: number;
   grade_id: number;
   grader_id: number;
@@ -34,6 +33,10 @@ export interface GradingJob {
   user_id?: number;
   user_names?: string[];
   submitter_name: string;
+}
+
+export interface StoredGradingJob extends GradingJob {
+  timestamp: number;
 }
 
 export type MoveConfig = {

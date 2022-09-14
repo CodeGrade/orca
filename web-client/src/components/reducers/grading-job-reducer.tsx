@@ -70,7 +70,7 @@ const gradingJobReducer = (state: State = initial_state, action: AnyAction) => {
       );
       if (!job_to_move_front) return state;
       // Update priority of job in state
-      const updated_job = {
+      const updated_job_front = {
         ...job_to_move_front,
         priority: action.new_priority,
       };
@@ -79,8 +79,9 @@ const gradingJobReducer = (state: State = initial_state, action: AnyAction) => {
       let released_ind = 0;
       for (let i = 0; i < state.grading_queue.grading_jobs.length; i++) {
         const grading_job = state.grading_queue.grading_jobs[i];
-        const release_time_ms: number = grading_job.priority * 1000;
-        const is_released: boolean = release_time_ms < now;
+        const release_time: number = grading_job.priority;
+
+        const is_released: boolean = release_time < now;
         if (!is_released) {
           released_ind = i;
           break;
@@ -91,7 +92,7 @@ const gradingJobReducer = (state: State = initial_state, action: AnyAction) => {
           (job) => job.submission_id !== action.grading_job_submission_id
         ),
       ];
-      updated_queue_front.splice(released_ind, 0, updated_job);
+      updated_queue_front.splice(released_ind, 0, updated_job_front);
       return (state = {
         grading_queue: {
           ...state.grading_queue,

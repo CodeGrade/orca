@@ -34,9 +34,7 @@ const GradingJobTableBody = ({
       grading_jobs.sort((a, b) => (a.course_id > b.course_id ? -order : order));
       break;
     case "wait_time":
-      grading_jobs.sort((a, b) =>
-        a.created_at > b.created_at ? -order : order
-      );
+      grading_jobs.sort((a, b) => (a.timestamp > b.timestamp ? -order : order));
       break;
     case "release_time":
       grading_jobs.sort((a, b) => (a.priority > b.priority ? -order : order));
@@ -53,7 +51,7 @@ const GradingJobTableBody = ({
           return (
             <GradingJobTableItem
               grading_job={grading_job}
-              key={grading_job.submission_id}
+              key={grading_job.timestamp}
             />
           );
         })}

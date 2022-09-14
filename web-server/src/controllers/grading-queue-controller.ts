@@ -10,8 +10,7 @@ import {
 } from "../utils/pagination";
 import { getGradingQueueStats } from "../grading-queue/stats";
 
-// TODO: Typing and Error handling
-// TODO: Add res.status for all
+// TODO: Error handling
 export const getGradingQueue = async (req: Request, res: Response) => {
   if (
     !req.query.limit ||
@@ -77,11 +76,6 @@ export const addGradingJobToQueue = async (req: Request, res: Response) => {
     case 200:
       json_response = { message: "OK" };
       break;
-    case 202:
-      json_response = {
-        message: "A Grading Job already exists with that submission id",
-      };
-      break;
     case 400:
       json_response = { errors: ["Invalid grading job configuration"] };
       break;
@@ -100,11 +94,13 @@ export const addGradingJobToQueue = async (req: Request, res: Response) => {
 export const moveGradingJobInQueue = async (req: Request, res: Response) => {
   const submission_id: string = req.params.sub_id;
   const new_priority: number = await moveGradingJob(submission_id, req.body);
+  res.status(200);
   res.json(new_priority);
 };
 
 export const deleteGradingJobInQueue = async (req: Request, res: Response) => {
   const submission_id: string = req.params.sub_id;
   const status: number = await deleteGradingJob(submission_id);
+  res.status(200);
   res.json(status);
 };

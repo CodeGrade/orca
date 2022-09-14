@@ -1,13 +1,6 @@
 import { client } from "../index";
 import { GradingJob } from "./types";
 import { LIFETIME_BUFFER } from "./constants";
-import {
-  redisExpireAt,
-  redisExpireTime,
-  redisGet,
-  redisSet,
-  redisZAdd,
-} from "../utils/helpers";
 
 const isNumber = (value: any): boolean => typeof value === "number";
 const isString = (value: any): boolean => typeof value === "string";
@@ -16,7 +9,6 @@ const isArray = (value: any): boolean => Array.isArray(value);
 
 const validateRequiredFields = (config: any): boolean => {
   const fields =
-    "created_at" in config &&
     "submission_id" in config &&
     "grade_id" in config &&
     "grader_id" in config &&
@@ -28,7 +20,6 @@ const validateRequiredFields = (config: any): boolean => {
   if (!fields) return false;
 
   const types =
-    isNumber(config.created_at) &&
     isNumber(config.submission_id) &&
     isNumber(config.grade_id) &&
     isNumber(config.grader_id) &&
@@ -86,31 +77,27 @@ const createGradingJob = async (grading_job_config: any) => {
     return 400;
   }
 
+  const now = new Date().getTime();
+
   const sub_id = grading_job_config["submission_id"];
-  const priority = grading_job_config["priority"];
+  // priority field is a delay in ms
+  const priority = now + grading_job_config["priority"];
   const grading_info_key = `QueuedGradingInfo.${sub_id}`;
 
   // TODO: Swap redis operations to use the helpers? Depends if we care about knowing which specific operation failed?
   try {
-    // TODO: Update this when we decide how to handle duplicates
-    // Check if already exists
-    if (await client.get(grading_info_key)) {
-      // Dupliclate
-      return 202;
-    }
-
     const lifetime = Math.max(
       priority + LIFETIME_BUFFER,
       await client.expireTime(grading_info_key)
     );
 
+    // TODO: Should I do this? Do we care about having the original delay submitted or do
+    // we now just care when the job is released?
+    grading_job_config.priority = priority;
     await client.set(grading_info_key, JSON.stringify(grading_job_config));
     await client.expireAt(grading_info_key, lifetime);
 
     let next_task: string = "";
-
-    // Submission timestamp nonce to add at end of GradingQueue entry key string
-    const now = new Date().getTime();
 
     if (grading_job_config["user_id"]) {
       const user_id = grading_job_config["user_id"];
@@ -119,6 +106,7 @@ const createGradingJob = async (grading_job_config: any) => {
       const team_id = grading_job_config["team_id"];
       next_task = `team.${team_id}`;
     } else {
+      // Jobs with just sub id go to priority now (lowest delay) - professor requests (assuming this is given correctly)
       await client.zAdd("GradingQueue", [
         { score: priority, value: `sub.${sub_id}.${now}` },
       ]);
