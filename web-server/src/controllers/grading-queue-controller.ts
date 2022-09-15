@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import getGradingJobs from "../grading-queue/get";
-import createGradingJob from "../grading-queue/create";
+import createStudentGradingJob from "../grading-queue/student-create";
+import createProfessorGradingJob from "../grading-queue/professor-create";
 import moveGradingJob from "../grading-queue/move";
 import deleteGradingJob from "../grading-queue/delete";
 import {
@@ -11,6 +12,7 @@ import {
 import { getGradingQueueStats } from "../grading-queue/stats";
 import { getFilterInfo } from "../grading-queue/filter";
 import { GradingJob } from "../grading-queue/types";
+import { validateGradingJobConfig } from "../utils/validate";
 
 export const getGradingQueue = async (req: Request, res: Response) => {
   if (
@@ -90,43 +92,105 @@ export const getGradingQueue = async (req: Request, res: Response) => {
   });
 };
 
-export const addGradingJobToQueue = async (req: Request, res: Response) => {
+export const addProfessorGradingJobToQueue = async (
+  req: Request,
+  res: Response
+) => {
+  const sub_id = req.params.sub_id;
   const grading_job_config = req.body;
-  const status = await createGradingJob(grading_job_config);
-  let json_response = {};
-  switch (status) {
-    case 200:
-      json_response = { message: "OK" };
-      break;
-    case 400:
-      json_response = { errors: ["Invalid grading job configuration"] };
-      break;
-    case 500:
-      json_response = {
-        errors: [
-          "An internal server error occurred while trying to create the grading job.  Please try again or contact an administrator",
-        ],
-      };
-      break;
+
+  // Validate received grading job config
+  try {
+    // TODO: Get specific error messages here [err]
+    if (!validateGradingJobConfig(grading_job_config)) {
+      res.status(400);
+      res.json({ errors: ["Invalid grading job configuration."] });
+      return;
+    }
+    // TODO: Add this for validation handlers for professor grading job
+    if (parseInt(sub_id) !== grading_job_config.submission_id) {
+      res.status(400);
+      res.json({
+        errors: ["Submission id in grading job does not match route."],
+      });
+      return;
+    }
+  } catch (error) {
+    res.status(500);
+    res.json({
+      errors: [
+        "Internal server error while validating grading job configuration.",
+      ],
+    });
+    return;
   }
-  res.status(status);
-  res.json(json_response);
+  const err = await createProfessorGradingJob(grading_job_config);
+  if (err) {
+    res.status(500);
+    res.json({
+      errors: [
+        "An internal server error occurred while trying to create the expedited grading job.  Please try again or contact an administrator",
+      ],
+    });
+    return;
+  }
+  res.status(200);
+  res.json({ message: "OK" });
+};
+
+export const addStudentGradingJobToQueue = async (
+  req: Request,
+  res: Response
+) => {
+  const grading_job_config = req.body;
+
+  try {
+    // TODO: Get specific error messages here [err]
+    if (!validateGradingJobConfig(grading_job_config)) {
+      res.status(400);
+      res.json({ errors: ["Invalid grading job configuration."] });
+      return;
+    }
+  } catch (error) {
+    res.status(500);
+    res.json({
+      errors: [
+        "Internal server error while validating grading job configuration.",
+      ],
+    });
+    return;
+  }
+
+  const err = await createStudentGradingJob(grading_job_config);
+  if (err) {
+    res.status(500);
+    res.json({
+      errors: [
+        "An internal server error occurred while trying to create the grading job.  Please try again or contact an administrator",
+      ],
+    });
+    return;
+  }
+
+  res.status(200);
+  res.json({ message: "OK" });
 };
 
 export const moveGradingJobInQueue = async (req: Request, res: Response) => {
   const submission_id: string = req.params.sub_id;
-  // TODO: Validate request format (req.body)
+  // TODO: Validate request format in middleware (req.body)
   const [new_priority, move_grading_job_err] = await moveGradingJob(
     submission_id,
     req.body
   );
-  if (move_grading_job_err || !new_priority) {
+  if (move_grading_job_err) {
     res.status(500);
     res.json({
       errors: [
         "An internal server error occurred while trying to move the grading job.  Please try again or contact an administrator",
       ],
     });
+    return;
   }
 
   res.status(200);

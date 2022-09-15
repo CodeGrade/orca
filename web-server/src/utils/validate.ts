@@ -1,6 +1,4 @@
-import { client } from "../index";
-import { GradingJob } from "./types";
-import { LIFETIME_BUFFER } from "./constants";
+import { GradingJob } from "../grading-queue/types";
 
 const isNumber = (value: any): boolean => typeof value === "number";
 const isString = (value: any): boolean => typeof value === "string";
@@ -64,65 +62,17 @@ const validateOptionalFields = (config: any): boolean => {
   return true;
 };
 
-const validateGradingJobConfig = (config: any): config is GradingJob => {
-  if (!validateRequiredFields(config)) return false;
+const validateSubmitterId = (config: any): boolean => {
+  // Has both a team and a user id
   if ("team_id" in config && "user_id" in config) return false;
+  // Has to have 1
+  return "team_id" in config || "user_id" in config;
+};
+
+export const validateGradingJobConfig = (config: any): config is GradingJob => {
+  if (!validateRequiredFields(config)) return false;
+  if (!validateSubmitterId(config)) return false;
   if (!validateScript(config.script)) return false;
   if (!validateOptionalFields(config)) return false;
   return true;
 };
-
-const createGradingJob = async (grading_job_config: any) => {
-  if (!validateGradingJobConfig(grading_job_config)) {
-    return 400;
-  }
-
-  const now = new Date().getTime();
-
-  const sub_id = grading_job_config["submission_id"];
-  // priority field is a delay in ms
-  const priority = now + grading_job_config["priority"];
-  const grading_info_key = `QueuedGradingInfo.${sub_id}`;
-
-  // TODO: Swap redis operations to use the helpers? Depends if we care about knowing which specific operation failed?
-  try {
-    const lifetime = Math.max(
-      priority + LIFETIME_BUFFER,
-      await client.expireTime(grading_info_key)
-    );
-
-    // TODO: Don't do this?
-    // Update priority to reflect release timestamp rather than just the delay
-    grading_job_config.priority = priority;
-    await client.set(grading_info_key, JSON.stringify(grading_job_config));
-    await client.expireAt(grading_info_key, lifetime);
-
-    let next_task: string = "";
-
-    if (grading_job_config["user_id"]) {
-      const user_id = grading_job_config["user_id"];
-      next_task = `user.${user_id}`;
-    } else if (grading_job_config["team_id"]) {
-      const team_id = grading_job_config["team_id"];
-      next_task = `team.${team_id}`;
-    } else {
-      // TODO: THIS WRONG -- ALL JOBS HAVE USER OR TEAM ID
-      // REFACTOR WHEN GRADINGJOB IS REDEFINED
-      await client.zAdd("GradingQueue", [
-        { score: priority, value: `sub.${sub_id}.${now}` },
-      ]);
-      return 200;
-    }
-    const submitter_info_key = `SubmitterInfo.${next_task}`;
-    await client.lPush(submitter_info_key, `${sub_id}`);
-    await client.expireAt(submitter_info_key, lifetime);
-    await client.zAdd("GradingQueue", [
-      { score: priority, value: `${next_task}.${now}` },
-    ]);
-    return 200;
-  } catch (error) {
-    return 500;
-  }
-};
-
-export default createGradingJob;

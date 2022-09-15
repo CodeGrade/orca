@@ -44,41 +44,36 @@ export const getFilteredGradingQueue = async (
 
 export const deleteGradingJob = async (
   dispatch: Dispatch,
-  grading_job_submission_id: number,
+  submission_id: number,
   nonce: number
 ) => {
-  const response = await service.deleteGradingJob(
-    grading_job_submission_id,
-    nonce
-  );
+  const response = await service.deleteGradingJob(submission_id, nonce);
   dispatch({
     type: DELETE_GRADING_JOB,
-    grading_job_submission_id,
+    timestamp: nonce,
   });
 };
 
 export const moveGradingJob = async (
   dispatch: Dispatch,
-  grading_job_submission_id: number,
+  submission_id: number,
   nonce: number,
   new_position: string,
   team_id?: number,
   user_id?: number
 ) => {
   const response = await service.moveGradingJob(
-    grading_job_submission_id,
+    submission_id,
     nonce,
     new_position,
     team_id,
     user_id
   );
-  // Already at front/back
-  if (response.status === 204) return;
 
   const new_priority: number = response.data;
   dispatch({
     type: new_position === "release" ? RELEASE_GRADING_JOB : DELAY_GRADING_JOB,
-    grading_job_submission_id,
+    timestamp: nonce,
     new_priority,
   });
 };

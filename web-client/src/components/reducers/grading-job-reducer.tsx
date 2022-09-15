@@ -35,7 +35,7 @@ const gradingJobReducer = (state: State = initial_state, action: AnyAction) => {
       const updated_queue_deleted = [
         ...state.grading_queue.grading_jobs.filter(
           (grading_job: GradingJob) =>
-            grading_job.submission_id !== action.grading_job_submission_id
+            grading_job.timestamp !== action.timestamp
         ),
       ];
       return (state = {
@@ -47,7 +47,7 @@ const gradingJobReducer = (state: State = initial_state, action: AnyAction) => {
     // TODO: Abstract from moving back/front
     case DELAY_GRADING_JOB:
       const job_to_delay = state.grading_queue.grading_jobs.find(
-        (job) => job.submission_id === action.grading_job_submission_id
+        (job) => job.timestamp === action.timestamp
       );
       if (!job_to_delay) return state;
 
@@ -58,7 +58,7 @@ const gradingJobReducer = (state: State = initial_state, action: AnyAction) => {
       };
       const queue_with_delayed_job = [
         ...state.grading_queue.grading_jobs.filter(
-          (job) => job.submission_id !== action.grading_job_submission_id
+          (job) => job.timestamp !== action.timestamp
         ),
         delayed_job,
       ];
@@ -70,7 +70,7 @@ const gradingJobReducer = (state: State = initial_state, action: AnyAction) => {
       });
     case RELEASE_GRADING_JOB:
       const job_to_release = state.grading_queue.grading_jobs.find(
-        (job) => job.submission_id === action.grading_job_submission_id
+        (job) => job.timestamp === action.timestamp
       );
       if (!job_to_release) return state;
       // Update priority of job in state
@@ -93,7 +93,7 @@ const gradingJobReducer = (state: State = initial_state, action: AnyAction) => {
       }
       const queue_with_release_job = [
         ...state.grading_queue.grading_jobs.filter(
-          (job) => job.submission_id !== action.grading_job_submission_id
+          (job) => job.timestamp !== action.timestamp
         ),
       ];
       queue_with_release_job.splice(released_ind, 0, release_job);

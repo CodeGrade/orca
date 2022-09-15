@@ -1,6 +1,6 @@
 import { client } from "../index";
 import { StoredGradingJob, SubmitterInfo, SubmitterInfoData } from "./types";
-import { filterNull } from "../utils/filter";
+import { filterNull } from "../utils/helpers";
 
 const DELIM = ".";
 

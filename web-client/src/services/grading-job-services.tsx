@@ -22,30 +22,27 @@ export const getFilteredGradingJobQueue = async (
       filter_value: filter_value,
     },
   });
-  console.log("FILTERING");
   return response.data;
 };
 
 // TODO: Update/Fix depending on how we decide to handle delete
 export const deleteGradingJob = async (
-  grading_job_submission_id: number,
+  submission_id: number,
   nonce: number
 ) => {
   // if not using redux then maybe have it hand back the new queue
-  const response = await axios.delete(
-    `${API_BASE}/${grading_job_submission_id}`
-  );
+  const response = await axios.delete(`${API_BASE}/${submission_id}`);
   return response.data;
 };
 
 export const moveGradingJob = async (
-  grading_job_submission_id: number,
+  submission_id: number,
   nonce: number,
   new_position: string,
   team_id?: number,
   user_id?: number
 ) => {
-  const response = await axios.put(`${API_BASE}/${grading_job_submission_id}`, {
+  const response = await axios.put(`${API_BASE}/${submission_id}`, {
     nonce: nonce,
     priority: new_position,
     team_id: team_id,
