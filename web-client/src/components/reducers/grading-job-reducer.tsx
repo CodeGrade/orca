@@ -2,8 +2,8 @@ import { AnyAction } from "redux";
 import {
   GET_GRADING_JOB_QUEUE,
   DELETE_GRADING_JOB,
-  MOVE_GRADING_JOB_BACK,
-  MOVE_GRADING_JOB_FRONT,
+  DELAY_GRADING_JOB,
+  RELEASE_GRADING_JOB,
 } from "../../actions/grading-job-actions";
 import { State, GradingJob } from "../grading_job_table/types";
 
@@ -16,6 +16,10 @@ const initial_state: State = {
     stats: {
       all: { avg: 0, min: 0, max: 0, num: 0 },
       released: { avg: 0, min: 0, max: 0, num: 0 },
+    },
+    filter_info: {
+      course_id: [],
+      grader_id: [],
     },
   },
 };
@@ -41,37 +45,37 @@ const gradingJobReducer = (state: State = initial_state, action: AnyAction) => {
         },
       });
     // TODO: Abstract from moving back/front
-    case MOVE_GRADING_JOB_BACK:
-      const job_to_move_back = state.grading_queue.grading_jobs.find(
+    case DELAY_GRADING_JOB:
+      const job_to_delay = state.grading_queue.grading_jobs.find(
         (job) => job.submission_id === action.grading_job_submission_id
       );
-      if (!job_to_move_back) return state;
+      if (!job_to_delay) return state;
 
       // Update priority of job in state
-      const updated_job_back = {
-        ...job_to_move_back,
+      const delayed_job = {
+        ...job_to_delay,
         priority: action.new_priority,
       };
-      const updated_queue_back = [
+      const queue_with_delayed_job = [
         ...state.grading_queue.grading_jobs.filter(
           (job) => job.submission_id !== action.grading_job_submission_id
         ),
-        updated_job_back,
+        delayed_job,
       ];
       return (state = {
         grading_queue: {
           ...state.grading_queue,
-          grading_jobs: updated_queue_back,
+          grading_jobs: queue_with_delayed_job,
         },
       });
-    case MOVE_GRADING_JOB_FRONT:
-      const job_to_move_front = state.grading_queue.grading_jobs.find(
+    case RELEASE_GRADING_JOB:
+      const job_to_release = state.grading_queue.grading_jobs.find(
         (job) => job.submission_id === action.grading_job_submission_id
       );
-      if (!job_to_move_front) return state;
+      if (!job_to_release) return state;
       // Update priority of job in state
-      const updated_job_front = {
-        ...job_to_move_front,
+      const release_job = {
+        ...job_to_release,
         priority: action.new_priority,
       };
 
@@ -87,16 +91,16 @@ const gradingJobReducer = (state: State = initial_state, action: AnyAction) => {
           break;
         }
       }
-      const updated_queue_front = [
+      const queue_with_release_job = [
         ...state.grading_queue.grading_jobs.filter(
           (job) => job.submission_id !== action.grading_job_submission_id
         ),
       ];
-      updated_queue_front.splice(released_ind, 0, updated_job_front);
+      queue_with_release_job.splice(released_ind, 0, release_job);
       return (state = {
         grading_queue: {
           ...state.grading_queue,
-          grading_jobs: updated_queue_front,
+          grading_jobs: queue_with_release_job,
         },
       });
     default:

@@ -19,14 +19,10 @@ const deleteGradingJob = async (sub_id: string) => {
     const submitter_info_str = grading_job["user_id"]
       ? `user.${grading_job["user_id"]}`
       : `team.${grading_job["team_id"]}`;
-    // TODO: Test this
     client.lRem(`SubmitterInfo.${submitter_info_str}`, 1, sub_id);
   }
 
-  // TODO: Not sure how we want to handle GradingQueue
-  // - we could just not handle them and then when we pop off the next job off the
-  // - GradingQueue and find there is no corresponding QueuedGradingInfo then we
-  // - just go to the next?
+  // TODO: Handle GradingQueue
   return 1;
 };
 

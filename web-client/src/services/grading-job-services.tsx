@@ -8,6 +8,24 @@ export const getGradingJobQueue = async (limit: number, offset: number) => {
   return response.data;
 };
 
+export const getFilteredGradingJobQueue = async (
+  limit: number,
+  offset: number,
+  filter_type: string,
+  filter_value: string
+) => {
+  const response: AxiosResponse = await axios.get(API_BASE, {
+    params: {
+      limit: limit,
+      offset: offset,
+      filter_type: filter_type,
+      filter_value: filter_value,
+    },
+  });
+  console.log("FILTERING");
+  return response.data;
+};
+
 // TODO: Update/Fix depending on how we decide to handle delete
 export const deleteGradingJob = async (
   grading_job_submission_id: number,

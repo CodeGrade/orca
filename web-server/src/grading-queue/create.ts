@@ -91,7 +91,7 @@ const createGradingJob = async (grading_job_config: any) => {
       await client.expireTime(grading_info_key)
     );
 
-    // TODO: Change this?
+    // TODO: Don't do this?
     // Update priority to reflect release timestamp rather than just the delay
     grading_job_config.priority = priority;
     await client.set(grading_info_key, JSON.stringify(grading_job_config));
@@ -106,8 +106,8 @@ const createGradingJob = async (grading_job_config: any) => {
       const team_id = grading_job_config["team_id"];
       next_task = `team.${team_id}`;
     } else {
-      // Jobs with just sub id go to priority now (lowest delay)
-      // - professor requests (assuming this is given correctly)
+      // TODO: THIS WRONG -- ALL JOBS HAVE USER OR TEAM ID
+      // REFACTOR WHEN GRADINGJOB IS REDEFINED
       await client.zAdd("GradingQueue", [
         { score: priority, value: `sub.${sub_id}.${now}` },
       ]);

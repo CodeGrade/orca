@@ -25,31 +25,32 @@ const GradingJobActions = ({
   const handleDelete = () => {
     deleteGradingJob(dispatch, submission_id, nonce);
   };
-  const handleMoveToFront = () => {
+  const handleRelease = () => {
     if (released) {
       // Should never need this
       alert("Job is already released");
       return;
     }
-    moveGradingJob(dispatch, submission_id, nonce, "front", team_id, user_id);
+    moveGradingJob(dispatch, submission_id, nonce, "release", team_id, user_id);
   };
-  const handleMoveToBack = () => {
+  const handleDelay = () => {
     if (released) {
       // Should never need this
       // Job already release
       return;
     }
-    moveGradingJob(dispatch, submission_id, nonce, "back", team_id, user_id);
+    moveGradingJob(dispatch, submission_id, nonce, "delay", team_id, user_id);
   };
+  // TODO: Abstract buttons
   return (
-    <div className="d-flex flex-column align-items-center justify-content-center">
+    <div className="d-flex align-items-center justify-content-center">
       <div>
         <button
           type="button"
-          className={`btn btn-success rounded ${
+          className={`btn btn-sm btn-success rounded ${
             released ? "d-none" : "d-inline"
           }`}
-          onClick={() => handleMoveToFront()}
+          onClick={() => handleRelease()}
         >
           Release
         </button>
@@ -57,22 +58,21 @@ const GradingJobActions = ({
       <div>
         <button
           type="button"
-          className="btn btn-danger rounded"
-          onClick={() => handleDelete()}
+          className={`btn btn-sm btn-warning rounded ${
+            released ? "d-none" : "d-inline"
+          }`}
+          onClick={() => handleDelay()}
         >
-          Delete
+          Delay
         </button>
       </div>
-
       <div>
         <button
           type="button"
-          className={`btn btn-warning rounded ${
-            released ? "d-none" : "d-inline"
-          }`}
-          onClick={() => handleMoveToBack()}
+          className="btn btn-sm btn-danger rounded"
+          onClick={() => handleDelete()}
         >
-          Delay
+          Delete
         </button>
       </div>
     </div>

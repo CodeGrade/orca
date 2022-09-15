@@ -15,8 +15,12 @@ const getGradingJobFromSubmissionId = async (
     if (error instanceof Error) {
       return [null, error];
     }
-    // TODO: Not sure how to handle this
-    return [null, null];
+    return [
+      null,
+      Error(
+        "Something went wrong when trying to rertieve grading job by submission id."
+      ),
+    ];
   }
 };
 
@@ -29,8 +33,10 @@ const getGradingQueue = async (): Promise<[string[] | null, Error | null]> => {
     if (error instanceof Error) {
       return [null, error];
     }
-    // TODO: Not sure how to handle this
-    return [null, null];
+    return [
+      null,
+      Error("Something went wrong when trying to retrieve grading queue."),
+    ];
   }
 };
 
@@ -49,8 +55,10 @@ const getSubmitterSubmissions = async (
     if (error instanceof Error) {
       return [null, error];
     }
-    // TODO: Not sure how to handle this
-    return [null, null];
+    return [
+      null,
+      Error("Something went wrong when trying to retrieve submissions list."),
+    ];
   }
 };
 
@@ -100,8 +108,10 @@ const getSubmitterInfo = async (
     if (error instanceof Error) {
       return [null, error];
     }
-    // TODO: Not sure how to handle this
-    return [null, null];
+    return [
+      null,
+      Error("Something went wrong while retrieving submitter info."),
+    ];
   }
 };
 
@@ -113,8 +123,7 @@ const getGradingJobs = async (): Promise<
     return [null, grading_queue_error];
   }
   if (!grading_queue) {
-    // TODO: Not sure how to handle this
-    return [null, null];
+    return [null, Error("Grading queue could not be retrieved.")];
   }
 
   const submitters: string[] = getUniqueSubmitters(grading_queue);
@@ -126,8 +135,7 @@ const getGradingJobs = async (): Promise<
     return [null, submitter_info_error];
   }
   if (!submitter_info) {
-    // TODO: Not sure how to handle this
-    return [null, null];
+    return [null, Error("Submitter info could not be retrieved.")];
   }
 
   // Grading queue is in order of increasing release timestamp
@@ -155,7 +163,8 @@ const getGradingJobs = async (): Promise<
         return null;
       }
 
-      // Store the score (priority) from GradingQueue since priority in QueuedGradingInfo can be overwritten by duplicate submission_id
+      // Store the score (priority) from GradingQueue since priority in
+      // QueuedGradingInfo can be overwritten by duplicate submission_id
       try {
         const priority = await client.zScore("GradingQueue", key);
         if (!priority) return null;
@@ -183,8 +192,10 @@ const getGradingJobs = async (): Promise<
     if (error instanceof Error) {
       return [null, error];
     }
-    // TODO: Not sure how to handle this
-    return [null, null];
+    return [
+      null,
+      Error("Something went wrong while retrieving the grading queue."),
+    ];
   }
 };
 

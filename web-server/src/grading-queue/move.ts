@@ -21,7 +21,7 @@ const moveGradingJob = async (
   submission_id: string,
   move_config: MoveConfig
 ): Promise<[number | null, Error | null]> => {
-  const new_priority_pos: string = move_config.priority; // 'front' or 'back'
+  const new_priority_pos: string = move_config.priority; // 'release' or 'delay'
   const nonce: string = move_config.nonce;
 
   const [grading_job_to_move, grading_job_to_move_err] =
@@ -33,25 +33,26 @@ const moveGradingJob = async (
     const grading_job: GradingJob = JSON.parse(grading_job_to_move);
 
     let new_priority: number | null, move_err: Error | null;
-    if (new_priority_pos === "front") {
-      [new_priority, move_err] = await moveGradingJobToFront(
+    if (new_priority_pos === "release") {
+      [new_priority, move_err] = await releaseGradingJob(
         submission_id,
         nonce,
         grading_job,
         move_config
       );
-    } else if (new_priority_pos === "back") {
-      [new_priority, move_err] = await moveGradingJobToBack(
+    } else if (new_priority_pos === "delay") {
+      [new_priority, move_err] = await delayGradingJob(
         submission_id,
         nonce,
         grading_job,
         move_config
       );
     } else {
+      // TODO: Move this validation to controller
       return [
         null,
         Error(
-          "Invalid priority given when attempting to move job - must be 'front' or 'back'"
+          "Invalid priority given when attempting to move job - must be 'release' or 'delay'"
         ),
       ];
     }
@@ -118,7 +119,7 @@ const getSubmitterKeyFromConfig = (config: MoveConfig) => {
   return submitter_str;
 };
 
-const moveGradingJobToFront = async (
+const releaseGradingJob = async (
   submission_id: string,
   nonce: string,
   grading_job: GradingJob,
@@ -156,12 +157,12 @@ const moveGradingJobToFront = async (
     if (error instanceof Error) return [null, error];
     return [
       null,
-      Error("Something went wrong while moving this grading job to front"),
+      Error("Something went wrong while releasing this grading job"),
     ];
   }
 };
 
-const moveGradingJobToBack = async (
+const delayGradingJob = async (
   submission_id: string,
   nonce: string,
   grading_job: GradingJob,
@@ -178,7 +179,7 @@ const moveGradingJobToBack = async (
       return [
         null,
         Error(
-          "No jobs found in grading queue when trying to move this job to back"
+          "No jobs found in grading queue when trying to delay this grading job"
         ),
       ];
     }
@@ -186,6 +187,9 @@ const moveGradingJobToBack = async (
     // Calculate new priority and redis object lifetimes
     const new_priority: number = last_job_priority + MOVE_TO_BACK_BUFFER;
     const lifetime: number = new_priority + LIFETIME_BUFFER;
+
+    // TODO: REFACTOR ONCE GRADINGJOB IS REDEFINED
+    // -- This causes a bug for how we currently handle duplicate submission_id jobs
 
     // getSubmitterKeyFromConfig will return empty string for direct submission
     let submitter_key_str = getSubmitterKeyFromConfig(config);
@@ -212,10 +216,7 @@ const moveGradingJobToBack = async (
     return [new_priority, null];
   } catch (error) {
     if (error instanceof Error) return [null, error];
-    return [
-      null,
-      Error("Something went wrong when moving this grading job to back"),
-    ];
+    return [null, Error("Something went wrong when delaying this grading job")];
   }
 };
 

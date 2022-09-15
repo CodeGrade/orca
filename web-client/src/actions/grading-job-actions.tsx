@@ -4,8 +4,8 @@ import { LIMIT, OFFSET_START } from "../utils/constants";
 
 export const GET_GRADING_JOB_QUEUE = "GET_GRADING_JOB_QUEUE";
 export const DELETE_GRADING_JOB = "DELETE_GRADING_JOB";
-export const MOVE_GRADING_JOB_FRONT = "MOVE_GRADING_JOB_FRONT";
-export const MOVE_GRADING_JOB_BACK = "MOVE_GRADING_JOB_BACK";
+export const RELEASE_GRADING_JOB = "RELEASE_GRADING_JOB";
+export const DELAY_GRADING_JOB = "DELAY_GRADING_JOB";
 
 // TODO: Check responses/status codes
 
@@ -16,6 +16,26 @@ export const getGradingJobQueue = async (
 ) => {
   if (!offset) offset = OFFSET_START;
   const grading_job_queue = await service.getGradingJobQueue(limit, offset);
+  dispatch({
+    type: GET_GRADING_JOB_QUEUE,
+    grading_job_queue,
+  });
+};
+
+export const getFilteredGradingQueue = async (
+  dispatch: Dispatch,
+  filter_type: string,
+  filter_value: string,
+  offset?: number,
+  limit: number = LIMIT
+) => {
+  if (!offset) offset = OFFSET_START;
+  const grading_job_queue = await service.getFilteredGradingJobQueue(
+    limit,
+    offset,
+    filter_type,
+    filter_value
+  );
   dispatch({
     type: GET_GRADING_JOB_QUEUE,
     grading_job_queue,
@@ -57,8 +77,7 @@ export const moveGradingJob = async (
 
   const new_priority: number = response.data;
   dispatch({
-    type:
-      new_position === "front" ? MOVE_GRADING_JOB_FRONT : MOVE_GRADING_JOB_BACK,
+    type: new_position === "release" ? RELEASE_GRADING_JOB : DELAY_GRADING_JOB,
     grading_job_submission_id,
     new_priority,
   });

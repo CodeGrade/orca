@@ -39,12 +39,18 @@ export type GradingQueueStats = {
   released: TimeStats;
 };
 
+export type FilterInfo = {
+  course_id: string[];
+  grader_id: string[];
+};
+
 export type GradingQueue = {
   grading_jobs: GradingJob[];
   prev: PaginationInfo | null;
   next: PaginationInfo | null;
   total: number;
   stats: GradingQueueStats;
+  filter_info: FilterInfo;
 };
 
 export type State = {

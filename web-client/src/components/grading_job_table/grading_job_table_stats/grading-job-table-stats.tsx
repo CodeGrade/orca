@@ -13,6 +13,7 @@ const GradingJobTableStats = ({ stats }: { stats: GradingQueueStats }) => {
           label="Released"
           tooltip="Times Since Release"
           stats={stats["released"]}
+          style={"success"}
         />
       </div>
     </div>

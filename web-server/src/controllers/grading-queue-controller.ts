@@ -9,8 +9,9 @@ import {
   getPageFromGradingQueue as getPageFromGradingJobs,
 } from "../utils/pagination";
 import { getGradingQueueStats } from "../grading-queue/stats";
+import { getFilterInfo } from "../grading-queue/filter";
+import { GradingJob } from "../grading-queue/types";
 
-// TODO: Error handling
 export const getGradingQueue = async (req: Request, res: Response) => {
   if (
     !req.query.limit ||
@@ -51,13 +52,33 @@ export const getGradingQueue = async (req: Request, res: Response) => {
     return;
   }
 
-  const pagination_data = getPageFromGradingJobs(grading_jobs, offset, limit);
+  let filtered = false;
+  let filtered_grading_jobs: GradingJob[] = [];
+  if (req.query.filter_type && req.query.filter_value) {
+    const filter_type = req.query.filter_type;
+    const filter_value = req.query.filter_value;
+    // TODO: Validate filter_type and value - try catch this?
+    filtered_grading_jobs = grading_jobs.filter(
+      (grading_job) =>
+        grading_job[filter_type as keyof GradingJob] == filter_value
+    );
+    filtered = true;
+  }
+  const res_grading_jobs = filtered ? filtered_grading_jobs : grading_jobs;
+
+  const pagination_data = getPageFromGradingJobs(
+    res_grading_jobs,
+    offset,
+    limit
+  );
   const { next, prev } = pagination_data;
   const grading_jobs_slice = pagination_data.data;
 
   // Calculate Stats for entire grading queue
   const stats = getGradingQueueStats(grading_jobs);
+  const filter_info = getFilterInfo(grading_jobs);
 
+  // TODO: Do we want to do filter info this way?
   res.status(200);
   res.json({
     grading_jobs: grading_jobs_slice,
@@ -65,6 +86,7 @@ export const getGradingQueue = async (req: Request, res: Response) => {
     prev,
     total: grading_jobs_slice.length,
     stats,
+    filter_info: filter_info,
   });
 };
 
