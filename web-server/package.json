@@ -7,7 +7,7 @@
     "build": "tsc --build",
     "clean": "tsc --build --clean",
     "start": "node build/index.js",
-    "dev": "tsc && yarn start"
+    "dev": "tsc --build && node build/index"
   },
   "author": "Jackson Williams",
   "license": "MIT",

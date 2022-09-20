@@ -2,6 +2,7 @@ import { GradingJob } from "./types";
 
 // Get the filter info for all filterable fields of a GradingJob
 export const getFilterInfo = (grading_jobs: GradingJob[]) => {
+  // TODO: make enum
   const filter_types = ["course_id", "grader_id"];
   let filter_info = {};
   filter_types.map((filter_type) => {

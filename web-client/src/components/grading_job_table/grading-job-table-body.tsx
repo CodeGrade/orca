@@ -37,7 +37,9 @@ const GradingJobTableBody = ({
       grading_jobs.sort((a, b) => (a.timestamp > b.timestamp ? -order : order));
       break;
     case "release_time":
-      grading_jobs.sort((a, b) => (a.priority > b.priority ? -order : order));
+      grading_jobs.sort((a, b) =>
+        a.timestamp + a.priority > b.timestamp + b.priority ? -order : order
+      );
       break;
     default:
       break;

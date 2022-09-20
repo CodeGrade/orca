@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import getGradingJobs from "../grading-queue/get";
-import createStudentGradingJob from "../grading-queue/student-create";
-import createProfessorGradingJob from "../grading-queue/professor-create";
+import createStudentGradingJob from "../grading-queue/create";
+import createImmediateGradingJob from "../grading-queue/create-immediate";
 import moveGradingJob from "../grading-queue/move";
 import deleteGradingJob from "../grading-queue/delete";
 import {
@@ -96,7 +96,6 @@ export const addProfessorGradingJobToQueue = async (
   req: Request,
   res: Response
 ) => {
-  const sub_id = req.params.sub_id;
   const grading_job_config = req.body;
 
   // Validate received grading job config
@@ -105,14 +104,6 @@ export const addProfessorGradingJobToQueue = async (
     if (!validateGradingJobConfig(grading_job_config)) {
       res.status(400);
       res.json({ errors: ["Invalid grading job configuration."] });
-      return;
-    }
-    // TODO: Add this for validation handlers for professor grading job
-    if (parseInt(sub_id) !== grading_job_config.submission_id) {
-      res.status(400);
-      res.json({
-        errors: ["Submission id in grading job does not match route."],
-      });
       return;
     }
   } catch (error) {
@@ -124,7 +115,7 @@ export const addProfessorGradingJobToQueue = async (
     });
     return;
   }
-  const err = await createProfessorGradingJob(grading_job_config);
+  const err = await createImmediateGradingJob(grading_job_config);
   if (err) {
     res.status(500);
     res.json({

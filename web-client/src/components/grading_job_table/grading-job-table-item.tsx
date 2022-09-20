@@ -10,10 +10,11 @@ const GradingJobTableItem = ({ grading_job }: { grading_job: GradingJob }) => {
     ? [grading_job.submitter_name, ...grading_job.user_names]
     : [grading_job.submitter_name];
 
-  const release_time_dt: DateTime = DateTime.fromMillis(grading_job.priority);
-  const wait_time_dt: DateTime = DateTime.fromMillis(grading_job.timestamp);
   const now: number = new Date().getTime();
-  const released: boolean = grading_job.priority < now;
+  const release_at = grading_job.timestamp + grading_job.priority;
+  const release_at_dt: DateTime = DateTime.fromMillis(release_at);
+  const wait_time_dt: DateTime = DateTime.fromMillis(grading_job.timestamp);
+  const released: boolean = release_at < now;
   return (
     <tr className={`text-wrap ${released ? "table-success" : "table-primary"}`}>
       <td>
@@ -28,9 +29,9 @@ const GradingJobTableItem = ({ grading_job }: { grading_job: GradingJob }) => {
       <td>{describeTime(wait_time_dt).slice(0, -4)}</td>
       <td
         data-toggle="tooltip"
-        title={`${makeReadableDate(release_time_dt, true, true)}`}
+        title={`${makeReadableDate(release_at_dt, true, true)}`}
       >
-        {describeTime(release_time_dt)}
+        {describeTime(release_at_dt)}
       </td>
       <td>
         <GradingJobActions

@@ -72,6 +72,44 @@ export const redisLPush = async (
   }
 };
 
+export const redisRPush = async (
+  key: string,
+  value: any
+): Promise<[number | null, Error | null]> => {
+  try {
+    // number of values added (1)
+    return [await client.rPush(key, value), null];
+  } catch (error) {
+    return [null, error];
+  }
+};
+
+export const redisLInsertAfter = async (
+  key: string,
+  pivot: any,
+  value: any
+): Promise<[number | null, Error | null]> => {
+  try {
+    // new length of list or -1 if pivot not found
+    return [await client.lInsert(key, "AFTER", pivot, value), null];
+  } catch (error) {
+    return [null, error];
+  }
+};
+
+export const redisLInsertBefore = async (
+  key: string,
+  pivot: any,
+  value: any
+): Promise<[number | null, Error | null]> => {
+  try {
+    // new length of list or -1 if pivot not found
+    return [await client.lInsert(key, "BEFORE", pivot, value), null];
+  } catch (error) {
+    return [null, error];
+  }
+};
+
 export const redisZRangeWithScores = async (
   key: string,
   start: number,
@@ -80,6 +118,44 @@ export const redisZRangeWithScores = async (
   try {
     // zset values or []
     return [await client.zRangeWithScores(key, start, stop), null];
+  } catch (error) {
+    return [null, error];
+  }
+};
+
+export const redisLRange = async (
+  key: string,
+  start: number,
+  stop: number
+): Promise<[string[] | null, Error | null]> => {
+  try {
+    // lrange values or []
+    return [await client.lRange(key, start, stop), null];
+  } catch (error) {
+    return [null, error];
+  }
+};
+
+export const redisLRem = async (
+  key: string,
+  element: string,
+  count: number = 1
+) => {
+  try {
+    // Number of elements deleted
+    return [await client.lRem(key, count, element)];
+  } catch (error) {
+    return [null, error];
+  }
+};
+
+export const redisLIndex = async (key: string, index: number) => {
+  try {
+    // element at index or null
+    const element = await client.lIndex(key, index);
+    if (!element)
+      return [null, Error("Element not found at given index during LINDEX.")];
+    return [element, null];
   } catch (error) {
     return [null, error];
   }

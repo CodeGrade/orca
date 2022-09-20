@@ -8,13 +8,15 @@ import {
 import { LIFETIME_BUFFER } from "../grading-queue/constants";
 import { GradingJob } from "../grading-queue/types";
 
+// TODO: Custom redis transactions where appropriate
+
 export const generateGradingInfoKey = (sub_id: number) => {
   return `QueuedGradingInfo.${sub_id}`;
 };
 
 export const calculateLifetime = async (
   grading_info_key: string,
-  priority: number
+  release_at: number
 ): Promise<[number | null, Error | null]> => {
   const [exp_time, exp_time_err] = await redisExpireTime(grading_info_key);
   if (exp_time_err) return [null, exp_time_err];
@@ -25,19 +27,19 @@ export const calculateLifetime = async (
         "Failed to retrieve expiration time when calculating job lifetime."
       ),
     ];
-  const lifetime = Math.max(priority + LIFETIME_BUFFER, exp_time);
+  const lifetime = Math.max(release_at + LIFETIME_BUFFER, exp_time);
   return [lifetime, null];
 };
 
-export const setGradingInfo = async (
+export const setGradingInfoWithLifetime = async (
   grading_info_key: string,
-  grading_job_config: GradingJob,
+  grading_job: GradingJob,
   lifetime: number
 ): Promise<Error | null> => {
   // Set QueuedGradingInfo
   const [job_set, job_set_err] = await redisSet(
     grading_info_key,
-    JSON.stringify(grading_job_config)
+    JSON.stringify(grading_job)
   );
   if (job_set_err) return job_set_err;
   if (!job_set)
@@ -90,7 +92,7 @@ export const getNextTaskString = (grading_job_config: GradingJob): string => {
   return next_task;
 };
 
-export const setSubmitterInfo = async (
+export const setSubmitterInfoWithLifetime = async (
   submitter_str: string,
   sub_id: number,
   lifetime: number

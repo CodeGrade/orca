@@ -83,7 +83,8 @@ const gradingJobReducer = (state: State = initial_state, action: AnyAction) => {
       let released_ind = 0;
       for (let i = 0; i < state.grading_queue.grading_jobs.length; i++) {
         const grading_job = state.grading_queue.grading_jobs[i];
-        const release_time: number = grading_job.priority;
+        const release_time: number =
+          grading_job.timestamp + grading_job.priority;
 
         const is_released: boolean = release_time < now;
         if (!is_released) {

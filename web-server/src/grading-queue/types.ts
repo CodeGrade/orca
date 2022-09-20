@@ -37,6 +37,7 @@ export interface GradingJob {
 
 export interface StoredGradingJob extends GradingJob {
   timestamp: number;
+  release_at: number;
 }
 
 export type MoveConfig = {

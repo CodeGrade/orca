@@ -166,13 +166,13 @@ const getGradingJobs = async (): Promise<
       // Store the score (priority) from GradingQueue since priority in
       // QueuedGradingInfo can be overwritten by duplicate submission_id
       try {
-        const priority = await client.zScore("GradingQueue", key);
-        if (!priority) return null;
+        const release_at = await client.zScore("GradingQueue", key);
+        if (!release_at) return null;
 
         const json_grading_job: StoredGradingJob = {
           ...JSON.parse(grading_job!),
           timestamp: timestamp,
-          priority: priority,
+          release_at: release_at,
         };
         return json_grading_job;
       } catch (error) {
@@ -186,7 +186,7 @@ const getGradingJobs = async (): Promise<
       grading_jobs
     );
     const filtered_results: StoredGradingJob[] = filterNull(results);
-    filtered_results.sort((a, b) => (a!.priority > b!.priority ? 1 : -1));
+    filtered_results.sort((a, b) => (a!.release_at > b!.release_at ? 1 : -1));
     return [filtered_results, null];
   } catch (error) {
     if (error instanceof Error) {

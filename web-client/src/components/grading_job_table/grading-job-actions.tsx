@@ -25,13 +25,14 @@ const GradingJobActions = ({
   const handleDelete = () => {
     deleteGradingJob(dispatch, submission_id, nonce);
   };
+  // TODO: Pull out RELEASE and DELAY
   const handleRelease = () => {
     if (released) {
       // Should never need this
       alert("Job is already released");
       return;
     }
-    moveGradingJob(dispatch, submission_id, nonce, "release", team_id, user_id);
+    moveGradingJob(dispatch, submission_id, nonce, "RELEASE", team_id, user_id);
   };
   const handleDelay = () => {
     if (released) {
@@ -39,7 +40,7 @@ const GradingJobActions = ({
       // Job already release
       return;
     }
-    moveGradingJob(dispatch, submission_id, nonce, "delay", team_id, user_id);
+    moveGradingJob(dispatch, submission_id, nonce, "DELAY", team_id, user_id);
   };
   // TODO: Abstract buttons
   return (

@@ -42,7 +42,7 @@ export const moveGradingJob = async (
   team_id?: number,
   user_id?: number
 ) => {
-  const response = await axios.put(`${API_BASE}/${submission_id}`, {
+  const response = await axios.put(`${API_BASE}/move/${submission_id}`, {
     nonce: nonce,
     priority: new_position,
     team_id: team_id,

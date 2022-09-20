@@ -72,7 +72,7 @@ export const moveGradingJob = async (
 
   const new_priority: number = response.data;
   dispatch({
-    type: new_position === "release" ? RELEASE_GRADING_JOB : DELAY_GRADING_JOB,
+    type: new_position === "RELEASE" ? RELEASE_GRADING_JOB : DELAY_GRADING_JOB,
     timestamp: nonce,
     new_priority,
   });
