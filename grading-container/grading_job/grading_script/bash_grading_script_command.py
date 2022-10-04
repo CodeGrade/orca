@@ -29,7 +29,7 @@ class BashGradingScriptCommand:
         cpe.returncode, cpe.stdout.decode(), cpe.stderr.decode()))
       did_fail = True
     except TimeoutExpired as te:
-      responses.append(GradingScriptCommandResponse(True, self.__cmd, -1, 
+      responses.append(GradingScriptCommandResponse(True, self.__cmd, None, 
         te.stdout.decode(), te.stderr.decode(), True))
       did_fail = True
     

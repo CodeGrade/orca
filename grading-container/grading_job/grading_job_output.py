@@ -4,12 +4,11 @@ from validations.grading_job_json_types import GradingJobOutputJSON, GradingJobO
 
 class GradingJobOutput:
   
-  def __init__(self, command_responses: List[GradingScriptCommandResponse], tap_output: str = None) -> None:
+  def __init__(self, command_responses: List[GradingScriptCommandResponse], execution_errors: List[Exception] = None, 
+    tap_output: str = None) -> None:
     self.__command_responses = command_responses
+    self.__execution_errors = execution_errors
     self.__tap_output = tap_output
-
-  def has_tap_output(self) -> bool:
-    return self.__tap_output is not None
   
   def get_command_responses(self) -> List[GradingScriptCommandResponse]:
     return self.__command_responses
@@ -17,9 +16,15 @@ class GradingJobOutput:
   def get_tap_output(self) -> str:
     return self.__tap_output
   
+  def get_execution_errors(self) -> List[Exception]:
+    return self.__execution_errors
+  
   def to_json(self) -> GradingJobOutputJSON:
+    ans = dict()
     json_responses = list(map(lambda c: c.to_json(), self.__command_responses))
-    ans = { "execution_responses": json_responses }
-    if self.has_tap_output():
+    ans["shell_responses"] = json_responses
+    if self.__execution_errors is not None:
+      ans["execution_errors"] = list(map(lambda e: str(e)))
+    if self.__tap_output is not None:
       ans["tap_output"] = self.__tap_output
     return ans

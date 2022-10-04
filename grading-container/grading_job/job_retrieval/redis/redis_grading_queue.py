@@ -30,13 +30,12 @@ class RedisGradingJobRetriever(GradingJobRetriever):
 
   def __get_next_job_sub_id(self) -> str:
     _, sub_info_raw, _ = self.__redis_client.bzpopmin('GradingQueue')
-    print(sub_info_raw)
     sub_info = sub_info_raw.decode().split('.')
-    print(sub_info)
-    if sub_info[0] == "sub":
-      sub_id = sub_info[1]
+    id_type, id, _ = sub_info
+    if id_type == "sub":
+      sub_id = id
     else:
-      sub_id_raw = self.__redis_client.lpop(f"SubmitterInfo.{sub_info[1]}")
+      sub_id_raw = self.__redis_client.lpop(f"SubmitterInfo.{id_type}.{id}")
       sub_id = sub_id_raw.decode()
     return sub_id
 
