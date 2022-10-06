@@ -11,9 +11,9 @@ const GradingJobTableItem = ({ grading_job }: { grading_job: GradingJob }) => {
     : [grading_job.submitter_name];
 
   const now: number = new Date().getTime();
-  const release_at = grading_job.timestamp + grading_job.priority;
+  const release_at = grading_job.release_at;
   const release_at_dt: DateTime = DateTime.fromMillis(release_at);
-  const wait_time_dt: DateTime = DateTime.fromMillis(grading_job.timestamp);
+  const wait_time_dt: DateTime = DateTime.fromMillis(grading_job.created_at);
   const released: boolean = release_at < now;
   return (
     <tr className={`text-wrap ${released ? "table-success" : "table-primary"}`}>
@@ -36,7 +36,7 @@ const GradingJobTableItem = ({ grading_job }: { grading_job: GradingJob }) => {
       <td>
         <GradingJobActions
           submission_id={grading_job.submission_id}
-          nonce={grading_job.timestamp}
+          nonce={grading_job.nonce}
           user_id={grading_job.user_id ? grading_job.user_id : undefined}
           team_id={grading_job.team_id ? grading_job.team_id : undefined}
           released={released}

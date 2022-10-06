@@ -6,12 +6,25 @@ import {
   redisZAdd,
 } from "./redis";
 import { LIFETIME_BUFFER } from "../grading-queue/constants";
-import { GradingJob } from "../grading-queue/types";
+import { GradingJob, GradingJobConfig } from "../grading-queue/types";
 
 // TODO: Custom redis transactions where appropriate
 
 export const generateGradingInfoKey = (sub_id: number) => {
   return `QueuedGradingInfo.${sub_id}`;
+};
+
+export const formatGradingJob = (
+  grading_job_config: GradingJobConfig,
+  release_at: number,
+  created_at: number
+): GradingJob => {
+  const { priority, ...format_grading_job } = grading_job_config;
+  return {
+    ...format_grading_job,
+    release_at: release_at,
+    created_at: created_at,
+  };
 };
 
 export const calculateLifetime = async (

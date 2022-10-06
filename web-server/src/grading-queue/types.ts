@@ -18,7 +18,7 @@ export type GradingQueueEntry = {
   score: number;
 };
 
-export interface GradingJob {
+export interface GradingJobConfig {
   submission_id: number;
   grade_id: number;
   grader_id: number;
@@ -26,7 +26,7 @@ export interface GradingJob {
   starter_code?: string; // CodeFileInfo;
   student_code: string; // CodeFileInfo;
   professor_code?: string; // CodeFileInfo;
-  priority: number;
+  priority: number; // Delay in ms
   max_retries?: number;
   script: GradingScriptCommand[];
   team_id?: number;
@@ -35,9 +35,22 @@ export interface GradingJob {
   submitter_name: string;
 }
 
-export interface StoredGradingJob extends GradingJob {
-  timestamp: number;
-  release_at: number;
+export interface GradingJob {
+  submission_id: number;
+  grade_id: number;
+  grader_id: number;
+  course_id: number;
+  starter_code?: string; // CodeFileInfo;
+  student_code: string; // CodeFileInfo;
+  professor_code?: string; // CodeFileInfo;
+  max_retries?: number;
+  script: GradingScriptCommand[];
+  team_id?: number;
+  user_id?: number;
+  user_names?: string[];
+  submitter_name: string;
+  release_at: number; // Release timestamp in ms
+  created_at: number; // Created timestamp in ms
 }
 
 export type MoveConfig = {

@@ -3,15 +3,17 @@ import {
   calculateLifetime,
   setGradingInfoWithLifetime,
   addToGradingQueue,
+  formatGradingJob,
 } from "../utils/helpers";
+import { GradingJobConfig } from "./types";
 
 const createImmediateGradingJob = async (
-  grading_job_config: any
+  grading_job_config: GradingJobConfig
 ): Promise<Error | null> => {
   const sub_id = grading_job_config["submission_id"];
 
   const now = new Date().getTime();
-  const release_at = now + grading_job_config["priority"];
+  const release_at = now + grading_job_config.priority;
 
   const grading_info_key = generateGradingInfoKey(sub_id);
 
@@ -22,9 +24,12 @@ const createImmediateGradingJob = async (
   if (lifetime_err) return lifetime_err;
 
   // Set QueuedGradingInfo
+  const grading_job = formatGradingJob(grading_job_config, release_at, now);
+  // TODO: How does overwriting the release timestamp of QueuedGradingInfo work if
+  //       there is a student job with the same submission id
   const grading_info_err = await setGradingInfoWithLifetime(
     grading_info_key,
-    grading_job_config,
+    grading_job,
     lifetime!
   );
   if (grading_info_err) return grading_info_err;

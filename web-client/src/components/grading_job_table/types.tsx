@@ -5,7 +5,6 @@ type GradingScriptCommand = {
 };
 
 export interface GradingJob {
-  timestamp: number;
   submission_id: number;
   grade_id: number;
   grader_id: number;
@@ -13,13 +12,15 @@ export interface GradingJob {
   starter_code?: string; // CodeFileInfo;
   student_code: string; // CodeFileInfo;
   professor_code?: string; // CodeFileInfo;
-  priority: number;
   max_retries?: number;
   script: [GradingScriptCommand];
   team_id?: number;
   user_id?: number;
   user_names?: string[];
   submitter_name: string;
+  release_at: number; // release timestamp in ms
+  created_at: number; // created at timestamp in ms
+  nonce: string;
 }
 
 export type PaginationInfo = {

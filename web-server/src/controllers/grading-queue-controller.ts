@@ -170,7 +170,7 @@ export const addStudentGradingJobToQueue = async (
 export const moveGradingJobInQueue = async (req: Request, res: Response) => {
   const submission_id: string = req.params.sub_id;
   // TODO: Validate request format in middleware (req.body)
-  const [new_priority, move_grading_job_err] = await moveGradingJob(
+  const [new_release_at, move_grading_job_err] = await moveGradingJob(
     submission_id,
     req.body
   );
@@ -185,7 +185,7 @@ export const moveGradingJobInQueue = async (req: Request, res: Response) => {
   }
 
   res.status(200);
-  res.json(new_priority);
+  res.json(new_release_at);
 };
 
 export const deleteGradingJobInQueue = async (req: Request, res: Response) => {

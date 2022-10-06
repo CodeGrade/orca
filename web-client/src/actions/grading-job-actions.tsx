@@ -45,19 +45,19 @@ export const getFilteredGradingQueue = async (
 export const deleteGradingJob = async (
   dispatch: Dispatch,
   submission_id: number,
-  nonce: number
+  nonce: string
 ) => {
   const response = await service.deleteGradingJob(submission_id, nonce);
   dispatch({
     type: DELETE_GRADING_JOB,
-    timestamp: nonce,
+    nonce: nonce,
   });
 };
 
 export const moveGradingJob = async (
   dispatch: Dispatch,
   submission_id: number,
-  nonce: number,
+  nonce: string,
   new_position: string,
   team_id?: number,
   user_id?: number
@@ -70,10 +70,10 @@ export const moveGradingJob = async (
     user_id
   );
 
-  const new_priority: number = response.data;
+  const new_release_at: number = response.data;
   dispatch({
     type: new_position === "RELEASE" ? RELEASE_GRADING_JOB : DELAY_GRADING_JOB,
-    timestamp: nonce,
-    new_priority,
+    nonce: nonce,
+    new_release_at,
   });
 };

@@ -1,26 +1,27 @@
 import { client } from "../index";
-import { StoredGradingJob, SubmitterInfo, SubmitterInfoData } from "./types";
+import { GradingJob, SubmitterInfo, SubmitterInfoData } from "./types";
 import { filterNull } from "../utils/helpers";
+import { redisZScore } from "../utils/redis";
 
 const DELIM = ".";
 
 const getGradingJobFromSubmissionId = async (
   submission_id: string
-): Promise<[string | null, Error | null]> => {
+): Promise<[GradingJob | null, Error | null]> => {
   try {
-    const grading_job = await client.get(`QueuedGradingInfo.${submission_id}`);
+    const grading_job_str = await client.get(
+      `QueuedGradingInfo.${submission_id}`
+    );
+    if (!grading_job_str)
+      return [
+        null,
+        Error("Grading job not found while getting job from submission id."),
+      ];
+    const grading_job: GradingJob = JSON.parse(grading_job_str);
     // Grading job can be null here
     return [grading_job, null];
   } catch (error) {
-    if (error instanceof Error) {
-      return [null, error];
-    }
-    return [
-      null,
-      Error(
-        "Something went wrong when trying to rertieve grading job by submission id."
-      ),
-    ];
+    return [null, error];
   }
 };
 
@@ -76,6 +77,7 @@ const getUniqueSubmitters = (grading_queue: string[]): string[] => {
   return unique_submitters;
 };
 
+// TODO: Simplify/Rewrite
 const getSubmitterInfo = async (
   submitters: string[]
 ): Promise<[SubmitterInfo | null, Error | null]> => {
@@ -85,7 +87,7 @@ const getSubmitterInfo = async (
       const [submissions, submissions_error] = await getSubmitterSubmissions(
         submitter
       );
-      if (submissions_error || !submissions) {
+      if (submissions_error || !submissions || !submissions.length) {
         return null;
       }
       const submitter_info_data: SubmitterInfoData = {
@@ -115,8 +117,9 @@ const getSubmitterInfo = async (
   }
 };
 
+// Simplify/Rewrite
 const getGradingJobs = async (): Promise<
-  [StoredGradingJob[] | null, Error | null]
+  [GradingJob[] | null, Error | null]
 > => {
   const [grading_queue, grading_queue_error] = await getGradingQueue();
   if (grading_queue_error) {
@@ -125,6 +128,7 @@ const getGradingJobs = async (): Promise<
   if (!grading_queue) {
     return [null, Error("Grading queue could not be retrieved.")];
   }
+  if (grading_queue.length === 0) return [[], null];
 
   const submitters: string[] = getUniqueSubmitters(grading_queue);
 
@@ -139,14 +143,17 @@ const getGradingJobs = async (): Promise<
   }
 
   // Grading queue is in order of increasing release timestamp
-  const grading_jobs: Promise<StoredGradingJob | null>[] = grading_queue.map(
+  // TODO: second time mapping over grading quueue - REWRITE/SIMPLIFY
+  // TODO: try catch this?
+  const grading_jobs: Promise<GradingJob | null>[] = grading_queue.map(
     async (key: string) => {
+      // Ex: team.234.nonce where 234 is the team is
+      // Ex: sub.5.nonce where 5 is the submission id
       const key_split: string[] = key.split(DELIM);
 
       // Retrieve timestamp from key
-      const timestamp_str: string = key_split.pop()!;
-      const timestamp: number = parseInt(timestamp_str);
-      if (!timestamp) return null;
+      const nonce: string = key_split.pop()!;
+      if (!nonce) return null;
 
       let submission_id: string;
       if (key_split[0] === "sub") {
@@ -162,40 +169,29 @@ const getGradingJobs = async (): Promise<
       if (grading_job_error || !grading_job) {
         return null;
       }
-
       // Store the score (priority) from GradingQueue since priority in
       // QueuedGradingInfo can be overwritten by duplicate submission_id
-      try {
-        const release_at = await client.zScore("GradingQueue", key);
-        if (!release_at) return null;
+      const [gq_release_at, zscore_err] = await redisZScore(
+        "GradingQueue",
+        key
+      );
+      if (zscore_err || !gq_release_at) return null;
 
-        const json_grading_job: StoredGradingJob = {
-          ...JSON.parse(grading_job!),
-          timestamp: timestamp,
-          release_at: release_at,
-        };
-        return json_grading_job;
-      } catch (error) {
-        return null;
-      }
+      return {
+        ...grading_job,
+        release_at: gq_release_at,
+        nonce: nonce,
+      };
     }
   );
 
   try {
-    const results: (StoredGradingJob | null)[] = await Promise.all(
-      grading_jobs
-    );
-    const filtered_results: StoredGradingJob[] = filterNull(results);
+    const results: (GradingJob | null)[] = await Promise.all(grading_jobs);
+    const filtered_results: GradingJob[] = filterNull(results);
     filtered_results.sort((a, b) => (a!.release_at > b!.release_at ? 1 : -1));
     return [filtered_results, null];
   } catch (error) {
-    if (error instanceof Error) {
-      return [null, error];
-    }
-    return [
-      null,
-      Error("Something went wrong while retrieving the grading queue."),
-    ];
+    return [null, error];
   }
 };
 

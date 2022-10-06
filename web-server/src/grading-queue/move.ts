@@ -41,30 +41,26 @@ const moveGradingJob = async (
     : `team.${move_config.team_id}`;
   const grading_queue_key = `${submitter_str}.${nonce}`;
 
-  let new_priority: number | null, move_err: Error | null;
-  const now = new Date().getTime();
+  let move_err: Error | null;
   let new_release_at: number | null = null;
+  const now = new Date().getTime();
   switch (move_position) {
     case MOVE_POSITION.RELEASE:
-      [new_priority, move_err] = await releaseGradingJob(
+      [new_release_at, move_err] = await releaseGradingJob(
         grading_info_key,
         submitter_str,
         grading_job,
         now,
-        timestamp,
         submission_id
       );
-      new_release_at = now;
       break;
     case MOVE_POSITION.DELAY:
-      [new_priority, move_err] = await delayGradingJob(
+      [new_release_at, move_err] = await delayGradingJob(
         grading_info_key,
         submitter_str,
         grading_job,
-        timestamp,
         submission_id
       );
-      new_release_at = timestamp + new_priority!;
       break;
     default:
       // TODO: Move this validation to middleware
@@ -82,9 +78,10 @@ const moveGradingJob = async (
   const gq_err = await updateGradingQueue(grading_queue_key, new_release_at);
   if (gq_err) return [null, gq_err];
 
-  return [new_priority, null];
+  return [new_release_at, null];
 };
 
+// TODO: Simplify this by using looping over SubmitterInfo list and checking release_at timestamps
 const getLastReleasedSubmissionIndexOfSubmitter = async (
   submitter_str: string,
   now: number
@@ -107,7 +104,6 @@ const getLastReleasedSubmissionIndexOfSubmitter = async (
     }
     last_released_ind++;
     const released = entry.score < now;
-    console.log(last_released_ind, entry);
     if (!released) {
       last_released_ind--;
       return [last_released_ind, null];
@@ -129,10 +125,9 @@ const releaseGradingJob = async (
   submitter_str: string,
   grading_job: GradingJob,
   now: number,
-  timestamp: number,
   submission_id: string
 ): Promise<[number | null, Error | null]> => {
-  const new_priority: number = now - timestamp;
+  const new_release_at = now;
   // Get existing lifetime to re-set after updating QueuedGradingInfo
   const [lifetime, lifetime_err] = await redisExpireTime(grading_info_key);
   if (lifetime_err) return [null, lifetime_err];
@@ -142,8 +137,11 @@ const releaseGradingJob = async (
     await getLastReleasedSubmissionIndexOfSubmitter(submitter_str, now);
   if (last_released_ind_err) return [null, last_released_ind_err];
 
-  // Update QueuedGradingInfo of GradingJob
-  const updated_grading_job = { ...grading_job, priority: new_priority };
+  // Update QueuedGradingInfo of GradingJob with release_at now
+  const updated_grading_job: GradingJob = {
+    ...grading_job,
+    release_at: new_release_at,
+  };
   const set_err = await setGradingInfoWithLifetime(
     grading_info_key,
     updated_grading_job,
@@ -172,7 +170,6 @@ const releaseGradingJob = async (
 
   // There are no released job - push back onto front of list
   if (last_released_ind === -1) {
-    console.log("PUSH TO FRONT");
     const [num_pushed, push_err] = await redisLPush(
       submitter_info_key,
       submission_id
@@ -201,14 +198,13 @@ const releaseGradingJob = async (
     );
     if (insert_err) return [null, insert_err];
   }
-  return [new_priority, null];
+  return [new_release_at, null];
 };
 
 const delayGradingJob = async (
   grading_info_key: string,
   submitter_str: string,
   grading_job: GradingJob,
-  timestamp: number,
   submission_id: string
 ): Promise<[number | null, Error | null]> => {
   // Get last job in GradingQueue to figure out the delay priority
@@ -231,10 +227,11 @@ const delayGradingJob = async (
   const new_release_at = last_job_release_at + MOVE_TO_BACK_BUFFER;
   const lifetime = new_release_at + LIFETIME_BUFFER;
 
-  const new_priority = new_release_at - timestamp;
-
   // Update QueuedGradingInfo of GradingJob
-  const updated_grading_job = { ...grading_job, priority: new_priority };
+  const updated_grading_job: GradingJob = {
+    ...grading_job,
+    release_at: new_release_at,
+  };
   const set_err = await setGradingInfoWithLifetime(
     grading_info_key,
     updated_grading_job,
@@ -286,7 +283,7 @@ const delayGradingJob = async (
       ),
     ];
 
-  return [new_priority, null];
+  return [new_release_at, null];
 };
 
 export default moveGradingJob;

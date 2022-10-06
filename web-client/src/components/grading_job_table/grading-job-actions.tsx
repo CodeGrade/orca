@@ -8,7 +8,7 @@ import {
 
 type GradingJobActionsProps = {
   submission_id: number;
-  nonce: number;
+  nonce: string;
   team_id?: number;
   user_id?: number;
   released: boolean;

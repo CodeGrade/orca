@@ -34,8 +34,7 @@ const gradingJobReducer = (state: State = initial_state, action: AnyAction) => {
     case DELETE_GRADING_JOB:
       const updated_queue_deleted = [
         ...state.grading_queue.grading_jobs.filter(
-          (grading_job: GradingJob) =>
-            grading_job.timestamp !== action.timestamp
+          (grading_job: GradingJob) => grading_job.nonce !== action.nonce
         ),
       ];
       return (state = {
@@ -47,18 +46,18 @@ const gradingJobReducer = (state: State = initial_state, action: AnyAction) => {
     // TODO: Abstract from moving back/front
     case DELAY_GRADING_JOB:
       const job_to_delay = state.grading_queue.grading_jobs.find(
-        (job) => job.timestamp === action.timestamp
+        (job) => job.nonce === action.nonce
       );
       if (!job_to_delay) return state;
 
-      // Update priority of job in state
-      const delayed_job = {
+      // Update release_at of job in state
+      const delayed_job: GradingJob = {
         ...job_to_delay,
-        priority: action.new_priority,
+        release_at: action.new_release_at,
       };
       const queue_with_delayed_job = [
         ...state.grading_queue.grading_jobs.filter(
-          (job) => job.timestamp !== action.timestamp
+          (job) => job.nonce !== action.nonce
         ),
         delayed_job,
       ];
@@ -70,23 +69,20 @@ const gradingJobReducer = (state: State = initial_state, action: AnyAction) => {
       });
     case RELEASE_GRADING_JOB:
       const job_to_release = state.grading_queue.grading_jobs.find(
-        (job) => job.timestamp === action.timestamp
+        (job) => job.nonce === action.nonce
       );
       if (!job_to_release) return state;
-      // Update priority of job in state
-      const release_job = {
+      // Update release_at of job in state
+      const release_job: GradingJob = {
         ...job_to_release,
-        priority: action.new_priority,
+        release_at: action.new_release_at,
       };
 
       const now: number = new Date().getTime();
       let released_ind = 0;
       for (let i = 0; i < state.grading_queue.grading_jobs.length; i++) {
         const grading_job = state.grading_queue.grading_jobs[i];
-        const release_time: number =
-          grading_job.timestamp + grading_job.priority;
-
-        const is_released: boolean = release_time < now;
+        const is_released: boolean = grading_job.release_at < now;
         if (!is_released) {
           released_ind = i;
           break;
@@ -94,7 +90,7 @@ const gradingJobReducer = (state: State = initial_state, action: AnyAction) => {
       }
       const queue_with_release_job = [
         ...state.grading_queue.grading_jobs.filter(
-          (job) => job.timestamp !== action.timestamp
+          (job) => job.nonce !== action.nonce
         ),
       ];
       queue_with_release_job.splice(released_ind, 0, release_job);

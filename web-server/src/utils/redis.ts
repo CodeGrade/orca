@@ -140,22 +140,39 @@ export const redisLRem = async (
   key: string,
   element: string,
   count: number = 1
-) => {
+): Promise<[number | null, Error | null]> => {
   try {
     // Number of elements deleted
-    return [await client.lRem(key, count, element)];
+    return [await client.lRem(key, count, element), null];
   } catch (error) {
     return [null, error];
   }
 };
 
-export const redisLIndex = async (key: string, index: number) => {
+export const redisLIndex = async (
+  key: string,
+  index: number
+): Promise<[string | null, Error | null]> => {
   try {
     // element at index or null
     const element = await client.lIndex(key, index);
     if (!element)
       return [null, Error("Element not found at given index during LINDEX.")];
     return [element, null];
+  } catch (error) {
+    return [null, error];
+  }
+};
+
+export const redisZScore = async (
+  key: string,
+  member: string
+): Promise<[number | null, Error | null]> => {
+  try {
+    const score = await client.zScore(key, member);
+    if (!score)
+      return [null, Error("Key or Member not found when getting ZScore")];
+    return [score, null];
   } catch (error) {
     return [null, error];
   }

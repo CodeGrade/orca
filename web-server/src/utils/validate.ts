@@ -1,4 +1,4 @@
-import { GradingJob } from "../grading-queue/types";
+import { GradingJob, GradingJobConfig } from "../grading-queue/types";
 
 const isNumber = (value: any): boolean => typeof value === "number";
 const isString = (value: any): boolean => typeof value === "string";
@@ -69,7 +69,9 @@ const validateSubmitterId = (config: any): boolean => {
   return "team_id" in config || "user_id" in config;
 };
 
-export const validateGradingJobConfig = (config: any): config is GradingJob => {
+export const validateGradingJobConfig = (
+  config: any
+): config is GradingJobConfig => {
   if (!validateRequiredFields(config)) return false;
   if (!validateSubmitterId(config)) return false;
   if (!validateScript(config.script)) return false;
