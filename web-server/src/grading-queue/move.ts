@@ -29,17 +29,18 @@ const moveGradingJob = async (
 ): Promise<[number | null, Error | null]> => {
   const move_position: MOVE_POSITION = MOVE_POSITION[move_config.priority];
   const nonce: string = move_config.nonce;
-  const timestamp: number = parseInt(nonce);
   const grading_info_key = `QueuedGradingInfo.${submission_id}`;
 
   const [grading_job_to_move, get_err] = await redisGet(grading_info_key);
   if (get_err) return [null, get_err];
 
+  // TODO: try catch this
   const grading_job: GradingJob = JSON.parse(grading_job_to_move!);
   const submitter_str = move_config.user_id
     ? `user.${move_config.user_id}`
     : `team.${move_config.team_id}`;
   const grading_queue_key = `${submitter_str}.${nonce}`;
+  const submitter_info_key = `SubmitterInfo.${submitter_str}`;
 
   let move_err: Error | null;
   let new_release_at: number | null = null;
@@ -48,7 +49,7 @@ const moveGradingJob = async (
     case MOVE_POSITION.RELEASE:
       [new_release_at, move_err] = await releaseGradingJob(
         grading_info_key,
-        submitter_str,
+        submitter_info_key,
         grading_job,
         now,
         submission_id
@@ -57,7 +58,7 @@ const moveGradingJob = async (
     case MOVE_POSITION.DELAY:
       [new_release_at, move_err] = await delayGradingJob(
         grading_info_key,
-        submitter_str,
+        submitter_info_key,
         grading_job,
         submission_id
       );
@@ -81,48 +82,121 @@ const moveGradingJob = async (
   return [new_release_at, null];
 };
 
-// TODO: Simplify this by using looping over SubmitterInfo list and checking release_at timestamps
-const getLastReleasedSubmissionIndexOfSubmitter = async (
-  submitter_str: string,
+// TODO: Move to move_helpers file
+const getLastReleasedSubmissionIdOfSubmitter = async (
+  submitter_info: string[],
   now: number
-): Promise<[number | null, Error | null]> => {
-  const [grading_queue, zrange_err] = await redisZRangeWithScores(
-    "GradingQueue",
+): Promise<[string | null, Error | null]> => {
+  try {
+    let last_released_id: string | null = null;
+    for (let i = 0; i < submitter_info.length; i++) {
+      const sub_id = submitter_info[i];
+      const [grading_job_str, get_err] = await redisGet(
+        `QueuedGradingInfo.${sub_id}`
+      );
+      if (get_err) throw get_err;
+      if (!grading_job_str)
+        throw Error("Failed to retrieve information when moving grading job");
+
+      const grading_job: GradingJob = JSON.parse(grading_job_str);
+      const released = grading_job.release_at < now;
+      if (!released) {
+        return [last_released_id, null];
+      }
+      last_released_id = sub_id;
+    }
+    return [last_released_id, null];
+  } catch (error) {
+    return [null, error];
+  }
+};
+
+const updateQueuedGradingInfo = async (
+  grading_job: GradingJob,
+  release_at: number,
+  grading_info_key: string,
+  lifetime: number
+): Promise<Error | null> => {
+  // Update QueuedGradingInfo of GradingJob with release_at now
+  const updated_grading_job: GradingJob = {
+    ...grading_job,
+    release_at: release_at,
+  };
+  const set_err = await setGradingInfoWithLifetime(
+    grading_info_key,
+    updated_grading_job,
+    lifetime!
+  );
+  if (set_err) return set_err;
+  return null;
+};
+
+const removeSubIdFromSubmitterInfo = async (
+  submitter_info_key: string,
+  submission_id: string
+): Promise<Error | null> => {
+  // Remove existing submission id in list
+  const [num_removed, remove_err] = await redisLRem(
+    submitter_info_key,
+    submission_id
+  );
+  if (remove_err) return remove_err;
+  if (!num_removed)
+    return Error(
+      "Did not find submission id in SubmitterInfo list while releasing grading job."
+    );
+  return null;
+};
+
+const getSubmitterInfo = async (
+  submitter_info_key: string
+): Promise<[string[] | null, Error | null]> => {
+  const [submitter_info, lrange_err] = await redisLRange(
+    submitter_info_key,
     0,
     -1
   );
-  if (zrange_err) return [null, zrange_err];
-  if (!grading_queue || !grading_queue.length)
-    return [null, Error("No jobs found when trying to release grading job")];
-
-  let last_released_ind = -1;
-  for (let i = 0; i < grading_queue.length; i++) {
-    const entry: GradingQueueEntry = grading_queue[i];
-    if (!entry.value.startsWith(`${submitter_str}.`)) {
-      // Entry is not for the submitter we care about
-      continue;
-    }
-    last_released_ind++;
-    const released = entry.score < now;
-    if (!released) {
-      last_released_ind--;
-      return [last_released_ind, null];
-    }
-  }
-  if (last_released_ind === -1)
+  if (lrange_err) return [null, lrange_err];
+  if (!submitter_info || !submitter_info.length)
     return [
       null,
-      Error("No jobs found for given submitter while releasing grading job."),
+      Error(
+        "Failed to find submitter info for given submitter when moving grading job."
+      ),
     ];
-  return [
-    null,
-    Error("Failed to release grading job - all jobs are already released"),
-  ];
+  return [submitter_info, null];
+};
+
+const isOnlySubInSubmitterInfo = async (
+  submitter_info_key: string
+): Promise<[boolean | null, Error | null]> => {
+  const [submitter_info, lrange_err] = await getSubmitterInfo(
+    submitter_info_key
+  );
+  if (lrange_err) return [null, lrange_err];
+  return [submitter_info!.length === 1, null];
+};
+
+const getLastJobInGradingQueue = async (): Promise<
+  [string | null, Error | null]
+> => {
+  const [last_job, last_job_err] = await redisZRangeWithScores(
+    "GradingQueue",
+    -1,
+    -1
+  );
+  if (last_job_err) return [null, last_job_err];
+  if (!last_job || last_job.length === 0)
+    return [
+      null,
+      Error("No jobs found in grading queue when trying to delay grading job"),
+    ];
+  return [last_job, null];
 };
 
 const releaseGradingJob = async (
   grading_info_key: string,
-  submitter_str: string,
+  submitter_info_key: string,
   grading_job: GradingJob,
   now: number,
   submission_id: string
@@ -132,44 +206,35 @@ const releaseGradingJob = async (
   const [lifetime, lifetime_err] = await redisExpireTime(grading_info_key);
   if (lifetime_err) return [null, lifetime_err];
 
-  // Get index of last released job
-  const [last_released_ind, last_released_ind_err] =
-    await getLastReleasedSubmissionIndexOfSubmitter(submitter_str, now);
-  if (last_released_ind_err) return [null, last_released_ind_err];
-
-  // Update QueuedGradingInfo of GradingJob with release_at now
-  const updated_grading_job: GradingJob = {
-    ...grading_job,
-    release_at: new_release_at,
-  };
-  const set_err = await setGradingInfoWithLifetime(
+  const update_err = await updateQueuedGradingInfo(
+    grading_job,
+    new_release_at,
     grading_info_key,
-    updated_grading_job,
     lifetime!
   );
-  if (set_err) return [null, set_err];
+  if (update_err) return [null, update_err];
 
-  // Move submission position in SubmitterInfo list
-  const submitter_info_key = `SubmitterInfo.${submitter_str}`;
+  const [submitter_info, submitter_info_err] = await getSubmitterInfo(
+    submitter_info_key
+  );
+  if (submitter_info_err) return [null, submitter_info_err];
 
-  // TODO: If moving to front - check if already at front
+  // Short circuit: Only job in submitter info - don't need to move
+  if (submitter_info!.length === 1) return [new_release_at, null];
 
-  // Remove existing submission id in list
-  const [num_removed, remove_err] = await redisLRem(
+  const remove_err = await removeSubIdFromSubmitterInfo(
     submitter_info_key,
     submission_id
   );
   if (remove_err) return [null, remove_err];
-  if (!num_removed)
-    return [
-      null,
-      Error(
-        "Did not find submission id in SubmitterInfo list while releasing grading job."
-      ),
-    ];
+
+  // Get index of last released job
+  const [last_released_id, last_released_id_err] =
+    await getLastReleasedSubmissionIdOfSubmitter(submitter_info!, now);
+  if (last_released_id_err) return [null, last_released_id_err];
 
   // There are no released job - push back onto front of list
-  if (last_released_ind === -1) {
+  if (!last_released_id) {
     const [num_pushed, push_err] = await redisLPush(
       submitter_info_key,
       submission_id
@@ -183,13 +248,6 @@ const releaseGradingJob = async (
         ),
       ];
   } else {
-    // Get submission id at the last released index
-    const [last_released_id, last_released_id_err] = await redisLIndex(
-      submitter_info_key,
-      last_released_ind!
-    );
-    if (last_released_id_err) return [null, last_released_id_err];
-
     // Insert submission id into list
     const [sub_info_len, insert_err] = await redisLInsertAfter(
       submitter_info_key,
@@ -203,57 +261,52 @@ const releaseGradingJob = async (
 
 const delayGradingJob = async (
   grading_info_key: string,
-  submitter_str: string,
+  submitter_info_key: string,
   grading_job: GradingJob,
   submission_id: string
 ): Promise<[number | null, Error | null]> => {
   // Get last job in GradingQueue to figure out the delay priority
-  const [last_job, last_job_err] = await redisZRangeWithScores(
-    "GradingQueue",
-    -1,
-    -1
-  );
+  const [last_job, last_job_err] = await getLastJobInGradingQueue();
   if (last_job_err) return [null, last_job_err];
-  if (last_job.length === 0)
-    return [
-      null,
-      Error(
-        "No jobs found in grading queue when trying to delay this grading job"
-      ),
-    ];
 
-  const last_job_release_at: number = last_job[0]["score"];
+  const last_job_release_at: number = last_job![0]["score"];
   // Calculate new priority and redis object lifetimes
   const new_release_at = last_job_release_at + MOVE_TO_BACK_BUFFER;
   const lifetime = new_release_at + LIFETIME_BUFFER;
 
-  // Update QueuedGradingInfo of GradingJob
-  const updated_grading_job: GradingJob = {
-    ...grading_job,
-    release_at: new_release_at,
-  };
-  const set_err = await setGradingInfoWithLifetime(
+  const update_err = await updateQueuedGradingInfo(
+    grading_job,
+    new_release_at,
     grading_info_key,
-    updated_grading_job,
     lifetime!
   );
-  if (set_err) return [null, set_err];
+  if (update_err) return [null, update_err];
+
+  // Update SubmitterInfo list lifetime
+  const [submitter_info_exp, submitter_info_exp_err] = await redisExpireAt(
+    submitter_info_key,
+    lifetime
+  );
+  if (submitter_info_exp_err) return [null, submitter_info_exp_err];
+  if (!submitter_info_exp)
+    return [
+      null,
+      Error(
+        "Failed to set expiration on submitter info when delaying grading job."
+      ),
+    ];
+
+  // Short circuit: Only job in submitter info - don't need to move
+  if (await isOnlySubInSubmitterInfo(submitter_info_key))
+    return [new_release_at, null];
 
   // Update submission id position in SubmitterInfo list
-  const submitter_info_key = `SubmitterInfo.${submitter_str}`;
   // Remove existing submission id in list
-  const [num_removed, remove_err] = await redisLRem(
+  const remove_err = await removeSubIdFromSubmitterInfo(
     submitter_info_key,
     submission_id
   );
   if (remove_err) return [null, remove_err];
-  if (!num_removed)
-    return [
-      null,
-      Error(
-        "Did not find submission id in SubmitterInfo list while delaying grading job."
-      ),
-    ];
 
   // RPUSH submission id back onto list
   const [num_pushed, push_err] = await redisRPush(
@@ -266,20 +319,6 @@ const delayGradingJob = async (
       null,
       Error(
         "Failed to push submission id to SubmitterInfo list while delaying grading job."
-      ),
-    ];
-
-  // Update SubmitterInfo list lifetime
-  const [submitter_info_exp, submitter_info_exp_err] = await redisExpireAt(
-    `SubmitterInfo.${submitter_str}`,
-    lifetime
-  );
-  if (submitter_info_exp_err) return [null, submitter_info_exp_err];
-  if (!submitter_info_exp)
-    return [
-      null,
-      Error(
-        "Failed to set expiration on submitter info when delaying grading job."
       ),
     ];
 

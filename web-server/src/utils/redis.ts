@@ -1,6 +1,5 @@
 import { client } from "../index";
 
-// TODO: Use these everywhere?
 export const redisSet = async (
   key: string,
   value: any
