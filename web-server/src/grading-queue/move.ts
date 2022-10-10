@@ -1,12 +1,10 @@
-import { GradingJob, MoveConfig, GradingQueueEntry } from "./types";
+import { GradingJob, MoveConfig } from "./types";
 import { LIFETIME_BUFFER, MOVE_TO_BACK_BUFFER } from "./constants";
 import {
   redisExpireAt,
   redisExpireTime,
   redisGet,
-  redisLIndex,
   redisLInsertAfter,
-  redisLInsertBefore,
   redisLPush,
   redisLRange,
   redisLRem,
@@ -16,6 +14,7 @@ import {
 import {
   updateGradingQueue,
   setGradingInfoWithLifetime,
+  getSubmitterInfo,
 } from "../utils/helpers";
 
 enum MOVE_POSITION {
@@ -111,7 +110,7 @@ const getLastReleasedSubmissionIdOfSubmitter = async (
   }
 };
 
-const updateQueuedGradingInfo = async (
+const updateGradingInfoForMove = async (
   grading_job: GradingJob,
   release_at: number,
   grading_info_key: string,
@@ -148,25 +147,6 @@ const removeSubIdFromSubmitterInfo = async (
   return null;
 };
 
-const getSubmitterInfo = async (
-  submitter_info_key: string
-): Promise<[string[] | null, Error | null]> => {
-  const [submitter_info, lrange_err] = await redisLRange(
-    submitter_info_key,
-    0,
-    -1
-  );
-  if (lrange_err) return [null, lrange_err];
-  if (!submitter_info || !submitter_info.length)
-    return [
-      null,
-      Error(
-        "Failed to find submitter info for given submitter when moving grading job."
-      ),
-    ];
-  return [submitter_info, null];
-};
-
 const isOnlySubInSubmitterInfo = async (
   submitter_info_key: string
 ): Promise<[boolean | null, Error | null]> => {
@@ -174,6 +154,8 @@ const isOnlySubInSubmitterInfo = async (
     submitter_info_key
   );
   if (lrange_err) return [null, lrange_err];
+  if (!submitter_info || !submitter_info.length)
+    return [null, Error("Something went wrong while getting SubmitterInfo.")];
   return [submitter_info!.length === 1, null];
 };
 
@@ -206,7 +188,7 @@ const releaseGradingJob = async (
   const [lifetime, lifetime_err] = await redisExpireTime(grading_info_key);
   if (lifetime_err) return [null, lifetime_err];
 
-  const update_err = await updateQueuedGradingInfo(
+  const update_err = await updateGradingInfoForMove(
     grading_job,
     new_release_at,
     grading_info_key,
@@ -218,6 +200,8 @@ const releaseGradingJob = async (
     submitter_info_key
   );
   if (submitter_info_err) return [null, submitter_info_err];
+  if (!submitter_info || !submitter_info.length)
+    return [null, Error("Something went wrong while getting SubmitterInfo.")];
 
   // Short circuit: Only job in submitter info - don't need to move
   if (submitter_info!.length === 1) return [new_release_at, null];
@@ -274,7 +258,7 @@ const delayGradingJob = async (
   const new_release_at = last_job_release_at + MOVE_TO_BACK_BUFFER;
   const lifetime = new_release_at + LIFETIME_BUFFER;
 
-  const update_err = await updateQueuedGradingInfo(
+  const update_err = await updateGradingInfoForMove(
     grading_job,
     new_release_at,
     grading_info_key,

@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import getGradingJobs from "../grading-queue/get";
-import createStudentGradingJob from "../grading-queue/create";
+import createGradingJob from "../grading-queue/create";
 import createImmediateGradingJob from "../grading-queue/create-immediate";
 import moveGradingJob from "../grading-queue/move";
 import deleteGradingJob from "../grading-queue/delete";
+import updateGradingJob from "../grading-queue/update";
 import {
   validateOffsetAndLimit,
   formatOffsetAndLimit,
@@ -13,6 +14,7 @@ import { getGradingQueueStats } from "../grading-queue/stats";
 import { getFilterInfo } from "../grading-queue/filter";
 import { GradingJob } from "../grading-queue/types";
 import { validateGradingJobConfig } from "../utils/validate";
+import { getGradingInfoKeyIfExists } from "../utils/helpers";
 
 export const getGradingQueue = async (req: Request, res: Response) => {
   if (
@@ -73,7 +75,7 @@ export const getGradingQueue = async (req: Request, res: Response) => {
     offset,
     limit
   );
-  const { next, prev } = pagination_data;
+  const { first, next, prev, last } = pagination_data;
   const grading_jobs_slice = pagination_data.data;
 
   // Calculate Stats for entire grading queue
@@ -84,15 +86,17 @@ export const getGradingQueue = async (req: Request, res: Response) => {
   res.status(200);
   res.json({
     grading_jobs: grading_jobs_slice,
+    first,
     next,
     prev,
+    last,
     total: grading_jobs_slice.length,
     stats,
     filter_info: filter_info,
   });
 };
 
-export const addProfessorGradingJobToQueue = async (
+export const createImmediateGradingJobController = async (
   req: Request,
   res: Response
 ) => {
@@ -129,14 +133,13 @@ export const addProfessorGradingJobToQueue = async (
   res.json({ message: "OK" });
 };
 
-export const addStudentGradingJobToQueue = async (
+export const createOrUpdateJobController = async (
   req: Request,
   res: Response
 ) => {
   const grading_job_config = req.body;
 
   try {
-    // TODO: Get specific error messages here [err]
     if (!validateGradingJobConfig(grading_job_config)) {
       res.status(400);
       res.json({ errors: ["Invalid grading job configuration."] });
@@ -152,8 +155,11 @@ export const addStudentGradingJobToQueue = async (
     return;
   }
 
-  const err = await createStudentGradingJob(grading_job_config);
-  if (err) {
+  // Get job info key if it exists already
+  const [existing_job_key, exists_err] = await getGradingInfoKeyIfExists(
+    grading_job_config
+  );
+  if (exists_err) {
     res.status(500);
     res.json({
       errors: [
@@ -163,11 +169,37 @@ export const addStudentGradingJobToQueue = async (
     return;
   }
 
+  if (existing_job_key) {
+    const update_err = await updateGradingJob(
+      existing_job_key,
+      grading_job_config
+    );
+    if (update_err) {
+      res.status(500);
+      res.json({
+        errors: [
+          "An internal server error occurred while trying to update grading job.  Please try again or contact an administrator",
+        ],
+      });
+      return;
+    }
+  } else {
+    const create_err = await createGradingJob(grading_job_config);
+    if (create_err) {
+      res.status(500);
+      res.json({
+        errors: [
+          "An internal server error occurred while trying to create grading job.  Please try again or contact an administrator",
+        ],
+      });
+      return;
+    }
+  }
   res.status(200);
   res.json({ message: "OK" });
 };
 
-export const moveGradingJobInQueue = async (req: Request, res: Response) => {
+export const moveJobController = async (req: Request, res: Response) => {
   const submission_id: string = req.params.sub_id;
   // TODO: Validate request format in middleware (req.body)
   const [new_release_at, move_grading_job_err] = await moveGradingJob(
@@ -188,7 +220,7 @@ export const moveGradingJobInQueue = async (req: Request, res: Response) => {
   res.json(new_release_at);
 };
 
-export const deleteGradingJobInQueue = async (req: Request, res: Response) => {
+export const deleteJobController = async (req: Request, res: Response) => {
   const submission_id: string = req.params.sub_id;
   const status: number = await deleteGradingJob(submission_id);
   res.status(200);

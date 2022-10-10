@@ -18,6 +18,7 @@ import {
   createDefaultFilterOption,
   getActiveOptions,
 } from "../../utils/filter";
+import TestingPanel from "../testing/testing-panel";
 
 const Dashboard = () => {
   const [offset, setOffset] = useState(OFFSET_START);
@@ -40,13 +41,23 @@ const Dashboard = () => {
   }, [dispatch, offset, filter_value]);
 
   const grading_jobs: GradingJob[] = grading_queue.grading_jobs;
-  const { prev, next, total, stats } = grading_queue;
+  const { first, prev, next, last, total, stats } = grading_queue;
 
+  const handleFirstPage = () => {
+    if (!first) return;
+    setOffset(first.offset);
+  };
+  const handleLastPage = () => {
+    if (!last) return;
+    setOffset(last.offset);
+  };
   const handleNextPage = () => {
-    setOffset(offset + LIMIT);
+    if (!next) return;
+    setOffset(next.offset);
   };
   const handlePrevPage = () => {
-    setOffset(offset - LIMIT);
+    if (!prev) return;
+    setOffset(prev.offset);
   };
 
   const handleSetFilter = (filter: string) => {
@@ -112,20 +123,46 @@ const Dashboard = () => {
             {/* End filter */}
             <GradingJobTable grading_jobs={grading_jobs && grading_jobs} />
             <div className="d-flex justify-content-between">
-              <button
-                type="button"
-                className={`btn btn-primary ${prev ? "visible" : "invisible"}`}
-                onClick={() => handlePrevPage()}
-              >
-                {"<"}---
-              </button>
-              <button
-                type="button"
-                className={`btn btn-primary ${next ? "visible" : "invisible"}`}
-                onClick={() => handleNextPage()}
-              >
-                ---{">"}
-              </button>
+              <div>
+                <button
+                  type="button"
+                  className={`btn btn-primary ${
+                    first ? "visible" : "invisible"
+                  }`}
+                  onClick={() => handleFirstPage()}
+                >
+                  {"<<"}
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-primary ${
+                    prev ? "visible" : "invisible"
+                  }`}
+                  onClick={() => handlePrevPage()}
+                >
+                  {"<"}
+                </button>
+              </div>
+              <div>
+                <button
+                  type="button"
+                  className={`btn btn-primary ${
+                    next ? "visible" : "invisible"
+                  }`}
+                  onClick={() => handleNextPage()}
+                >
+                  {">"}
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-primary ${
+                    last ? "visible" : "invisible"
+                  }`}
+                  onClick={() => handleLastPage()}
+                >
+                  {">>"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -136,6 +173,7 @@ const Dashboard = () => {
           grading_job_queue={grading_job_queue && grading_job_queue}
         />
       </div> */}
+      <TestingPanel />
     </div>
   );
 };

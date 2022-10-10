@@ -1,7 +1,10 @@
 import {
   redisExpireAt,
   redisExpireTime,
+  redisGet,
+  redisKeys,
   redisLPush,
+  redisLRange,
   redisSet,
   redisZAdd,
 } from "./redis";
@@ -91,18 +94,20 @@ export const updateGradingQueue = async (
   return null;
 };
 
-export const getNextTaskString = (grading_job_config: GradingJob): string => {
-  let next_task: string = "";
+export const getSubmitterString = (
+  grading_job: GradingJob | GradingJobConfig
+): string => {
+  let submitter_str: string = "";
   // Determine if job has user_id or team_id for redis keys
-  if (grading_job_config["user_id"]) {
-    const user_id = grading_job_config["user_id"];
-    next_task = `user.${user_id}`;
+  if (grading_job.user_id) {
+    const user_id = grading_job.user_id;
+    submitter_str = `user.${user_id}`;
   } else {
     // Team id
-    const team_id = grading_job_config["team_id"];
-    next_task = `team.${team_id}`;
+    const team_id = grading_job.team_id;
+    submitter_str = `team.${team_id}`;
   }
-  return next_task;
+  return submitter_str;
 };
 
 export const setSubmitterInfoWithLifetime = async (
@@ -135,4 +140,80 @@ export const setSubmitterInfoWithLifetime = async (
 
 export const filterNull = (arr: any[]): any[] => {
   return arr.filter((x) => x);
+};
+
+const configMatchesJob = (
+  config: GradingJobConfig,
+  job: GradingJob
+): boolean => {
+  // TODO: Not final on the actual fields we need to compare
+  const teamOrUserIdAreEqual = () => {
+    if (config.team_id) {
+      if (!job.team_id || config.team_id !== job.team_id) return false;
+    } else if (config.user_id) {
+      if (!job.user_id || config.user_id !== job.user_id) return false;
+    } else {
+      return false;
+    }
+    return true;
+  };
+  return (
+    config.submission_id === job.submission_id &&
+    config.course_id === job.course_id &&
+    config.grader_id === job.grader_id &&
+    teamOrUserIdAreEqual()
+  );
+};
+
+export const getSubmitterInfo = async (
+  submitter_info_key: string
+): Promise<[string[] | null, Error | null]> => {
+  const [submitter_info, lrange_err] = await redisLRange(
+    submitter_info_key,
+    0,
+    -1
+  );
+  if (lrange_err) return [null, lrange_err];
+  if (!submitter_info)
+    return [
+      null,
+      Error(
+        "Failed to retrieve submitter info for given submitter when moving grading job."
+      ),
+    ];
+  return [submitter_info, null];
+};
+
+export const getGradingInfoKeyIfExists = async (
+  grading_job_config: GradingJobConfig
+): Promise<[string | null, Error | null]> => {
+  // Get SubmitterInfo
+  const submitter_str = getSubmitterString(grading_job_config);
+  const [submitter_info, submitter_info_err] = await getSubmitterInfo(
+    `SubmitterInfo.${submitter_str}`
+  );
+  if (submitter_info_err) return [null, submitter_info_err];
+  if (!submitter_info)
+    return [null, Error("Failed to retrieve submitter info.")];
+
+  // No existing SubmitterInfo for the team/user
+  if (submitter_info.length === 0) return [null, null];
+
+  // Check each submission for match - stop when found
+  for (let i = 0; i < submitter_info.length; i++) {
+    const submission_id = submitter_info[i];
+    const grading_info_key = `QueuedGradingInfo.${submission_id}`;
+    const [grading_job_str, get_err] = await redisGet(grading_info_key);
+    if (get_err) return [null, get_err];
+    if (!grading_job_str) return [null, Error("QueuedGradingInfo not found.")];
+    try {
+      const grading_job: GradingJob = JSON.parse(grading_job_str);
+      if (configMatchesJob(grading_job_config, grading_job)) {
+        return [grading_info_key, null];
+      }
+    } catch (error) {
+      return [null, error];
+    }
+  }
+  return [null, null];
 };

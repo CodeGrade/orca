@@ -1,4 +1,4 @@
-type GradingScriptCommand = {
+export type GradingScriptCommand = {
   cmd: string;
   on_fail: string;
   on_complete: string;
@@ -47,6 +47,8 @@ export type FilterInfo = {
 
 export type GradingQueue = {
   grading_jobs: GradingJob[];
+  first: PaginationInfo | null;
+  last: PaginationInfo | null;
   prev: PaginationInfo | null;
   next: PaginationInfo | null;
   total: number;

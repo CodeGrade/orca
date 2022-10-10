@@ -66,6 +66,8 @@ export type PaginationInfo = {
 };
 
 export type PaginationData = {
+  first: PaginationInfo | null;
+  last: PaginationInfo | null;
   prev: PaginationInfo | null;
   next: PaginationInfo | null;
   data: GradingJob[];

@@ -176,3 +176,15 @@ export const redisZScore = async (
     return [null, error];
   }
 };
+
+export const redisKeys = async (
+  pattern: string
+): Promise<[string[] | null, Error | null]> => {
+  try {
+    // list of keys (strings) or empty list
+    const keys: string[] = await client.keys(pattern);
+    return [keys, null];
+  } catch (error) {
+    return [null, error];
+  }
+};

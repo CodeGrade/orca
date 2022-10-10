@@ -12,6 +12,8 @@ const initial_state: State = {
     grading_jobs: [],
     prev: null,
     next: null,
+    first: null,
+    last: null,
     total: 0,
     stats: {
       all: { avg: 0, min: 0, max: 0, num: 0 },
