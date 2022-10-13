@@ -15,29 +15,52 @@ A `GradingJob` contains details about how to grade a submission.
 
 ```typescript
 interface GradingJob {
-  submission_id: number;
-  grade_id: number;
-  grader_id: number;
-  course_id: number;
-  fixture_code?: CodeFileInfo;
-  target_code: CodeFileInfo;
-  test_code?: CodeFileInfo;
+  key: JSONString;
+  collation: Collation;
+  metadata_table: Map<string, string>;
+  files: Map<string, CodeFileInfo>;
   priority: integer;
-  script: [GradingScriptCommand];
-  team_id?: number;
-  user_id?: number;
-  user_names?: [string];
-  submitter_name: string;
+  script: GradingScriptCommand[];
 }
 ```
 
-**TODO: Why the hell did we use grader_id in here and NOT grader type?**
+The `key` is produced by Bottlenose and is unique to a given GradingJob. Orca will never abscribe meaning to the key (i.e., parse the `JSONString`) and only uses it as an identifier. **The given key must not contain a `.` character.**
 
-The grade ID and submission ID _alone_ are sufficient to send the grading results back to Bottlenose. The course ID, submitter name, usernames, user ID, and team ID are included to provide useful metadata in the Orca UI.
+Orca needs to know if it belongs to a single user or a team to maintain an ordered list of jobs to be graded for their owners.
 
-The fixture code, target code, and test code provide the setup, student code, and test cases (if any) for this submission.
+<hr>
 
-The script defines the actual grading process, as a state machine specified below.
+### `Collation`
+
+```typescript
+
+enum CollationType {
+  User = "user"
+  Team = "team"
+}
+
+interface Collation {
+  type: CollationType;
+  id: string;
+}
+```
+
+`Collation` objects specify relevant ownership info for the grading queue.
+
+<hr>
+
+The Orca Web Client is filterable by useful metadata for a given grading job. `GradingJob`s specify a dictionary of field names that are mapped to a given identifier.
+
+For example, JUnit Grader for Assignment 1 might have a metadata field of:
+
+```json
+{
+  "assignment_name": "Assignment 1",
+  "grader_description": "A1 JUnit Grader"
+}
+```
+
+`GradingJob`s contain code files to be used for grading, with a unique and (ideally) descriptive name mapped to each one. Grading VMs download files in a directory matching this name.
 
 <hr>
 
@@ -55,6 +78,8 @@ interface CodeFileInfo {
 <hr>
 
 Grading jobs have a numeric priority determined by Bottlenose, which is interpreted as a _delay_ to be applied to the job when added to the queue.
+
+The script defines the actual grading process, as a state machine specified below.
 
 <hr>
 
@@ -104,10 +129,7 @@ interface GradingJobOutput {
   tap_output?: string;
   shell_responses: [GradingScriptCommandResponse];
   errors?: [string];
-  grade_id: number;
-  submission_id: number;
-  user_id?: number;
-  team_id?: number;
+  key: JSONString;
 }
 
 interface GradingScriptCommandResponse {
@@ -119,6 +141,6 @@ interface GradingScriptCommandResponse {
 }
 ```
 
-The output includes the grade ID and the submission ID associated with the job. The `shell_responses` array contains a transcript of the output from each `GradingScriptCommand`.
+The output includes the key given in the original job for use on the Bottlenose side. The `shell_responses` array contains a transcript of the output from each `GradingScriptCommand`.
 
 A successful `GradingJobOutput` will _always_ contain TAP output. An unsuccessful `GradingJobOutput` will still contain any responses of commands executed by the script; if the Orca VM harness fails (e.g., due to resource limits) the `errors` array will be non-empty.
