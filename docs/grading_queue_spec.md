@@ -58,13 +58,46 @@ Orca will queue up grading jobs based on their user ID or team ID. The given `Gr
 `GradingJob`s sent from Bottlenose will contain a _priority_, which is a delay to be placed on a job. For now, assume `delay = (# of subs in last 15 mins) * 1 min`.
 
 ```typescript
-lifetime_buffer = 60 * 60 * 24 // A day in seconds.
-arrival_time = time.now()
-lifetime = Math.max(GradingJob.priority + arrival_time + life_time_buffer, EXPIRETIME(GradingJob.key)
-SET(GradingJob.key, GradingJob, ex=lifetime)
-next_task = GradingJob.collator.team ? `team.${GradingJob.collator.team}` : `user.${GradingJob.collator.user}`
-RPUSH(`SubmitterInfo.${next_task}`, GradingJob.sub_id)
-ZADD(Reservations, `${next_task}.${arrival_time}`, GradingJob.priority + arrival_time)
+LIFETIME_BUFFER = 60 * 60 * 24; // A day in seconds.
+
+function createOrUpdateGradingJob(job: GradingJob) {
+  arrivalTime = time.now();
+  lifetime = calculateJobLifetime(job, arrivalTime);
+  if (!jobInQueue(job)) {
+    setEnqueuedJobDetails(job, lifetime);
+    enqueueJob(job, arrivalTime);
+  } else {
+    setEnqueuedJobDetails(job);
+  }
+}
+
+function jobInQueue({ key }: GradingJob) {
+  return EXISTS(key);
+}
+
+function calculateJobLifeTime(
+  { priority, key }: GradingJob,
+  arrivalTime: number
+) {
+  return Math.max(priority + arrival_time + life_time_buffer, EXPIRETIME(key));
+}
+
+function setEnqueuedJobDetails(job: GradingJob, lifetime?: number) {
+  if (lifetime !== null || lifetime !== undefined) {
+    SET(job.key, job, (ex = lifetime));
+  } else {
+    SET(job.key, job);
+  }
+}
+
+function enqueueJob(
+  { key, collation, priority }: GradingJob,
+  arrivalTime: number
+) {
+  nextTask = `${collation.type}.${collation.id}`;
+  RPUSH(`SubmitterInfo.${nextTask}`, key);
+  ZADD(Reservations, `${nextTask}.${arrivalTime}`, priority + arrivalTime);
+}
 ```
 
 This priority is used to calculate the lifetime of the `GradingJobKey` in Redis, where this value is the maximum of the current `GradingJobKey`'s lifetime and the sum of priority, arrival time, and a buffer of one day. Orca uses Redis' expiration feature as a way to ensure items in the queue are cleaned up rather than implementing a constantly-running task. `SubmitterInfo` objects do not get an exprie time because Redis `List` structures get deleted upon becoming empty.
@@ -80,15 +113,29 @@ While it's possible to place a job at the front of the line for a student/team b
 Jobs added to the queue for immediate grading are added to the `Reservations` `ZSet` using its `GradingJobKey` (from the `key` attribute) instead of the team or user ID. This allows the job to bypass the `SubmitterInfo` list, ensuring that it cannot be cut in line.
 
 ```typescript
-lifetime_buffer = 60 * 60 * 24; // Add buffer of 1 day to expiry.
-arrival_time = time.now();
-lifetime = Math.max(arrival_time + lifetime_buffer, EXPIRETIME(GradingJob.key));
-SET(GradingJob.key, GradingJob, (ex = lifetime));
-ZSET(
-  Reservations,
-  `immediate.${GradingJob.key}.${arrival_time}`,
-  GradingJob.priority
-);
+function nonImmediateJobExists({ key, collation }: GradingJob) {
+  for (jobKey in LRANGE(`SubmitterInfo.${collation.type}.${collation.id}`)) {
+    if (jobKey === key) return true;
+  }
+  return false;
+}
+
+function createOrUpdateImmediateJob(job: GradingJob) {}
+
+function createImmediateJob(job: GradingJob) {
+  lifetime_buffer = 60 * 60 * 24; // Add buffer of 1 day to expiry.
+  arrival_time = time.now();
+  lifetime = Math.max(
+    arrival_time + lifetime_buffer,
+    EXPIRETIME(GradingJob.key)
+  );
+  SET(GradingJob.key, GradingJob, (ex = lifetime));
+  ZSET(
+    Reservations,
+    `immediate.${GradingJob.key}.${arrival_time}`,
+    GradingJob.priority
+  );
+}
 ```
 
 Bottlenose guarantees that all jobs submitted for immediate grading will have a priority of 0.
@@ -110,8 +157,7 @@ interface MoveJobRequest {
   nonce: number;
   job_key: JSONString;
   move_action: MoveJobAction;
-  team_id?: number; // exists if user_id does not
-  user_id?: number; // exists if team_id does not
+  collation: Collation;
 }
 ```
 
@@ -119,20 +165,21 @@ Moving a job requires its unique key, the nonce used in the job's corresponding 
 
 ```typescript
 function moveJob(req: JobMoveRequest) {
+  const { nonce, job_key, move_action, collation } = req;
   let new_priority: number;
-  switch (req.move_action) {
+  switch (move_action) {
     case MoveJobAction.RELEASE:
       new_priority = releaseJob(req);
       break;
     case MoveJobAction.DELAY:
-      new_priority = delayJob(req);
+      new_priority = 0;
       break;
     default:
       throw Error();
   }
   ZADD(
     'Reservations',
-    `${req.user_id ? 'user' : 'team'}.${req.user_id || req.team_id}.${
+    `${req.user_id ? 'user' : 'team'}.${req.collation.type || req.team_id}.${
       req.nonce
     }`,
     new_priority
@@ -149,17 +196,7 @@ function delayJob(req: JobMoveReuquest) {
   EXPIRE_AT(req.job_key, new_lifetime);
   return new_priority;
 }
-
-function releaseJob(req: JobMoveRequest) {
-  current_lifetime = EXPIRETIME(queued_info_key);
-  job = GET(queued_info_key);
-  new_priority = 0;
-  EXPIRE_AT(queued_info_key, current_lifetime);
-  return new_priority;
-}
 ```
-
-**TODO: How does adjusting ExpireTime on releaseJob work/change?**
 
 A job is moved to the back of the queue by assigning it a new priority of `priorityOf(lastJobInQueue) + buffer`. The buffer is used to guaranteed that the given job will be placed at the back.
 
