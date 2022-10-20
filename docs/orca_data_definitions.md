@@ -21,6 +21,7 @@ interface GradingJob {
   files: Map<string, CodeFileInfo>;
   priority: integer;
   script: GradingScriptCommand[];
+  response_url: string;
 }
 ```
 
@@ -56,7 +57,8 @@ For example, JUnit Grader for Assignment 1 might have a metadata field of:
 ```json
 {
   "assignment_name": "Assignment 1",
-  "grader_description": "A1 JUnit Grader"
+  "grader_description": "A1 JUnit Grader",
+  "grader_id": "1234"
 }
 ```
 
