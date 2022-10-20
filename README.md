@@ -25,6 +25,10 @@ This can either be done with a machine directly running the OS or with a Windows
 
 For instructions about how to set up Ubuntu through WSL2 and Windows Terminal, [visit this page](https://ubuntu.com/tutorials/install-ubuntu-on-wsl2-on-windows-10#1-overview). For a more "aesthetic" and informative bash experience, developers can also set up [Starship](https://starship.rs/). Make sure to also add VSCode integration with the WSL2 terminal.
 
+### TypeScript Tools
+
+Orca uses `yarn` as its package manager over `npm`. It also implements `eslint` and `prettier` across its TypeScript components.
+
 ### VSCode Extensions
 
 The following VSCode extensions are expected to be installed for the best development experience:
