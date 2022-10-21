@@ -1,14 +1,14 @@
 # Grading Queue: A Redis-based Architecture
 
-The GradingQueue is ephemeral in nature, where data is stored and deleted only when jobs are in the grading queue. Thus Redis was the chosen tool to implement the Grading Queue in, as an in-memory storage system with quick access to its elements.
+The Orca Grading Queue is ephemeral in nature, where data has a lifetime and will never be persisted. Redis was the chosen tool to implement the Grading Queue, as an in-memory storage system with quick access to its elements.
 
 ## Data Definitions
 
 A full implementation of the grading queue requires three pieces of functionality:
 
 1. Knowing when a job is ready to be extracted and graded.
-2. Retrieving the next submission to be graded for a given team or user.
-3. Obtaining the `GradingJob` object for a given submission.
+2. Retrieving the next job to be graded for a given team or user.
+3. Obtaining the correct `GradingJob` object.
 
 ### Reservations: ZSet
 
@@ -57,7 +57,13 @@ For optimization purposes, users may need to know what nonces are in use by a co
 
 These nonces are stored under the key `Nonces.<collation_type>.<collation_id>`.
 
-## Web Server: Adding a Job to the Queue
+## Queue Operations
+
+All operations are performed by either the web server or the grading VM.
+
+**NOTE**: Any functionality implemented must use Redlock to ensure Redis resources are not accessed by two machines at the same time.
+
+### Web Server: Adding a Job to the Queue
 
 Adding a job to the queue is a create-or-update function. If a job is already seen to be in the queue, then the job object will be updated but nothing will be added to the queue.
 
@@ -103,11 +109,11 @@ The priority is also used to calculate the `ZSet` score of the job: the sum of a
 
 The nonce of the reservation is cached for other update functionality.
 
-## Web Server: Adding a Job for Immediate Grading
+### Web Server: Adding a Job for Immediate Grading
 
 A professor may want to submit a job for immediate grading in the event they change the original test criteria.
 
-While it's possible to place a job at the front of the line for a student/team by giving it a priority of 0, jobs may be added afterwards and thus a regrade attempt may be waiting for an arbitrarily long time.
+While it's possible to place a job at the front of the line for a student/team by giving it a priority of 0, jobs may be added afterwards and thus a regrade attempt may be waiting for an arbitrarily long time. For this reason, if a non-immediate job already exists, it is replaced with a new immediate job.
 
 Jobs added to the queue for immediate grading are added to the `Reservations` `ZSet` using its `GradingJobKey` (from the `key` attribute) instead of the team or user ID. This allows the job to bypass the `SubmitterInfo` list, ensuring that it cannot be cut in line.
 
@@ -115,10 +121,7 @@ Jobs added to the queue for immediate grading are added to the `Reservations` `Z
 function createOrUpdateImmediateJob(job: GradingJob) {
   if (!jobInQueue(job)) createImmediateJob(job);
   SET(job.key, job);
-  if (nonImmediateJobExists(job)) {
-    removeNonImmediateJob(job);
-    createImmediateJob(job);
-  }
+  if (nonImmediateJobExists(job)) upgradeJob(job: GradingJob);
 }
 
 function nonImmediateJobExists({ key, collation }: GradingJob) {
@@ -126,6 +129,11 @@ function nonImmediateJobExists({ key, collation }: GradingJob) {
     if (jobKey === key) return true;
   }
   return false;
+}
+
+function upgradeJob(job: GradingJob) {
+  removeNonImmediateJob(job);
+  createImmediateJob(job);
 }
 
 function removeNonImmediateJob({ collation }: GradingJob) {
@@ -146,7 +154,7 @@ function createImmediateJob(job: GradingJob) {
 
 Bottlenose guarantees that all jobs submitted for immediate grading will have a priority of 0.
 
-## Web Server: Moving a Job in the Queue
+### Web Server: Moving a Job in the Queue
 
 Jobs in the queue may either be:
 
@@ -161,59 +169,60 @@ enum MoveJobAction {
 
 interface MoveJobRequest {
   nonce: number;
-  job_key: JSONString;
-  move_action: MoveJobAction;
-  collation: Collation;
+  jobKey: JSONString;
+  moveAction: MoveJobAction;
+  collation?: Collation;
 }
 ```
 
-Moving a job requires its unique key, the nonce used in the job's corresponding `Reservations` `ZSet` key, the type of action to be taken, and either the team ID or user ID of the job. Jobs submitted for immediate grading cannot be moved.
+Moving a job requires its unique key, the nonce used in the job's corresponding `Reservations` `ZSet` key, the type of action to be taken, and collation data. Jobs submitted for immediate grading cannot be moved.
 
 ```typescript
 function moveJob(req: JobMoveRequest) {
-  const { nonce, job_key, move_action, collation } = req;
-  let new_priority: number;
+  const { nonce, jobKey, moveAction, collation } = req;
+  if (!collation) return;
   switch (move_action) {
     case MoveJobAction.RELEASE:
-      new_priority = releaseJob(req);
+      const job = GET(jobKey);
+      upgradeJob(job);
       break;
     case MoveJobAction.DELAY:
-      new_priority = 0;
+      delayJob(req);
       break;
     default:
       throw Error();
   }
-  ZADD(
-    'Reservations',
-    `${req.user_id ? 'user' : 'team'}.${req.collation.type || req.team_id}.${
-      req.nonce
-    }`,
-    new_priority
-  );
 }
 
 const MOVE_TO_BACK_BUFFER = 10; // seconds
 
 function delayJob(req: JobMoveReuquest) {
   [last_job, last_priority] = ZRANGE('Reservations', -1, -1, WITHSCORES); // Gets job at back of queue
-  new_priority = last_priority + MOVE_TO_BACK_BUFFER;
-  new_lifetime = new_priority + LIFE_TIME_BUFFER;
-  job = GET(req.job_key);
-  EXPIRE_AT(req.job_key, new_lifetime);
+  const new_priority = last_priority + MOVE_TO_BACK_BUFFER;
+  ZADD(
+    'Reservations',
+    `${req.collation.type}.${req.collation.id}.${req.nonce}`,
+    new_priority
+  );
+  const subInfoKey = `SubmitterInfo.${req.collation.type}.${req.collation.id}`;
+  LREM(subInfoKey, req.jobKey);
+  RPUSH(subInfoKey, req.jobKey);
   return new_priority;
 }
 ```
 
-A job is moved to the back of the queue by assigning it a new priority of `priorityOf(lastJobInQueue) + buffer`. The buffer is used to guaranteed that the given job will be placed at the back.
+A job is moved to the back of the queue by assigning it a new priority of `priorityOf(lastJobInQueue) + buffer` as its score in `Reservations`. The buffer is used to guarantee that the given job will be placed at the back. The job is also placed at the back of `SubmitterInfo`.
 
-### Examples
+Jobs are moved to the front of the queue by being replaced with an immediate job, ensuring they cannot be skipped.
+
+#### Examples
 
 - Release a job -> job at front of queue
 - Delay a job -> job at back of queue
 - Release job_1, release job_2 -> job_2 in front of job_1, job_1 in front of job_3...job_n
 - Delay job_1, delay job_2 -> job_2 is behind job_1, job_1 is behind job_3...job_n
 
-## Web Server: Deleting a Job from the Queue
+### Web Server: Deleting a Job from the Queue
 
 A job can be deleted given its nonce in the `Reservations` `ZSet` and collation information if relevant.
 
@@ -226,27 +235,32 @@ function deleteJob(
   if (collation) {
     LREM(`SubmitterInfo.${cType}.${cID}`, 1, job_key);
     ZREM('Reservations', [cType, cID, nonce].join('.'));
+    SREM(`Nonces.${cType}.${cID}`, nonce);
   } else {
     ZREM('Reservations', `immediate.${nonce}`);
   }
 }
 ```
 
-Non-immediate jobs have their information ejected from both `Reservations` and the proper `SubmitterInfo` list.
+All jobs have their data ejected from `Reservations`. Non-immediate jobs have data also have data removed from both the proper `Nonces` and `SubmitterInfo` set and list, respectively.
 
-## Grading VM: Extracting Job From Queue
+### Grading VM: Extracting Job From Queue
 
 Grading jobs are popped from the queue using their associated `GradingJobKey`.
 
 ```typescript
-next_task = ZPOPMIN('Reservations')
-if (next_task STARTS WITH "immediate") {
-	_, job_key, _ = next_task.split(".")
+const nextTask = ZPOPMIN('Reservations');
+const nextTaskInfo = next_task.split('.');
+
+let jobKey, collationType, collationID, nonce;
+if (nextInfo[0] === 'immediate') {
+  [_, jobKey] = nextTaskInfo;
 } else {
-	id_type, id, _ = next_task.split(".")
-	job_key = LPOP(`SubmitterInfo.${id_type}.${id}`)
+  [collationType, collationID, nonce] = nextTaskInfo;
+  SREM(`Nonces.${collationType}.${collationID}`, nonce);
+  jobKey = LPOP(`SubmitterInfo.${collationType}.${collationID}`);
 }
-grading_info = GET(job_key)
+const gradingJob = GETDEL(jobKey);
 ```
 
-This is either obtained directly by popping off the first item from `Reservations`, or by popping the first submission ID off of `SubmitterInfo` given the team/user ID from `Reservations`.
+This is either obtained directly by popping off the first item from `Reservations`, or by using the collation data from the reservation to pop the first job key off of `SubmitterInfo`. All data pointing to the job is deleted, either through a "pop" or deletion function.
