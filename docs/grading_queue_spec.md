@@ -1,6 +1,6 @@
-# Redis Grading Queue Set Up
+# Grading Queue: A Redis-based Architecture
 
-Explanation for why Redis was the choice for the queue.
+The GradingQueue is ephemeral in nature, where data is stored and deleted only when jobs are in the grading queue. Thus Redis was the chosen tool to implement the Grading Queue in, as an in-memory storage system with quick access to its elements.
 
 ## Data Definitions
 
@@ -51,24 +51,27 @@ String <GradingJobKey> => GradingJob
 
 Only one `GradingJob` exists per `GradingJobKey` so that the most recent grading script specifications provided by a professor are used for grading. For instance, if a student submits and a professor updates the test files for an assignment and clicks "regrade" for the student, this will update the grading job under that `GradingJobKey` such that when the student job gets graded, it will run with the updated specs.
 
+### [BONUS] Nonces: Set
+
+For optimization purposes, users may need to know what nonces are in use by a collation type/id in the Reservations `ZSet`.
+
+These nonces are stored under the key `Nonces.<collation_type>.<collation_id>`.
+
 ## Web Server: Adding a Job to the Queue
 
-Orca will queue up grading jobs based on their user ID or team ID. The given `GradingJob` object will contain a `GradingJobKey`, and the submission ID for this object will be pushed onto the `SubmitterInfo` Stack using Redis' `LPUSH` operation, ensuring it is added to the front.
+Adding a job to the queue is a create-or-update function. If a job is already seen to be in the queue, then the job object will be updated but nothing will be added to the queue.
 
-`GradingJob`s sent from Bottlenose will contain a _priority_, which is a delay to be placed on a job. For now, assume `delay = (# of subs in last 15 mins) * 1 min`.
+In the create case, Orca will queue up grading jobs based on their user ID or team ID. The given `GradingJob` object will contain a `GradingJobKey`, and the submission ID for this object will be pushed onto the `SubmitterInfo` Stack using Redis' `LPUSH` operation, ensuring it is added to the front.
+
+`GradingJob`s sent from Bottlenose will contain a _priority_, which is a delay to be placed on a job. For now, assume `priority = (# of subs in last 15 mins) * 1 min`.
 
 ```typescript
 LIFETIME_BUFFER = 60 * 60 * 24; // A day in seconds.
 
 function createOrUpdateGradingJob(job: GradingJob) {
-  arrivalTime = time.now();
-  lifetime = calculateJobLifetime(job, arrivalTime);
-  if (!jobInQueue(job)) {
-    setEnqueuedJobDetails(job, lifetime);
-    enqueueJob(job, arrivalTime);
-  } else {
-    setEnqueuedJobDetails(job);
-  }
+  const arrivalTime = time.now();
+  if (!jobInQueue(job)) enqueueJob(job, arrivalTime);
+  SET(job.key, job);
 }
 
 function jobInQueue({ key }: GradingJob) {
@@ -82,27 +85,23 @@ function calculateJobLifeTime(
   return Math.max(priority + arrival_time + life_time_buffer, EXPIRETIME(key));
 }
 
-function setEnqueuedJobDetails(job: GradingJob, lifetime?: number) {
-  if (lifetime !== null || lifetime !== undefined) {
-    SET(job.key, job, (ex = lifetime));
-  } else {
-    SET(job.key, job);
-  }
-}
-
 function enqueueJob(
   { key, collation, priority }: GradingJob,
   arrivalTime: number
 ) {
-  nextTask = `${collation.type}.${collation.id}`;
+  const nextTask = `${collation.type}.${collation.id}`;
+  const nonce = priority + arrivalTime;
   RPUSH(`SubmitterInfo.${nextTask}`, key);
-  ZADD(Reservations, `${nextTask}.${arrivalTime}`, priority + arrivalTime);
+  ZADD('Reservations', `${nextTask}.${arrivalTime}`, nonce);
+  SADD(`Nonces.${collation.type}.${collation.id}`, nonce);
 }
 ```
 
 This priority is used to calculate the lifetime of the `GradingJobKey` in Redis, where this value is the maximum of the current `GradingJobKey`'s lifetime and the sum of priority, arrival time, and a buffer of one day. Orca uses Redis' expiration feature as a way to ensure items in the queue are cleaned up rather than implementing a constantly-running task. `SubmitterInfo` objects do not get an exprie time because Redis `List` structures get deleted upon becoming empty.
 
-The priority is also used to calculate the `ZSet` score of the job, which is just the sum of arrival time and the priority value.
+The priority is also used to calculate the `ZSet` score of the job: the sum of arrival time and the priority value.
+
+The nonce of the reservation is cached for other update functionality.
 
 ## Web Server: Adding a Job for Immediate Grading
 
@@ -113,6 +112,15 @@ While it's possible to place a job at the front of the line for a student/team b
 Jobs added to the queue for immediate grading are added to the `Reservations` `ZSet` using its `GradingJobKey` (from the `key` attribute) instead of the team or user ID. This allows the job to bypass the `SubmitterInfo` list, ensuring that it cannot be cut in line.
 
 ```typescript
+function createOrUpdateImmediateJob(job: GradingJob) {
+  if (!jobInQueue(job)) createImmediateJob(job);
+  SET(job.key, job);
+  if (nonImmediateJobExists(job)) {
+    removeNonImmediateJob(job);
+    createImmediateJob(job);
+  }
+}
+
 function nonImmediateJobExists({ key, collation }: GradingJob) {
   for (jobKey in LRANGE(`SubmitterInfo.${collation.type}.${collation.id}`)) {
     if (jobKey === key) return true;
@@ -120,20 +128,18 @@ function nonImmediateJobExists({ key, collation }: GradingJob) {
   return false;
 }
 
-function createOrUpdateImmediateJob(job: GradingJob) {}
+function removeNonImmediateJob({ collation }: GradingJob) {
+  LREM(`SubmitterInfo.${collation.type}.${collation.id}`);
+  SPOP(`Nonces.${collation.type}.${collation.id}`);
+  ZREM('Reservations', `${collation.type}.${collation.id}`);
+}
 
 function createImmediateJob(job: GradingJob) {
-  lifetime_buffer = 60 * 60 * 24; // Add buffer of 1 day to expiry.
   arrival_time = time.now();
-  lifetime = Math.max(
-    arrival_time + lifetime_buffer,
-    EXPIRETIME(GradingJob.key)
-  );
-  SET(GradingJob.key, GradingJob, (ex = lifetime));
   ZSET(
     Reservations,
-    `immediate.${GradingJob.key}.${arrival_time}`,
-    GradingJob.priority
+    `immediate.${GradingJob.key}`,
+    arrival_time + GradingJob.priority
   );
 }
 ```
