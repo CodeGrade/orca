@@ -11,4 +11,3 @@ COPY . .
 ENV PYTHONPATH .
 
 RUN pipenv install --system --deploy
-CMD [ "python3", "do_grading.py" ]

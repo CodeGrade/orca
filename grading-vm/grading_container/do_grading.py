@@ -66,7 +66,10 @@ def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobOutpu
 
 if __name__ == "__main__":
   try:
-    grading_job = get_job_from_input_stream(sys.stdin)
+    _, file_name = sys.argv
+    job_json_fp = open(file_name, 'r')
+    grading_job = get_job_from_input_stream(job_json_fp)
+    job_json_fp.close()
     secret = GradingJobExecutionSecret.get_secret()
   except Exception as e:
     output = GradingJobOutput([], [e])
