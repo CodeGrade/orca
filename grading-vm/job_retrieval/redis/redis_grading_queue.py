@@ -14,10 +14,10 @@ class RedisGradingJobRetriever(GradingJobRetriever):
     except:
       raise FailedToConnectToRedisException(redis_db_url)
     
-  def retrieve_grading_job(self):
+  def retrieve_grading_job(self) -> str:
     return self.__get_next_job_from_queue()
 
-  def __get_next_job_from_queue(self):
+  def __get_next_job_from_queue(self) -> str:
     queue_lock = Lock(self.__redis_client, 'GradingQueueLock', timeout=self.LOCK_TIMEOUT)
     lock_acquired = False
     while not lock_acquired:

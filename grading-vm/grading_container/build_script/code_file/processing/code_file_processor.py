@@ -2,11 +2,11 @@ from os.path import basename, join
 from shutil import copyfileobj, copyfile
 import gzip
 import tarfile
+from grading_container.build_script.code_file.code_file_info import CodeFileInfo
+from grading_container.build_script.code_file.sub_mime_types import SubmissionMIMEType
 from py7zr import SevenZipFile
 from zipfile import ZipFile
 import requests
-from grading_job.build_script.code_file.code_file_info import CodeFileInfo
-from grading_job.build_script.code_file.sub_mime_types import SubmissionMIMEType
 
 def extract_tar_file(from_path: str, to_path: str) -> None:
   f = tarfile.open(from_path, "r:")

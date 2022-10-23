@@ -1,5 +1,7 @@
 from os import urandom
 
+SECRET_LENGTH = 32
+
 class GradingJobExecutionSecret:
   """
   Class with static method used to generate a secret for use during the execution
@@ -8,6 +10,5 @@ class GradingJobExecutionSecret:
 
   @staticmethod
   def get_secret() -> str:
-    secret_length = 32
-    os_bytes = urandom(secret_length)
+    os_bytes = urandom(SECRET_LENGTH)
     return os_bytes.hex()

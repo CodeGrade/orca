@@ -1,6 +1,6 @@
 from typing import Dict, List
-from grading_job.grading_job_output import GradingJobOutput
-from grading_job.grading_script.grading_script_command_response import GradingScriptCommandResponse
+from grading_container.grading_script.grading_script_command_response import GradingScriptCommandResponse
+from grading_container.output.grading_job_output import GradingJobOutput
 
 class GradingScriptCommand:
   """

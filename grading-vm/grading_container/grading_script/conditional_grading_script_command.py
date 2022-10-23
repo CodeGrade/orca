@@ -1,10 +1,9 @@
 from enum import Enum
 from types import FunctionType
 from typing import List
-from grading_job.grading_job_output import GradingJobOutput
-from grading_job.grading_script.grading_script_command import GradingScriptCommand
+from grading_container.grading_script.grading_script_command import GradingScriptCommand
 from os.path import exists, isdir, isfile
-from grading_job.grading_script.grading_script_command_response import GradingScriptCommandResponse
+from grading_container.grading_script.grading_script_command_response import GradingScriptCommandResponse
 
 class GradingScriptPredicate(Enum):
   EXISTS = "exists"

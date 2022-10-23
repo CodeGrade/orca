@@ -1,4 +1,4 @@
-from grading_job.job_retrieval.exceptions import JobRetrievalException
+from job_retrieval.exceptions import JobRetrievalException
 
 class LocalGradingJobRetrievalError(JobRetrievalException):
 
