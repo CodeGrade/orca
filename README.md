@@ -13,9 +13,9 @@ Orca is a grading job ecosystem to be used in tandem with Bottlenose, a web appl
 
 Orca expects the following tools with these versions:
 
-- Redis 7.x (Grading Queue)
-- Node 16.15.x (Web Server and Client)
-- Python 3.8.x (Grading VM)
+- Redis 7.0 (Grading Queue)
+- Node 16.15.0 (Web Server and Client)
+- Python 3.8.10 (Grading VM)
 
 ## Local Development
 
@@ -24,6 +24,8 @@ All local development is expected to be done in an environment running on **Ubun
 This can either be done with a machine directly running the OS or with a Windows machine running WSL2.
 
 For instructions about how to set up Ubuntu through WSL2 and Windows Terminal, [visit this page](https://ubuntu.com/tutorials/install-ubuntu-on-wsl2-on-windows-10#1-overview). For a more "aesthetic" and informative bash experience, developers can also set up [Starship](https://starship.rs/). Make sure to also add VSCode integration with the WSL2 terminal.
+
+Orca also uses Docker for local development and as a feature in the Grading VM. Docker should be on the host machine, either with Docker Desktop or Docker Community Edition installed in the shell.
 
 ### TypeScript Tools
 
