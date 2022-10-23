@@ -16,7 +16,10 @@ def grading_job_handler(retriever: GradingJobRetriever):
     fp.write(job_string)
   file_abs_path = os.path.abspath(file_name)
   container_path = f"{CONTAINER_WORKING_DIR}/{file_name}"
-  subprocess.run(f"docker run -v {file_abs_path}:{container_path}")
+  try:
+    subprocess.run(f"docker run -v {file_abs_path}:{container_path} . python main.py {file_name}")
+  except Exception as e:
+    push_results_with_exception(job_string, e)
 
 def push_results_with_exception(job_json_string: str, e: Exception):
   # job_json = json.loads(job_json_string) # To be added when credentials are added to output
