@@ -2,7 +2,7 @@ from urllib.parse import urlparse, unquote
 from os.path import basename
 from grading_container.build_script.code_file.code_file_source import CodeFileSource
 from grading_container.build_script.code_file.sub_mime_types import SubmissionMIMEType
-from grading_container.validations.grading_job_json_types import CodeFileInfoJSON
+from common.types.grading_job_json_types import CodeFileInfoJSON
 
 class CodeFileInfo:
   """

@@ -1,8 +1,9 @@
 import json
 import sys
 from typing import List, TextIO
+from common.services.push_results import push_results_to_bottlenose
 from grading_container.exec_secret import GradingJobExecutionSecret
-from grading_container.output.grading_job_output import GradingJobOutput
+from common.job_output.grading_job_output import GradingJobOutput
 from grading_container.grading_script.grading_script_command import GradingScriptCommand
 from grading_container.grading_script.grading_script_command_response import GradingScriptCommandResponse
 from grading_container.build_script.preprocess import GradingScriptPreprocessor
@@ -12,7 +13,7 @@ from grading_container.build_script.code_file.code_file_info import CodeFileInfo
 from grading_container.build_script.code_file.code_file_source import CodeFileSource
 from grading_container.build_script.code_file.sub_mime_types import SubmissionMIMEType
 from grading_container.validations.exceptions import InvalidGradingJobJSONException
-from grading_container.validations.grading_job_json_types import CodeFileInfoJSON, GradingJobJSON, GradingJobOutputJSON, GradingScriptCommandJSON
+from common.types.grading_job_json_types import CodeFileInfoJSON, GradingJobJSON, GradingJobOutputJSON, GradingScriptCommandJSON
 from grading_container.validations.schemas.grading_job_schema import GradingJobSchema
 from jsonschema import validate, ValidationError
 
@@ -23,12 +24,6 @@ def get_job_from_input_stream(input_stream: TextIO) -> GradingJobJSON:
     return job_json
   except json.JSONDecodeError or ValidationError:
     raise InvalidGradingJobJSONException()
-
-def push_results_to_bottlenose(grading_job_output: GradingJobOutput) -> bool:
-  json_output: GradingJobOutputJSON = grading_job_output.to_json()
-  print(json_output)
-  # TODO: Add an API endpoint URL to Bottlenose
-  return True
 
 def extract_code_file_info_from_grading_job_json(grading_job_json: GradingJobJSON) -> List[CodeFileInfo]:
   code_files: List[CodeFileInfo] = []

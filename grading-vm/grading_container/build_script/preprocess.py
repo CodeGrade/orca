@@ -7,7 +7,7 @@ from grading_container.grading_script.bash_grading_script_command import BashGra
 from grading_container.grading_script.conditional_grading_script_command import ConditionalGradingScriptCommand, GradingScriptPredicate
 from grading_container.grading_script.grading_script_command import GradingScriptCommand
 from grading_container.build_script.json_helpers.grading_script_command import is_bash_command, is_conditional_command
-from grading_container.validations.grading_job_json_types import GradingScriptCommandJSON
+from common.types.grading_job_json_types import GradingScriptCommandJSON
 
 DEFAULT_COMMAND_TIMEOUT = 60 # 1 minute
 

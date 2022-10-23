@@ -1,6 +1,7 @@
 from enum import Enum
 from types import FunctionType
 from typing import List
+from common.job_output.grading_job_output import GradingJobOutput
 from grading_container.grading_script.grading_script_command import GradingScriptCommand
 from os.path import exists, isdir, isfile
 from grading_container.grading_script.grading_script_command_response import GradingScriptCommandResponse
