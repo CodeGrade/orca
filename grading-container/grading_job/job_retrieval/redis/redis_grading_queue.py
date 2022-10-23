@@ -23,25 +23,25 @@ class RedisGradingJobRetriever(GradingJobRetriever):
     while not lock_acquired:
       lock_acquired = queue_lock.acquire()
       print(("Lock acquired" if lock_acquired else "Lock not acquired."))
-    next_sub_id = self.__get_next_job_sub_id()
-    grading_job = self.__get_next_job_with_sub_id(next_sub_id)
+    next_job_key = self.__get_next_job_key()
+    grading_job = self.__get_next_job_with_key(next_job_key)
     queue_lock.release()
     return grading_job
 
-  def __get_next_job_sub_id(self) -> str:
-    _, sub_info_raw, _ = self.__redis_client.bzpopmin('GradingQueue')
-    print(sub_info_raw)
-    sub_info = sub_info_raw.decode().split('.')
-    print(sub_info)
-    if sub_info[0] == "sub":
-      sub_id = sub_info[1]
+  def __get_next_job_key(self) -> str:
+    reservation_str = self.__redis_client.bzpopmin('Reservations')
+    reservation_info = reservation_str.decode().split('.')
+    if (reservation_info[0] == 'immediate'): 
+      _, job_key = reservation_info
     else:
-      sub_id_raw = self.__redis_client.lpop(f"SubmitterInfo.{sub_info[1]}")
-      sub_id = sub_id_raw.decode()
-    return sub_id
+      collation_type, collation_id, nonce = reservation_info
+      self.__redis_client.srem(f"Nonces.{collation_type}.{collation_id}")
+      job_key = self.__redis_client.lpop(f"SubmitterInfo.{collation_type}.{collation_id}")
+    return job_key
 
-  def __get_next_job_with_sub_id(self, sub_id: str) -> str:
-    grading_job_raw: bytes = self.__redis_client.get(f"QueuedGradingInfo.{sub_id}")
+
+  def __get_next_job_with_key(self, job_key: str) -> str:
+    grading_job_raw: bytes = self.__redis_client.getdel({job_key})
     stringified_grading_job = grading_job_raw.decode()
     return stringified_grading_job
 
