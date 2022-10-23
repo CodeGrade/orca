@@ -1,7 +1,7 @@
 from typing import Dict, List
 import os
 from grading_job.build_script.code_file.code_file_info import CodeFileInfo, json_to_code_file_info
-from grading_job.build_script.code_file.processing.code_file_processing_strategy import CodeFileProcessor
+from grading_job.build_script.code_file.processing.code_file_processor import CodeFileProcessor
 from grading_job.build_script.cycle_detector import CycleDetector
 from grading_job.build_script.exceptions import InvalidGradingScriptCommand, NotADAGException
 from grading_job.build_script.json_helpers.grading_script_command import is_bash_command, is_conditional_command

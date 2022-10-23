@@ -3,7 +3,7 @@ import shutil
 from typing import List
 from grading_job.build_script.code_file.code_file_info import CodeFileInfo
 from grading_job.build_script.code_file.code_file_source import CodeFileSource
-from grading_job.build_script.code_file.processing.code_file_processing_strategy import CodeFileProcessor
+from grading_job.build_script.code_file.processing.code_file_processor import CodeFileProcessor
 from grading_job.build_script.code_file.sub_mime_types import SubmissionMIMEType
 from grading_job.job_retrieval.exceptions import JobRetrievalException
 from grading_job.build_script.exceptions import PreprocessingException
