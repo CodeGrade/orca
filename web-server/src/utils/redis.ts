@@ -2,7 +2,7 @@ import { client } from "../index";
 
 export const redisSet = async (
   key: string,
-  value: any
+  value: any,
 ): Promise<[string | null, Error | null]> => {
   try {
     // "OK" or null
@@ -13,7 +13,7 @@ export const redisSet = async (
 };
 
 export const redisGet = async (
-  key: string
+  key: string,
 ): Promise<[string | null, Error | null]> => {
   try {
     // key value or null
@@ -24,7 +24,7 @@ export const redisGet = async (
 };
 
 export const redisExpireTime = async (
-  key: string
+  key: string,
 ): Promise<[number | null, Error | null]> => {
   try {
     // expiration value or -1 or -2
@@ -36,7 +36,7 @@ export const redisExpireTime = async (
 
 export const redisExpireAt = async (
   key: string,
-  expire_at: number
+  expire_at: number,
 ): Promise<[boolean | null, Error | null]> => {
   try {
     // 0 or 1
@@ -49,7 +49,7 @@ export const redisExpireAt = async (
 export const redisZAdd = async (
   key: string,
   score: number,
-  value: string
+  value: string,
 ): Promise<[number | null, Error | null]> => {
   try {
     // number of values added (1)
@@ -61,7 +61,7 @@ export const redisZAdd = async (
 
 export const redisLPush = async (
   key: string,
-  value: any
+  value: any,
 ): Promise<[number | null, Error | null]> => {
   try {
     // number of values added (1)
@@ -73,7 +73,7 @@ export const redisLPush = async (
 
 export const redisRPush = async (
   key: string,
-  value: any
+  value: any,
 ): Promise<[number | null, Error | null]> => {
   try {
     // number of values added (1)
@@ -86,7 +86,7 @@ export const redisRPush = async (
 export const redisLInsertAfter = async (
   key: string,
   pivot: any,
-  value: any
+  value: any,
 ): Promise<[number | null, Error | null]> => {
   try {
     // new length of list or -1 if pivot not found
@@ -99,7 +99,7 @@ export const redisLInsertAfter = async (
 export const redisLInsertBefore = async (
   key: string,
   pivot: any,
-  value: any
+  value: any,
 ): Promise<[number | null, Error | null]> => {
   try {
     // new length of list or -1 if pivot not found
@@ -112,7 +112,7 @@ export const redisLInsertBefore = async (
 export const redisZRangeWithScores = async (
   key: string,
   start: number,
-  stop: number
+  stop: number,
 ) => {
   try {
     // zset values or []
@@ -125,7 +125,7 @@ export const redisZRangeWithScores = async (
 export const redisLRange = async (
   key: string,
   start: number,
-  stop: number
+  stop: number,
 ): Promise<[string[] | null, Error | null]> => {
   try {
     // lrange values or []
@@ -138,7 +138,7 @@ export const redisLRange = async (
 export const redisLRem = async (
   key: string,
   element: string,
-  count: number = 1
+  count: number = 1,
 ): Promise<[number | null, Error | null]> => {
   try {
     // Number of elements deleted
@@ -150,7 +150,7 @@ export const redisLRem = async (
 
 export const redisLIndex = async (
   key: string,
-  index: number
+  index: number,
 ): Promise<[string | null, Error | null]> => {
   try {
     // element at index or null
@@ -165,7 +165,7 @@ export const redisLIndex = async (
 
 export const redisZScore = async (
   key: string,
-  member: string
+  member: string,
 ): Promise<[number | null, Error | null]> => {
   try {
     const score = await client.zScore(key, member);
@@ -178,12 +178,35 @@ export const redisZScore = async (
 };
 
 export const redisKeys = async (
-  pattern: string
+  pattern: string,
 ): Promise<[string[] | null, Error | null]> => {
   try {
     // list of keys (strings) or empty list
     const keys: string[] = await client.keys(pattern);
     return [keys, null];
+  } catch (error) {
+    return [null, error];
+  }
+};
+
+export const redisExists = async (
+  key: string,
+): Promise<[number | null, Error | null]> => {
+  try {
+    // 0 or 1 since it is only called with a single key at time
+    return [await client.exists(key), null];
+  } catch (error) {
+    return [null, error];
+  }
+};
+
+export const redisSAdd = async (
+  key: string,
+  value: any,
+): Promise<[number | null, Error | null]> => {
+  try {
+    // number of values added - should only ever be 1
+    return [await client.sAdd(key, value), null];
   } catch (error) {
     return [null, error];
   }

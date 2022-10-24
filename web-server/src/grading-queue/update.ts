@@ -1,34 +1,24 @@
-import {
-  calculateLifetime,
-  formatGradingJob,
-  setGradingInfoWithLifetime,
-} from "../utils/helpers";
-import { GradingJobConfig } from "./types";
+import { redisGet, redisSet } from "../utils/redis";
+import { GradingJob, GradingJobConfig } from "./types";
 
-const updateGradingJob = async (
-  grading_info_key: string,
-  grading_job_config: GradingJobConfig
+const updateJob = async (
+  gradingJobConfig: GradingJobConfig,
 ): Promise<Error | null> => {
-  // TODO: Abstract this from here and create.ts
-  const now = new Date().getTime();
-  // priority field is a delay in ms
-  const release_at = now + grading_job_config.priority;
+  const [gradingJobStr, getErr] = await redisGet(gradingJobConfig.key);
+  if (getErr) return getErr;
+  if (!gradingJobStr)
+    return Error("Failed to find existing job when updating grading job.");
 
-  const [lifetime, lifetime_err] = await calculateLifetime(
-    grading_info_key,
-    release_at
-  );
-  if (lifetime_err) return lifetime_err;
+  let gradingJob: GradingJob;
+  try {
+    gradingJob = JSON.parse(gradingJobStr);
+  } catch (error) {
+    return Error("Failed to update existing grading job.");
+  }
 
-  // Set QueuedGradingInfo
-  const grading_job = formatGradingJob(grading_job_config, release_at, now);
-
-  const grading_info_err = await setGradingInfoWithLifetime(
-    grading_info_key,
-    grading_job,
-    lifetime!
-  );
-  if (grading_info_err) return grading_info_err;
+  const [setStatus, setErr] = await redisSet(gradingJob.key, gradingJob);
+  if (setErr) return setErr;
+  if (setStatus !== "OK") return Error("Failed to set grading job");
   return null;
 };
-export default updateGradingJob;
+export default updateJob;

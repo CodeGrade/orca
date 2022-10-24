@@ -4,7 +4,7 @@ import createGradingJob from "../grading-queue/create";
 import createImmediateGradingJob from "../grading-queue/create-immediate";
 import moveGradingJob from "../grading-queue/move";
 import deleteGradingJob from "../grading-queue/delete";
-import updateGradingJob from "../grading-queue/update";
+import updateJob from "../grading-queue/update";
 import {
   validateOffsetAndLimit,
   formatOffsetAndLimit,
@@ -14,7 +14,9 @@ import { getGradingQueueStats } from "../grading-queue/stats";
 import { getFilterInfo } from "../grading-queue/filter";
 import { GradingJob } from "../grading-queue/types";
 import { validateGradingJobConfig } from "../utils/validate";
-import { getGradingInfoKeyIfExists } from "../utils/helpers";
+import { jobInQueue } from "../utils/helpers";
+import createJob from "../grading-queue/create";
+import { redisGet, redisSet } from "../utils/redis";
 
 export const getGradingQueue = async (req: Request, res: Response) => {
   if (
@@ -32,11 +34,11 @@ export const getGradingQueue = async (req: Request, res: Response) => {
   // Get Pagination Data
   const [offset, limit] = formatOffsetAndLimit(
     req.query.offset,
-    req.query.limit
+    req.query.limit,
   );
 
-  const [grading_jobs, grading_jobs_error] = await getGradingJobs();
-  if (grading_jobs_error || !grading_jobs) {
+  const [gradingJobs, gradingJobsErr] = await getGradingJobs();
+  if (gradingJobsErr || !gradingJobs) {
     res.status(500);
     res.json({
       errors: [
@@ -46,7 +48,7 @@ export const getGradingQueue = async (req: Request, res: Response) => {
     return;
   }
 
-  if (offset > 0 && offset >= grading_jobs.length) {
+  if (offset > 0 && offset >= gradingJobs.length) {
     res.status(400);
     res.json({
       errors: [
@@ -57,55 +59,49 @@ export const getGradingQueue = async (req: Request, res: Response) => {
   }
 
   let filtered = false;
-  let filtered_grading_jobs: GradingJob[] = [];
+  let filteredGradingJobs: GradingJob[] = [];
   if (req.query.filter_type && req.query.filter_value) {
-    const filter_type = req.query.filter_type;
-    const filter_value = req.query.filter_value;
+    const filterType = req.query.filter_type;
+    const filterValue = req.query.filter_value;
     // TODO: Validate filter_type and value - try catch this?
-    filtered_grading_jobs = grading_jobs.filter(
-      (grading_job) =>
-        grading_job[filter_type as keyof GradingJob] == filter_value
+    filteredGradingJobs = gradingJobs.filter(
+      (gradingJob) => gradingJob[filterType as keyof GradingJob] == filterValue,
     );
     filtered = true;
   }
-  const res_grading_jobs = filtered ? filtered_grading_jobs : grading_jobs;
+  const resGradingJobs = filtered ? filteredGradingJobs : gradingJobs;
 
-  const pagination_data = getPageFromGradingJobs(
-    res_grading_jobs,
-    offset,
-    limit
-  );
-  const { first, next, prev, last } = pagination_data;
-  const grading_jobs_slice = pagination_data.data;
+  const pageinationData = getPageFromGradingJobs(resGradingJobs, offset, limit);
+  const { first, next, prev, last } = pageinationData;
+  const gradingJobsSlice = pageinationData.data;
 
   // Calculate Stats for entire grading queue
-  const stats = getGradingQueueStats(grading_jobs);
-  const filter_info = getFilterInfo(grading_jobs);
+  const stats = getGradingQueueStats(gradingJobs);
+  const filterInfo = getFilterInfo(gradingJobs);
 
   // TODO: Do we want to do filter info this way?
   res.status(200);
   res.json({
-    grading_jobs: grading_jobs_slice,
+    grading_jobs: gradingJobsSlice,
     first,
     next,
     prev,
     last,
-    total: grading_jobs_slice.length,
+    total: gradingJobsSlice.length,
     stats,
-    filter_info: filter_info,
+    filter_info: filterInfo,
   });
 };
 
-export const createImmediateGradingJobController = async (
+export const createImmediateJobController = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
-  const grading_job_config = req.body;
+  const gradingJobConfig = req.body;
 
   // Validate received grading job config
   try {
-    // TODO: Get specific error messages here [err]
-    if (!validateGradingJobConfig(grading_job_config)) {
+    if (!validateGradingJobConfig(gradingJobConfig)) {
       res.status(400);
       res.json({ errors: ["Invalid grading job configuration."] });
       return;
@@ -119,12 +115,12 @@ export const createImmediateGradingJobController = async (
     });
     return;
   }
-  const err = await createImmediateGradingJob(grading_job_config);
+  const err = await createImmediateGradingJob(gradingJobConfig);
   if (err) {
     res.status(500);
     res.json({
       errors: [
-        "An internal server error occurred while trying to create the expedited grading job.  Please try again or contact an administrator",
+        "An internal server error occurred while trying to create the grading job.",
       ],
     });
     return;
@@ -135,12 +131,12 @@ export const createImmediateGradingJobController = async (
 
 export const createOrUpdateJobController = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
-  const grading_job_config = req.body;
+  const gradingJobConfig = req.body;
 
   try {
-    if (!validateGradingJobConfig(grading_job_config)) {
+    if (!validateGradingJobConfig(gradingJobConfig)) {
       res.status(400);
       res.json({ errors: ["Invalid grading job configuration."] });
       return;
@@ -149,52 +145,46 @@ export const createOrUpdateJobController = async (
     res.status(500);
     res.json({
       errors: [
-        "Internal server error while validating grading job configuration.",
+        "An internal server error occurred while trying to create the grading job.",
       ],
     });
     return;
   }
 
-  // Get job info key if it exists already
-  const [existing_job_key, exists_err] = await getGradingInfoKeyIfExists(
-    grading_job_config
-  );
-  if (exists_err) {
-    res.status(500);
-    res.json({
-      errors: [
-        "An internal server error occurred while trying to create the grading job.  Please try again or contact an administrator",
-      ],
-    });
-    return;
-  }
-
-  if (existing_job_key) {
-    const update_err = await updateGradingJob(
-      existing_job_key,
-      grading_job_config
-    );
-    if (update_err) {
+  const arrivalTime = new Date().getTime();
+  if (!jobInQueue(gradingJobConfig.key)) {
+    // Create job if it doesn't already exist
+    const releaseTime = gradingJobConfig.priority + arrivalTime;
+    const gradingJob: GradingJob = {
+      ...gradingJobConfig,
+      release_at: releaseTime,
+      created_at: arrivalTime,
+    };
+    const createErr = await createJob(gradingJob, arrivalTime, releaseTime);
+    if (createErr) {
       res.status(500);
       res.json({
         errors: [
-          "An internal server error occurred while trying to update grading job.  Please try again or contact an administrator",
+          "An internal server error occurred while trying to create grading job.",
         ],
       });
       return;
     }
   } else {
-    const create_err = await createGradingJob(grading_job_config);
-    if (create_err) {
+    // Update existing job
+    const updateErr = await updateJob(gradingJobConfig);
+    if (updateErr) {
       res.status(500);
       res.json({
         errors: [
-          "An internal server error occurred while trying to create grading job.  Please try again or contact an administrator",
+          "An internal server error occurred while trying to update grading job.",
         ],
       });
       return;
     }
   }
+
+  // Success
   res.status(200);
   res.json({ message: "OK" });
 };
@@ -204,7 +194,7 @@ export const moveJobController = async (req: Request, res: Response) => {
   // TODO: Validate request format in middleware (req.body)
   const [new_release_at, move_grading_job_err] = await moveGradingJob(
     submission_id,
-    req.body
+    req.body,
   );
   if (move_grading_job_err) {
     res.status(500);

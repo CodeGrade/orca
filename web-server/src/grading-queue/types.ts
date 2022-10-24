@@ -7,50 +7,53 @@ export type SubmitterInfo = {
   [submitter: string]: string[];
 };
 
-type GradingScriptCommand = {
-  cmd: string;
-  on_fail: string;
-  on_complete: string;
-};
-
 export type GradingQueueEntry = {
   value: string;
   score: number;
 };
 
+interface GradingScriptCommand {
+  cmd: string;
+  on_fail: "abort" | number;
+  on_complete: "output" | number;
+}
+
+export interface CodeFileInfo {
+  url: string;
+  mime_type: string;
+}
+
+export enum CollationType {
+  User = "user",
+  Team = "team",
+}
+
+export interface Collation {
+  type: CollationType;
+  id: string;
+}
+
 export interface GradingJobConfig {
-  submission_id: number;
-  grade_id: number;
-  grader_id: number;
-  course_id: number;
-  starter_code?: string; // CodeFileInfo;
-  student_code: string; // CodeFileInfo;
-  professor_code?: string; // CodeFileInfo;
-  priority: number; // Delay in ms
-  max_retries?: number;
+  key: string; // JSONString
+  collation: Collation;
+  metadata_table: Map<string, string>;
+  files: Map<string, CodeFileInfo>;
+  priority: number;
   script: GradingScriptCommand[];
-  team_id?: number;
-  user_id?: number;
-  user_names?: string[];
-  submitter_name: string;
+  response_url: string;
 }
 
 export interface GradingJob {
-  submission_id: number;
-  grade_id: number;
-  grader_id: number;
-  course_id: number;
-  starter_code?: string; // CodeFileInfo;
-  student_code: string; // CodeFileInfo;
-  professor_code?: string; // CodeFileInfo;
-  max_retries?: number;
+  key: string; // JSONString
+  collation: Collation;
+  metadata_table: Map<string, string>;
+  files: Map<string, CodeFileInfo>;
+  priority: number;
   script: GradingScriptCommand[];
-  team_id?: number;
-  user_id?: number;
-  user_names?: string[];
-  submitter_name: string;
+  response_url: string;
   release_at: number; // Release timestamp in ms
   created_at: number; // Created timestamp in ms
+  // updated_at: number; // Last updated timestamp in ms
 }
 
 export type MoveConfig = {

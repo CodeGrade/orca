@@ -1,54 +1,39 @@
-import {
-  addToGradingQueue,
-  calculateLifetime,
-  formatGradingJob,
-  generateGradingInfoKey,
-  getSubmitterString,
-  setGradingInfoWithLifetime,
-  setSubmitterInfoWithLifetime,
-} from "../utils/helpers";
-import { GradingJobConfig } from "./types";
+import { addToReservations } from "../utils/helpers";
+import { redisLPush, redisSAdd, redisSet } from "../utils/redis";
+import { GradingJob } from "./types";
 
-const createGradingJob = async (
-  grading_job_config: GradingJobConfig
+const createJob = async (
+  gradingJob: GradingJob,
+  arrivalTime: number,
+  releaseTime: number,
 ): Promise<Error | null> => {
-  const sub_id = grading_job_config.submission_id;
-  const now = new Date().getTime();
-  // priority field is a delay in ms
-  const release_at = now + grading_job_config.priority;
+  const { key, collation } = gradingJob;
+  const nextTask = `${collation.type}.${collation.id}`;
 
-  const grading_info_key = generateGradingInfoKey(sub_id);
+  // Push key to SubmitterInfo list
+  const [length, pushErr] = await redisLPush(`SubmitterInfo.${nextTask}`, key);
+  if (pushErr) return pushErr;
+  if (!length) return Error("Failed to push key to SubmitterInfo.");
 
-  const [lifetime, lifetime_err] = await calculateLifetime(
-    grading_info_key,
-    release_at
+  // Create reservation
+  const reservationErr = await addToReservations(
+    `${nextTask}.${arrivalTime}`,
+    releaseTime,
   );
-  if (lifetime_err) return lifetime_err;
+  if (reservationErr) return reservationErr;
 
-  // Set QueuedGradingInfo
-  const grading_job = formatGradingJob(grading_job_config, release_at, now);
-
-  const grading_info_err = await setGradingInfoWithLifetime(
-    grading_info_key,
-    grading_job,
-    lifetime!
+  // Store nonce
+  const [numAdded, nonceErr] = await redisSAdd(
+    `Nonces.${collation.type}.${collation.id}`,
+    arrivalTime,
   );
-  if (grading_info_err) return grading_info_err;
+  if (nonceErr) return nonceErr;
+  if (numAdded !== 1) return Error("Failed to store job nonce.");
 
-  // Set SubmitterInfo
-  const submitter_str = getSubmitterString(grading_job);
-  const submitter_info_err = await setSubmitterInfoWithLifetime(
-    submitter_str,
-    sub_id,
-    lifetime!
-  );
-  if (submitter_info_err) return submitter_info_err;
-
-  // Add job to GradingQueue
-  const gq_err = await addToGradingQueue(`${submitter_str}.${now}`, release_at);
-  if (gq_err) return gq_err;
-
-  // No errors
+  const [setStatus, setErr] = await redisSet(key, gradingJob);
+  if (setErr) return setErr;
+  if (setStatus !== "OK") return Error("Failed to set grading job");
   return null;
 };
-export default createGradingJob;
+
+export default createJob;

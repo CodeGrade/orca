@@ -4,7 +4,7 @@ import {
   createOrUpdateJobController,
   moveJobController,
   deleteJobController,
-  createImmediateGradingJobController,
+  createImmediateJobController,
 } from "../controllers/grading-queue-controller";
 
 const gradingQueueRouter = Router();
@@ -14,7 +14,7 @@ gradingQueueRouter.get("/grading_queue", getGradingQueue);
 gradingQueueRouter.post("/grading_queue", createOrUpdateJobController);
 gradingQueueRouter.post(
   "/grading_queue/immediate",
-  createImmediateGradingJobController
+  createImmediateJobController,
 );
 gradingQueueRouter.put("/grading_queue/move/:sub_id", moveJobController);
 gradingQueueRouter.delete("/grading_queue/:sub_id", deleteJobController);
