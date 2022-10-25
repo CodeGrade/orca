@@ -1,7 +1,8 @@
+import { generateGradingJobFromConfig } from "../utils/helpers";
 import { redisGet, redisSet } from "../utils/redis";
 import { GradingJob, GradingJobConfig } from "./types";
 
-const updateJob = async (
+const updateGradingJob = async (
   gradingJobConfig: GradingJobConfig,
 ): Promise<Error | null> => {
   const [gradingJobStr, getErr] = await redisGet(gradingJobConfig.key);
@@ -16,9 +17,14 @@ const updateJob = async (
     return Error("Failed to update existing grading job.");
   }
 
-  const [setStatus, setErr] = await redisSet(gradingJob.key, gradingJob);
+  const updatedGradingJob = generateGradingJobFromConfig(
+    gradingJobConfig,
+    gradingJob.created_at,
+    gradingJob.release_at,
+  );
+  const [setStatus, setErr] = await redisSet(gradingJob.key, updatedGradingJob);
   if (setErr) return setErr;
   if (setStatus !== "OK") return Error("Failed to set grading job");
   return null;
 };
-export default updateJob;
+export default updateGradingJob;

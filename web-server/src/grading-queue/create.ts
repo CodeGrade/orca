@@ -1,13 +1,23 @@
-import { addToReservations } from "../utils/helpers";
+import {
+  addToReservations,
+  generateGradingJobFromConfig,
+} from "../utils/helpers";
 import { redisLPush, redisSAdd, redisSet } from "../utils/redis";
-import { GradingJob } from "./types";
+import { GradingJobConfig } from "./types";
 
 const createJob = async (
-  gradingJob: GradingJob,
+  gradingJobConfig: GradingJobConfig,
   arrivalTime: number,
-  releaseTime: number,
 ): Promise<Error | null> => {
-  const { key, collation } = gradingJob;
+  const { key, priority, collation } = gradingJobConfig;
+  const releaseTime = priority + arrivalTime;
+
+  const gradingJob = generateGradingJobFromConfig(
+    gradingJobConfig,
+    arrivalTime,
+    releaseTime,
+  );
+
   const nextTask = `${collation.type}.${collation.id}`;
 
   // Push key to SubmitterInfo list
@@ -30,6 +40,7 @@ const createJob = async (
   if (nonceErr) return nonceErr;
   if (numAdded !== 1) return Error("Failed to store job nonce.");
 
+  // Store grading job
   const [setStatus, setErr] = await redisSet(key, gradingJob);
   if (setErr) return setErr;
   if (setStatus !== "OK") return Error("Failed to set grading job");

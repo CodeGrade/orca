@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import getGradingJobs from "../grading-queue/get";
 import createGradingJob from "../grading-queue/create";
-import createImmediateGradingJob from "../grading-queue/create-immediate";
+import createImmediateJob from "../grading-queue/create-immediate";
 import moveGradingJob from "../grading-queue/move";
 import deleteGradingJob from "../grading-queue/delete";
-import updateJob from "../grading-queue/update";
+import updateGradingJob from "../grading-queue/update";
 import {
   validateOffsetAndLimit,
   formatOffsetAndLimit,
@@ -14,9 +14,15 @@ import { getGradingQueueStats } from "../grading-queue/stats";
 import { getFilterInfo } from "../grading-queue/filter";
 import { GradingJob } from "../grading-queue/types";
 import { validateGradingJobConfig } from "../utils/validate";
-import { jobInQueue } from "../utils/helpers";
+import { jobInQueue, nonImmediateJobExists } from "../utils/helpers";
 import createJob from "../grading-queue/create";
-import { redisGet, redisSet } from "../utils/redis";
+import { upgradeJob } from "../grading-queue/upgrade";
+
+const errorResponse = (res: Response, status: number, errors: string[]) => {
+  res.status(500);
+  res.json({ errors: errors });
+  return;
+};
 
 export const getGradingQueue = async (req: Request, res: Response) => {
   if (
@@ -24,11 +30,9 @@ export const getGradingQueue = async (req: Request, res: Response) => {
     !req.query.offset ||
     !validateOffsetAndLimit(req.query.offset, req.query.limit)
   ) {
-    res.status(400);
-    res.json({
-      errors: ["Must send a valid offset and a limit with this request."],
-    });
-    return;
+    errorResponse(res, 400, [
+      "Must send a valid offset and a limit with this request.",
+    ]);
   }
 
   // Get Pagination Data
@@ -39,22 +43,16 @@ export const getGradingQueue = async (req: Request, res: Response) => {
 
   const [gradingJobs, gradingJobsErr] = await getGradingJobs();
   if (gradingJobsErr || !gradingJobs) {
-    res.status(500);
-    res.json({
-      errors: [
-        "An internal server error occurred while trying to retrieve the grading queue.  Please try again or contact an administrator",
-      ],
-    });
+    errorResponse(res, 500, [
+      "An internal server error occurred while trying to retrieve the grading queue.  Please try again or contact an administrator",
+    ]);
     return;
   }
 
   if (offset > 0 && offset >= gradingJobs.length) {
-    res.status(400);
-    res.json({
-      errors: [
-        "The given offset is out of range for the total number of items.",
-      ],
-    });
+    errorResponse(res, 400, [
+      "The given offset is out of range for the total number of items.",
+    ]);
     return;
   }
 
@@ -71,9 +69,9 @@ export const getGradingQueue = async (req: Request, res: Response) => {
   }
   const resGradingJobs = filtered ? filteredGradingJobs : gradingJobs;
 
-  const pageinationData = getPageFromGradingJobs(resGradingJobs, offset, limit);
-  const { first, next, prev, last } = pageinationData;
-  const gradingJobsSlice = pageinationData.data;
+  const paginationData = getPageFromGradingJobs(resGradingJobs, offset, limit);
+  const { first, next, prev, last } = paginationData;
+  const gradingJobsSlice = paginationData.data;
 
   // Calculate Stats for entire grading queue
   const stats = getGradingQueueStats(gradingJobs);
@@ -93,38 +91,77 @@ export const getGradingQueue = async (req: Request, res: Response) => {
   });
 };
 
-export const createImmediateJobController = async (
+export const createOrUpdateImmediateJobController = async (
   req: Request,
   res: Response,
 ) => {
   const gradingJobConfig = req.body;
 
-  // Validate received grading job config
   try {
     if (!validateGradingJobConfig(gradingJobConfig)) {
-      res.status(400);
-      res.json({ errors: ["Invalid grading job configuration."] });
+      errorResponse(res, 400, ["Invalid grading job configuration."]);
       return;
     }
   } catch (error) {
-    res.status(500);
-    res.json({
-      errors: [
-        "Internal server error while validating grading job configuration.",
-      ],
-    });
+    errorResponse(res, 500, [
+      "An internal server error occurred while trying to validate immediate grading job.",
+    ]);
+
     return;
   }
-  const err = await createImmediateGradingJob(gradingJobConfig);
-  if (err) {
-    res.status(500);
-    res.json({
-      errors: [
-        "An internal server error occurred while trying to create the grading job.",
-      ],
-    });
+
+  const arrivalTime = new Date().getTime();
+  const { key, collation } = gradingJobConfig;
+  const [jobExists, existsErr] = await jobInQueue(key);
+  if (existsErr) {
+    errorResponse(res, 500, [
+      "An internal server error occurred while trying to create immediate grading job.",
+    ]);
     return;
   }
+
+  if (!jobExists) {
+    // Create job if it doesn't already exist
+    const createErr = await createImmediateJob(gradingJobConfig, arrivalTime);
+    if (createErr) {
+      errorResponse(res, 500, [
+        "An internal server error occurred while trying to create immediate grading job.",
+      ]);
+      return;
+    }
+  } else {
+    // TODO: This can currently be overwritten by nonImmediateJobExists because SET(key, job) happens inside of functions
+    // Update existing job
+    const updateErr = await updateGradingJob(gradingJobConfig);
+    if (updateErr) {
+      errorResponse(res, 500, [
+        "An internal server error occurred while trying to update immediate grading job.",
+      ]);
+      return;
+    }
+  }
+
+  const [regJobExists, regExistsErr] = await nonImmediateJobExists(
+    key,
+    collation,
+  );
+  if (regExistsErr) {
+    errorResponse(res, 500, [
+      "An internal server error occurred while trying to upgrade immediate grading job.",
+    ]);
+    return;
+  }
+
+  if (regJobExists) {
+    const upgradeErr = await upgradeJob(gradingJobConfig, arrivalTime);
+    if (upgradeErr) {
+      errorResponse(res, 500, [
+        "An internal server error occurred while trying to upgrade immediate grading job.",
+      ]);
+      return;
+    }
+  }
+
   res.status(200);
   res.json({ message: "OK" });
 };
@@ -145,46 +182,40 @@ export const createOrUpdateJobController = async (
     res.status(500);
     res.json({
       errors: [
-        "An internal server error occurred while trying to create the grading job.",
+        "An internal server error occurred while trying to validate grading job.",
       ],
     });
     return;
   }
 
-  const arrivalTime = new Date().getTime();
-  if (!jobInQueue(gradingJobConfig.key)) {
+  const { key } = gradingJobConfig;
+  const [jobExists, existsErr] = await jobInQueue(key);
+  if (existsErr) {
+    errorResponse(res, 500, [
+      "An internal server error occurred while trying to create immediate grading job.",
+    ]);
+    return;
+  }
+  if (!jobExists) {
     // Create job if it doesn't already exist
-    const releaseTime = gradingJobConfig.priority + arrivalTime;
-    const gradingJob: GradingJob = {
-      ...gradingJobConfig,
-      release_at: releaseTime,
-      created_at: arrivalTime,
-    };
-    const createErr = await createJob(gradingJob, arrivalTime, releaseTime);
+    const arrivalTime = new Date().getTime();
+    const createErr = await createJob(gradingJobConfig, arrivalTime);
     if (createErr) {
-      res.status(500);
-      res.json({
-        errors: [
-          "An internal server error occurred while trying to create grading job.",
-        ],
-      });
+      errorResponse(res, 500, [
+        "An internal server error occurred while trying to create grading job.",
+      ]);
       return;
     }
   } else {
     // Update existing job
-    const updateErr = await updateJob(gradingJobConfig);
+    const updateErr = await updateGradingJob(gradingJobConfig);
     if (updateErr) {
-      res.status(500);
-      res.json({
-        errors: [
-          "An internal server error occurred while trying to update grading job.",
-        ],
-      });
+      errorResponse(res, 500, [
+        "An internal server error occurred while trying to update grading job.",
+      ]);
       return;
     }
   }
-
-  // Success
   res.status(200);
   res.json({ message: "OK" });
 };

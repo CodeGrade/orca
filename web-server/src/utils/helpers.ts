@@ -1,11 +1,43 @@
+import {
+  Collation,
+  GradingJob,
+  GradingJobConfig,
+} from "../grading-queue/types";
 import { redisExists, redisLRange, redisZAdd } from "./redis";
 
-export const jobInQueue = async (
-  jobKey: string,
+export const nonImmediateJobExists = async (
+  key: string,
+  collation: Collation,
 ): Promise<[boolean | null, Error | null]> => {
-  const [exists, existsErr] = await redisExists(jobKey);
+  const [submitterInfo, submitterInfoErr] = await getSubmitterInfo(
+    `SubmitterInfo.${collation.type}.${collation.id}`,
+  );
+  if (submitterInfoErr) return [null, submitterInfoErr];
+  for (let jobKey in submitterInfo!) {
+    if (jobKey === key) return [true, null];
+  }
+  return [false, null];
+};
+
+export const jobInQueue = async (
+  key: string,
+): Promise<[boolean | null, Error | null]> => {
+  const [exists, existsErr] = await redisExists(key);
   if (existsErr) return [null, existsErr];
   return [exists ? true : false, null];
+};
+
+export const generateGradingJobFromConfig = (
+  gradingJobConfig: GradingJobConfig,
+  arrivalTime: number,
+  releaseTime: number,
+): GradingJob => {
+  const gradingJob: GradingJob = {
+    ...gradingJobConfig,
+    release_at: releaseTime,
+    created_at: arrivalTime,
+  };
+  return gradingJob;
 };
 
 export const addToReservations = async (
@@ -24,20 +56,16 @@ export const filterNull = (arr: any[]): any[] => {
 };
 
 export const getSubmitterInfo = async (
-  submitter_info_key: string,
+  submitterInfoKey: string,
 ): Promise<[string[] | null, Error | null]> => {
-  const [submitter_info, lrange_err] = await redisLRange(
-    submitter_info_key,
-    0,
-    -1,
-  );
-  if (lrange_err) return [null, lrange_err];
-  if (!submitter_info)
+  const [submitterInfo, lRangeErr] = await redisLRange(submitterInfoKey, 0, -1);
+  if (lRangeErr) return [null, lRangeErr];
+  if (!submitterInfo)
     return [
       null,
       Error(
         "Failed to retrieve submitter info for given submitter when moving grading job.",
       ),
     ];
-  return [submitter_info, null];
+  return [submitterInfo, null];
 };

@@ -211,3 +211,27 @@ export const redisSAdd = async (
     return [null, error];
   }
 };
+
+export const redisSRem = async (
+  key: string,
+  value: any,
+): Promise<[number | null, Error | null]> => {
+  try {
+    // number of values removed - should only ever be 1
+    return [await client.sRem(key, value), null];
+  } catch (error) {
+    return [null, error];
+  }
+};
+
+export const redisZRem = async (
+  key: string,
+  value: any,
+): Promise<[number | null, Error | null]> => {
+  try {
+    // number of values removed - should only ever be 1
+    return [await client.zRem(key, value), null];
+  } catch (error) {
+    return [null, error];
+  }
+};
