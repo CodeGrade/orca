@@ -1,0 +1,4 @@
+jsonschema
+redis
+py7zr
+requests
