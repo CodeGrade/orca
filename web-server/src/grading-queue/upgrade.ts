@@ -38,13 +38,12 @@ const removeNonImmediateJob = async (
 };
 
 export const upgradeJob = async (
-  gradingJobConfig: GradingJobConfig,
-  arrivalTime: number,
+  gradingJob: GradingJobConfig | GradingJob,
 ): Promise<null | Error> => {
-  const { key, collation } = gradingJobConfig;
+  const { key, collation } = gradingJob;
   const remErr = await removeNonImmediateJob(key, collation);
   if (remErr) return remErr;
-  const createErr = await createImmediateJob(gradingJobConfig, arrivalTime);
+  const createErr = await createImmediateJob(gradingJob);
   if (createErr) return createErr;
   return null;
 };

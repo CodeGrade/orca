@@ -56,13 +56,6 @@ export interface GradingJob {
   // updated_at: number; // Last updated timestamp in ms
 }
 
-export type MoveConfig = {
-  priority: string;
-  nonce: string;
-  team_id?: string;
-  user_id?: string;
-};
-
 export type PaginationInfo = {
   offset: number;
   limit: number;
@@ -87,3 +80,15 @@ export type GradingQueueStats = {
   all: TimeStats;
   released: TimeStats;
 };
+
+export enum MoveJobAction {
+  RELEASE = "release",
+  DELAY = "delay",
+}
+
+export interface MoveJobRequest {
+  nonce: number;
+  jobKey: string; // JSONString
+  moveAction: MoveJobAction;
+  collation?: Collation;
+}

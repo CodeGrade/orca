@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import getGradingJobs from "../grading-queue/get";
+import getCollatedGradingJobs from "../grading-queue/get";
 import createGradingJob from "../grading-queue/create";
 import createImmediateJob from "../grading-queue/create-immediate";
 import moveGradingJob from "../grading-queue/move";
@@ -13,7 +13,10 @@ import {
 import { getGradingQueueStats } from "../grading-queue/stats";
 import { getFilterInfo } from "../grading-queue/filter";
 import { GradingJob } from "../grading-queue/types";
-import { validateGradingJobConfig } from "../utils/validate";
+import {
+  validateGradingJobConfig,
+  validateMoveRequest,
+} from "../utils/validate";
 import { jobInQueue, nonImmediateJobExists } from "../utils/helpers";
 import createJob from "../grading-queue/create";
 import { upgradeJob } from "../grading-queue/upgrade";
@@ -24,7 +27,7 @@ const errorResponse = (res: Response, status: number, errors: string[]) => {
   return;
 };
 
-export const getGradingQueue = async (req: Request, res: Response) => {
+export const getGradingJobs = async (req: Request, res: Response) => {
   if (
     !req.query.limit ||
     !req.query.offset ||
@@ -41,7 +44,7 @@ export const getGradingQueue = async (req: Request, res: Response) => {
     req.query.limit,
   );
 
-  const [gradingJobs, gradingJobsErr] = await getGradingJobs();
+  const [gradingJobs, gradingJobsErr] = await getCollatedGradingJobs();
   if (gradingJobsErr || !gradingJobs) {
     errorResponse(res, 500, [
       "An internal server error occurred while trying to retrieve the grading queue.  Please try again or contact an administrator",
@@ -91,7 +94,7 @@ export const getGradingQueue = async (req: Request, res: Response) => {
   });
 };
 
-export const createOrUpdateImmediateJobController = async (
+export const createOrUpdateImmediateJob = async (
   req: Request,
   res: Response,
 ) => {
@@ -110,7 +113,6 @@ export const createOrUpdateImmediateJobController = async (
     return;
   }
 
-  const arrivalTime = new Date().getTime();
   const { key, collation } = gradingJobConfig;
   const [jobExists, existsErr] = await jobInQueue(key);
   if (existsErr) {
@@ -122,7 +124,7 @@ export const createOrUpdateImmediateJobController = async (
 
   if (!jobExists) {
     // Create job if it doesn't already exist
-    const createErr = await createImmediateJob(gradingJobConfig, arrivalTime);
+    const createErr = await createImmediateJob(gradingJobConfig);
     if (createErr) {
       errorResponse(res, 500, [
         "An internal server error occurred while trying to create immediate grading job.",
@@ -153,7 +155,7 @@ export const createOrUpdateImmediateJobController = async (
   }
 
   if (regJobExists) {
-    const upgradeErr = await upgradeJob(gradingJobConfig, arrivalTime);
+    const upgradeErr = await upgradeJob(gradingJobConfig);
     if (upgradeErr) {
       errorResponse(res, 500, [
         "An internal server error occurred while trying to upgrade immediate grading job.",
@@ -166,10 +168,7 @@ export const createOrUpdateImmediateJobController = async (
   res.json({ message: "OK" });
 };
 
-export const createOrUpdateJobController = async (
-  req: Request,
-  res: Response,
-) => {
+export const createOrUpdateJob = async (req: Request, res: Response) => {
   const gradingJobConfig = req.body;
 
   try {
@@ -220,25 +219,32 @@ export const createOrUpdateJobController = async (
   res.json({ message: "OK" });
 };
 
-export const moveJobController = async (req: Request, res: Response) => {
-  const submission_id: string = req.params.sub_id;
-  // TODO: Validate request format in middleware (req.body)
-  const [new_release_at, move_grading_job_err] = await moveGradingJob(
-    submission_id,
-    req.body,
-  );
-  if (move_grading_job_err) {
-    res.status(500);
-    res.json({
-      errors: [
-        "An internal server error occurred while trying to move the grading job.  Please try again or contact an administrator",
-      ],
-    });
+export const moveJob = async (req: Request, res: Response) => {
+  const moveRequest = req.body;
+
+  try {
+    if (!validateMoveRequest(moveRequest)) {
+      errorResponse(res, 400, ["Invalid move request."]);
+      return;
+    }
+  } catch (error) {
+    errorResponse(res, 500, [
+      "An internal server error occurred while trying to validate move request.",
+    ]);
+
+    return;
+  }
+
+  const [releaseAt, moveErr] = await moveGradingJob(moveRequest);
+  if (moveErr || releaseAt === null) {
+    errorResponse(res, 500, [
+      "An internal server error occurred while trying to move grading job.",
+    ]);
     return;
   }
 
   res.status(200);
-  res.json(new_release_at);
+  res.json(releaseAt);
 };
 
 export const deleteJobController = async (req: Request, res: Response) => {

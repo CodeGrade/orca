@@ -2,8 +2,9 @@ import {
   CodeFileInfo,
   Collation,
   CollationType,
-  GradingJob,
   GradingJobConfig,
+  MoveJobAction,
+  MoveJobRequest,
 } from "../grading-queue/types";
 
 const isNumber = (value: any): boolean => typeof value === "number";
@@ -15,29 +16,6 @@ const isArray = (value: any): boolean => Array.isArray(value);
 // Key must not contain '.' character
 const validateJSONKey = (key: string) => {
   return key.indexOf(".") === -1;
-};
-
-const validateRequiredFields = (config: any): boolean => {
-  const fields =
-    "key" in config &&
-    "collation" in config &&
-    "metadata_table" in config &&
-    "files" in config &&
-    "priority" in config &&
-    "script" in config &&
-    "response_url" in config;
-  if (!fields) return false;
-
-  const types =
-    isString(config.key) &&
-    isObject(config.collation) &&
-    isObject(config.metadata_table) &&
-    isObject(config.files) &&
-    isInteger(config.priority) &&
-    isArray(config.script) &&
-    isString(config.response_url);
-  if (!types) return false;
-  return true;
 };
 
 const validateScript = (script: any[]): boolean => {
@@ -61,6 +39,8 @@ const validateScript = (script: any[]): boolean => {
 
 // TODO: What to type collation as?
 const validateCollation = (collation: any): collation is Collation => {
+  if (!collation) return false;
+
   const fields = "type" in collation && "id" in collation;
   if (!fields) return false;
 
@@ -106,11 +86,60 @@ const validateMetadataTable = (metadata_table: object) => {
 export const validateGradingJobConfig = (
   config: any,
 ): config is GradingJobConfig => {
-  if (!validateRequiredFields(config)) return false;
+  const validateGradingJobFields = (config: any): boolean => {
+    const fields =
+      "key" in config &&
+      "collation" in config &&
+      "metadata_table" in config &&
+      "files" in config &&
+      "priority" in config &&
+      "script" in config &&
+      "response_url" in config;
+    if (!fields) return false;
+
+    const types =
+      isString(config.key) &&
+      isObject(config.collation) &&
+      isObject(config.metadata_table) &&
+      isObject(config.files) &&
+      isInteger(config.priority) &&
+      isArray(config.script) &&
+      isString(config.response_url);
+    if (!types) return false;
+    return true;
+  };
+
+  if (!validateGradingJobFields(config)) return false;
   if (!validateJSONKey(config.key)) return false;
   if (!validateCollation(config.collation)) return false;
   if (!validateFiles(config.files)) return false;
   if (!validateScript(config.script)) return false;
   if (!validateMetadataTable(config.metadata_table)) return false;
+  return true;
+};
+
+export const validateMoveRequest = (
+  request: any,
+): request is MoveJobRequest => {
+  const validateMoveRequestFields = (request: any): boolean => {
+    const fields =
+      "nonce" in request &&
+      "jobKey" in request &&
+      "moveAction" in request &&
+      "collation" in request; // TODO: Do I want to enforce 'collation' field here?
+    if (!fields) return false;
+    return true;
+  };
+
+  const validateMoveAction = (moveAction: string): boolean => {
+    if (!moveAction) return false;
+    if (!isString(moveAction)) return false;
+    return moveAction in Object.values(MoveJobAction);
+  };
+
+  if (!validateMoveRequestFields(request)) return false;
+  if (!validateJSONKey(request.jobKey)) return false;
+  if (!validateCollation(request.collation)) return false;
+  if (!validateMoveAction(request.moveAction)) return false;
   return true;
 };

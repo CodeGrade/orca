@@ -7,9 +7,9 @@ import { GradingJobConfig } from "./types";
 
 const createImmediateJob = async (
   gradingJobConfig: GradingJobConfig,
-  arrivalTime: number,
 ): Promise<Error | null> => {
   const { key, priority } = gradingJobConfig;
+  const arrivalTime = new Date().getTime();
   const releaseTime = priority + arrivalTime;
   const gradingJob = generateGradingJobFromConfig(
     gradingJobConfig,
