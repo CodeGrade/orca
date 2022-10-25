@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import getCollatedGradingJobs from "../grading-queue/get";
 import createGradingJob from "../grading-queue/create";
 import createImmediateJob from "../grading-queue/create-immediate";
-import moveGradingJob from "../grading-queue/move";
+import moveJobHandler from "../grading-queue/move";
 import deleteGradingJob from "../grading-queue/delete";
 import updateGradingJob from "../grading-queue/update";
 import {
@@ -14,12 +14,15 @@ import { getGradingQueueStats } from "../grading-queue/stats";
 import { getFilterInfo } from "../grading-queue/filter";
 import { GradingJob } from "../grading-queue/types";
 import {
+  validateDeleteRequest,
   validateGradingJobConfig,
   validateMoveRequest,
 } from "../utils/validate";
 import { jobInQueue, nonImmediateJobExists } from "../utils/helpers";
 import createJob from "../grading-queue/create";
 import { upgradeJob } from "../grading-queue/upgrade";
+import { redisLRem } from "../utils/redis";
+import deleteJobHandler from "../grading-queue/delete";
 
 const errorResponse = (res: Response, status: number, errors: string[]) => {
   res.status(500);
@@ -231,11 +234,10 @@ export const moveJob = async (req: Request, res: Response) => {
     errorResponse(res, 500, [
       "An internal server error occurred while trying to validate move request.",
     ]);
-
     return;
   }
 
-  const [releaseAt, moveErr] = await moveGradingJob(moveRequest);
+  const [releaseAt, moveErr] = await moveJobHandler(moveRequest);
   if (moveErr || releaseAt === null) {
     errorResponse(res, 500, [
       "An internal server error occurred while trying to move grading job.",
@@ -247,9 +249,28 @@ export const moveJob = async (req: Request, res: Response) => {
   res.json(releaseAt);
 };
 
-export const deleteJobController = async (req: Request, res: Response) => {
-  const submission_id: string = req.params.sub_id;
-  const status: number = await deleteGradingJob(submission_id);
+export const deleteJob = async (req: Request, res: Response) => {
+  const deleteRequest = req.body;
+  try {
+    if (!validateDeleteRequest(deleteRequest)) {
+      errorResponse(res, 400, ["Invalid move request."]);
+      return;
+    }
+  } catch (error) {
+    errorResponse(res, 500, [
+      "An internal server error occurred while trying to validate delete request.",
+    ]);
+    return;
+  }
+
+  const deleteErr = await deleteJobHandler(deleteRequest);
+  if (deleteErr) {
+    errorResponse(res, 500, [
+      "An internal server error occurred while trying to delete grading job.",
+    ]);
+    return;
+  }
+
   res.status(200);
-  res.json(status);
+  res.json({ message: "OK" });
 };

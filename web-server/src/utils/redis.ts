@@ -235,3 +235,14 @@ export const redisZRem = async (
     return [null, error];
   }
 };
+
+export const redisDel = async (
+  key: string,
+): Promise<[number | null, Error | null]> => {
+  try {
+    // number of values removed - should only ever be 1
+    return [await client.del(key), null];
+  } catch (error) {
+    return [null, error];
+  }
+};

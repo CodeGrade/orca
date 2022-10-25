@@ -10,7 +10,7 @@ import {
 import { addToReservations } from "../utils/helpers";
 import { upgradeJob } from "./upgrade";
 
-const moveGradingJob = async (
+const moveJobHandler = async (
   moveRequest: MoveJobRequest,
 ): Promise<[number | null, Error | null]> => {
   const { nonce, jobKey, moveAction, collation } = moveRequest;
@@ -39,7 +39,7 @@ const moveGradingJob = async (
       newReleaseAt = now;
       break;
     case MoveJobAction.DELAY:
-      const [delayedReleaseAt, delayErr] = await delayGradingJob(
+      const [delayedReleaseAt, delayErr] = await delayJob(
         jobKey,
         nonce,
         collation,
@@ -63,7 +63,7 @@ const moveGradingJob = async (
   return [newReleaseAt, null];
 };
 
-const delayGradingJob = async (
+const delayJob = async (
   jobKey: string,
   nonce: number,
   collation: Collation,
@@ -110,4 +110,4 @@ const getLastReservation = async (): Promise<[string | null, Error | null]> => {
   return [lastJob, null];
 };
 
-export default moveGradingJob;
+export default moveJobHandler;

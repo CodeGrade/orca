@@ -92,3 +92,9 @@ export interface MoveJobRequest {
   moveAction: MoveJobAction;
   collation?: Collation;
 }
+
+export interface DeleteJobRequest {
+  nonce: number;
+  jobKey: string; // JSONString
+  collation?: Collation;
+}

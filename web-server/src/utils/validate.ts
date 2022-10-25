@@ -2,6 +2,7 @@ import {
   CodeFileInfo,
   Collation,
   CollationType,
+  DeleteJobRequest,
   GradingJobConfig,
   MoveJobAction,
   MoveJobRequest,
@@ -123,23 +124,48 @@ export const validateMoveRequest = (
 ): request is MoveJobRequest => {
   const validateMoveRequestFields = (request: any): boolean => {
     const fields =
-      "nonce" in request &&
-      "jobKey" in request &&
-      "moveAction" in request &&
-      "collation" in request; // TODO: Do I want to enforce 'collation' field here?
+      "nonce" in request && "jobKey" in request && "moveAction" in request;
     if (!fields) return false;
+    const types =
+      isNumber(request.nonce) &&
+      isString(request.jobKey) &&
+      isString(request.moveAction);
+    if (!types) return false;
+
+    if ("collation" in request) {
+      return validateCollation(request.collation);
+    }
     return true;
   };
 
   const validateMoveAction = (moveAction: string): boolean => {
     if (!moveAction) return false;
-    if (!isString(moveAction)) return false;
     return moveAction in Object.values(MoveJobAction);
   };
 
   if (!validateMoveRequestFields(request)) return false;
   if (!validateJSONKey(request.jobKey)) return false;
-  if (!validateCollation(request.collation)) return false;
   if (!validateMoveAction(request.moveAction)) return false;
+  return true;
+};
+
+export const validateDeleteRequest = (
+  request: any,
+): request is DeleteJobRequest => {
+  const validateDeleteRequestFields = (request: any): boolean => {
+    const requiredFields = "nonce" in request && "jobKey" in request;
+    if (!requiredFields) return false;
+    const requiredFieldTypes =
+      isNumber(request.nonce) && isString(request.jobKey);
+    if (!requiredFieldTypes) return false;
+
+    if ("collation" in request) {
+      return validateCollation(request.collation);
+    }
+    return true;
+  };
+
+  if (!validateDeleteRequestFields(request)) return false;
+  if (!validateJSONKey(request.jobKey)) return false;
   return true;
 };

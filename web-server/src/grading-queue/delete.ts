@@ -1,29 +1,31 @@
-import { client } from "../index";
+import { removeNonImmediateJob } from "../utils/helpers";
+import { redisDel, redisZRem } from "../utils/redis";
+import { DeleteJobRequest } from "./types";
 
-// Removing Jobs from the Redis Grading Queue
-
-// TODO: Update/Fix using nonce
-
-const deleteGradingJob = async (sub_id: string) => {
-  const grading_job_to_delete = await client.get(`QueuedGradingInfo.${sub_id}`);
-  if (!grading_job_to_delete) {
-    // error - grading job not found in queue
-    return -1;
+const deleteJobHandler = async (
+  deleteJobRequest: DeleteJobRequest,
+): Promise<null | Error> => {
+  const { jobKey, nonce } = deleteJobRequest;
+  if (deleteJobRequest.collation) {
+    const removeErr = await removeNonImmediateJob(
+      jobKey,
+      deleteJobRequest.collation,
+    );
+    if (removeErr) return removeErr;
+  } else {
+    const [numRemoved, zRemErr] = await redisZRem(
+      "Reservations",
+      `immediate.${jobKey}`,
+    );
+    if (zRemErr) return zRemErr;
+    if (numRemoved !== 1)
+      return Error("Something went wrong while deleting grading job.");
   }
-  const grading_job = JSON.parse(grading_job_to_delete);
-  // Delete QueuedGradingInfo entry
-  client.del(`QueuedGradingInfo.${sub_id}`);
-
-  if (grading_job["user_id"] || grading_job["team_id"]) {
-    // Delete submission from SubmitterInfo list
-    const submitter_info_str = grading_job["user_id"]
-      ? `user.${grading_job["user_id"]}`
-      : `team.${grading_job["team_id"]}`;
-    client.lRem(`SubmitterInfo.${submitter_info_str}`, 1, sub_id);
-  }
-
-  // TODO: Handle GradingQueue
-  return 1;
+  const [numDeleted, deleteErr] = await redisDel(jobKey);
+  if (deleteErr) return deleteErr;
+  if (numDeleted !== 1)
+    return Error("Something went wrong while deleting grading job.");
+  return null;
 };
 
-export default deleteGradingJob;
+export default deleteJobHandler;

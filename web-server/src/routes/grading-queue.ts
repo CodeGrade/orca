@@ -3,7 +3,7 @@ import {
   getGradingJobs,
   createOrUpdateJob,
   moveJob,
-  deleteJobController,
+  deleteJob,
   createOrUpdateImmediateJob,
 } from "../controllers/grading-queue-controller";
 
@@ -14,6 +14,6 @@ gradingQueueRouter.get("/grading_queue", getGradingJobs);
 gradingQueueRouter.post("/grading_queue", createOrUpdateJob);
 gradingQueueRouter.post("/grading_queue/immediate", createOrUpdateImmediateJob);
 gradingQueueRouter.put("/grading_queue/move/:sub_id", moveJob);
-gradingQueueRouter.delete("/grading_queue/:sub_id", deleteJobController);
+gradingQueueRouter.delete("/grading_queue/:sub_id", deleteJob);
 
 export default gradingQueueRouter;
