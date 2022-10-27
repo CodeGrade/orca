@@ -24,7 +24,7 @@ const createImmediateJob = async (
   if (reservationErr) return reservationErr;
 
   // Store grading job
-  const [setStatus, setErr] = await redisSet(key, gradingJob);
+  const [setStatus, setErr] = await redisSet(key, JSON.stringify(gradingJob));
   if (setErr) return setErr;
   if (setStatus !== "OK") return Error("Failed to set immediate grading job");
   return null;

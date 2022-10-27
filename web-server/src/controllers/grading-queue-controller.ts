@@ -1,9 +1,7 @@
 import { Request, Response } from "express";
 import getCollatedGradingJobs from "../grading-queue/get";
-import createGradingJob from "../grading-queue/create";
 import createImmediateJob from "../grading-queue/create-immediate";
 import moveJobHandler from "../grading-queue/move";
-import deleteGradingJob from "../grading-queue/delete";
 import updateGradingJob from "../grading-queue/update";
 import {
   validateOffsetAndLimit,
@@ -21,7 +19,6 @@ import {
 import { jobInQueue, nonImmediateJobExists } from "../utils/helpers";
 import createJob from "../grading-queue/create";
 import { upgradeJob } from "../grading-queue/upgrade";
-import { redisLRem } from "../utils/redis";
 import deleteJobHandler from "../grading-queue/delete";
 
 const errorResponse = (res: Response, status: number, errors: string[]) => {
@@ -83,7 +80,7 @@ export const getGradingJobs = async (req: Request, res: Response) => {
   const stats = getGradingQueueStats(gradingJobs);
   const filterInfo = getFilterInfo(gradingJobs);
 
-  // TODO: Do we want to do filter info this way?
+  // TODO: Create separate endpoint for filter info
   res.status(200);
   res.json({
     grading_jobs: gradingJobsSlice,
@@ -194,7 +191,7 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
   const [jobExists, existsErr] = await jobInQueue(key);
   if (existsErr) {
     errorResponse(res, 500, [
-      "An internal server error occurred while trying to create immediate grading job.",
+      "An internal server error occurred while trying to create grading job.",
     ]);
     return;
   }
@@ -203,6 +200,7 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
     const arrivalTime = new Date().getTime();
     const createErr = await createJob(gradingJobConfig, arrivalTime);
     if (createErr) {
+      console.error(createErr);
       errorResponse(res, 500, [
         "An internal server error occurred while trying to create grading job.",
       ]);
@@ -263,7 +261,11 @@ export const deleteJob = async (req: Request, res: Response) => {
     return;
   }
 
-  const deleteErr = await deleteJobHandler(deleteRequest);
+  const deleteErr = await deleteJobHandler(
+    deleteRequest.jobKey,
+    deleteRequest.nonce,
+    deleteRequest.collation,
+  );
   if (deleteErr) {
     errorResponse(res, 500, [
       "An internal server error occurred while trying to delete grading job.",

@@ -20,22 +20,26 @@ const validateJSONKey = (key: string) => {
 };
 
 const validateScript = (script: any[]): boolean => {
-  if (!script.every((cmd) => isObject(cmd))) return false;
-  if (
-    !script.every((cmd) => {
-      const cmd_fields =
-        "cmd" in cmd && "on_fail" in cmd && "on_complete" in cmd;
-      if (!cmd_fields) return false;
-      const cmd_types =
-        isString(cmd.cmd) &&
-        isInteger(cmd.on_fail) &&
-        isInteger(cmd.on_complete);
-      if (!cmd_types) return false;
-      return true;
-    })
-  )
-    return false;
-  return true;
+  const validateOnFail = (onFail: any) => {
+    return isInteger(onFail) || onFail === "abort";
+  };
+  const validateOnComplete = (onComplete: any) => {
+    return isInteger(onComplete) || onComplete === "output";
+  };
+  return script.every((cmd) => {
+    if (!isObject(cmd)) return false;
+
+    const cmdFields = "cmd" in cmd && "on_fail" in cmd && "on_complete" in cmd;
+    if (!cmdFields) return false;
+
+    const cmdTypes =
+      isString(cmd.cmd) &&
+      validateOnFail(cmd.on_fail) &&
+      validateOnComplete(cmd.on_complete);
+    if (!cmdTypes) return false;
+
+    return true;
+  });
 };
 
 // TODO: What to type collation as?
@@ -49,34 +53,33 @@ const validateCollation = (collation: any): collation is Collation => {
   if (!types) return false;
 
   const validateCollationType = (type: string): type is CollationType => {
-    return type in Object.values(CollationType);
+    const collationValues: string[] = Object.values(CollationType);
+    return collationValues.includes(type);
   };
 
-  const collation_type = validateCollationType(collation.type);
-  if (!collation_type) return false;
+  const collationType = validateCollationType(collation.type);
+  if (!collationType) return false;
   return true;
 };
 
-// TODO: What to type files as
 const validateFiles = (files: object) => {
-  const validateCodeFileInfo = (file_info: any): file_info is CodeFileInfo => {
-    const fields = "url" in file_info && "mime_type" in file_info;
+  const validateCodeFileInfo = (fileInfo: any): fileInfo is CodeFileInfo => {
+    const fields = "url" in fileInfo && "mime_type" in fileInfo;
     if (!fields) return false;
-    const types = isString(file_info.url) && isString(file_info.mime_type);
+    const types = isString(fileInfo.url) && isString(fileInfo.mime_type);
     if (!types) return false;
     return true;
   };
 
-  for (const [key, file_info] of Object.entries(files)) {
+  for (const [key, fileInfo] of Object.entries(files)) {
     if (!isString(key)) return false;
-    if (!validateCodeFileInfo(file_info)) return false;
+    if (!validateCodeFileInfo(fileInfo)) return false;
   }
   return true;
 };
 
-// TODO: What to type metadata_table as
-const validateMetadataTable = (metadata_table: object) => {
-  for (const [key, value] of Object.entries(metadata_table)) {
+const validateMetadataTable = (metadataTable: object) => {
+  for (const [key, value] of Object.entries(metadataTable)) {
     if (!isString(key)) return false;
     if (!isString(value)) return false;
   }

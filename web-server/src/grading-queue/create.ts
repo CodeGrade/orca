@@ -31,19 +31,19 @@ const createJob = async (
     releaseTime,
   );
   if (reservationErr) return reservationErr;
-
   // Store nonce
   const [numAdded, nonceErr] = await redisSAdd(
     `Nonces.${collation.type}.${collation.id}`,
-    arrivalTime,
+    arrivalTime.toString(),
   );
   if (nonceErr) return nonceErr;
   if (numAdded !== 1) return Error("Failed to store job nonce.");
 
   // Store grading job
-  const [setStatus, setErr] = await redisSet(key, gradingJob);
+  const [setStatus, setErr] = await redisSet(key, JSON.stringify(gradingJob));
   if (setErr) return setErr;
   if (setStatus !== "OK") return Error("Failed to set grading job");
+
   return null;
 };
 

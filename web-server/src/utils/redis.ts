@@ -2,7 +2,7 @@ import { client } from "../index";
 
 export const redisSet = async (
   key: string,
-  value: any,
+  value: number | string,
 ): Promise<[string | null, Error | null]> => {
   try {
     // "OK" or null
@@ -61,7 +61,7 @@ export const redisZAdd = async (
 
 export const redisLPush = async (
   key: string,
-  value: any,
+  value: string,
 ): Promise<[number | null, Error | null]> => {
   try {
     // number of values added (1)
@@ -73,7 +73,7 @@ export const redisLPush = async (
 
 export const redisRPush = async (
   key: string,
-  value: any,
+  value: string,
 ): Promise<[number | null, Error | null]> => {
   try {
     // number of values added (1)
@@ -85,8 +85,8 @@ export const redisRPush = async (
 
 export const redisLInsertAfter = async (
   key: string,
-  pivot: any,
-  value: any,
+  pivot: string,
+  value: string,
 ): Promise<[number | null, Error | null]> => {
   try {
     // new length of list or -1 if pivot not found
@@ -98,8 +98,8 @@ export const redisLInsertAfter = async (
 
 export const redisLInsertBefore = async (
   key: string,
-  pivot: any,
-  value: any,
+  pivot: string,
+  value: string,
 ): Promise<[number | null, Error | null]> => {
   try {
     // new length of list or -1 if pivot not found
@@ -202,7 +202,7 @@ export const redisExists = async (
 
 export const redisSAdd = async (
   key: string,
-  value: any,
+  value: string,
 ): Promise<[number | null, Error | null]> => {
   try {
     // number of values added - should only ever be 1
@@ -214,7 +214,7 @@ export const redisSAdd = async (
 
 export const redisSRem = async (
   key: string,
-  value: any,
+  value: string,
 ): Promise<[number | null, Error | null]> => {
   try {
     // number of values removed - should only ever be 1
@@ -226,7 +226,7 @@ export const redisSRem = async (
 
 export const redisZRem = async (
   key: string,
-  value: any,
+  value: string,
 ): Promise<[number | null, Error | null]> => {
   try {
     // number of values removed - should only ever be 1

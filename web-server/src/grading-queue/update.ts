@@ -22,7 +22,10 @@ const updateGradingJob = async (
     gradingJob.created_at,
     gradingJob.release_at,
   );
-  const [setStatus, setErr] = await redisSet(gradingJob.key, updatedGradingJob);
+  const [setStatus, setErr] = await redisSet(
+    gradingJob.key,
+    JSON.stringify(updatedGradingJob),
+  );
   if (setErr) return setErr;
   if (setStatus !== "OK") return Error("Failed to set grading job");
   return null;

@@ -56,7 +56,10 @@ const moveJobHandler = async (
     ...gradingJob,
     release_at: newReleaseAt,
   };
-  const [setStatus, setErr] = await redisSet(jobKey, movedGradingJob);
+  const [setStatus, setErr] = await redisSet(
+    jobKey,
+    JSON.stringify(movedGradingJob),
+  );
   if (setErr) return [null, setErr];
   if (setStatus !== "OK")
     return [null, Error("Failed to update job when moving grading job.")];
