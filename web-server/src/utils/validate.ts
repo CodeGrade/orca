@@ -13,6 +13,10 @@ const isInteger = (value: any): boolean => Number.isInteger(value);
 const isString = (value: any): boolean => typeof value === "string";
 const isObject = (value: any): boolean => typeof value === "object";
 const isArray = (value: any): boolean => Array.isArray(value);
+const isStringArray = (arr: any): boolean => {
+  if (!isArray(arr)) return false;
+  return arr.every((elem) => isString(elem));
+};
 
 // Key must not contain '.' character
 const validateJSONKey = (key: string) => {
@@ -81,7 +85,7 @@ const validateFiles = (files: object) => {
 const validateMetadataTable = (metadataTable: object) => {
   for (const [key, value] of Object.entries(metadataTable)) {
     if (!isString(key)) return false;
-    if (!isString(value)) return false;
+    if (!isString(value) && !isStringArray(value)) return false;
   }
   return true;
 };
@@ -127,27 +131,29 @@ export const validateMoveRequest = (
 ): request is MoveJobRequest => {
   const validateMoveRequestFields = (request: any): boolean => {
     const fields =
-      "nonce" in request && "jobKey" in request && "moveAction" in request;
+      "nonce" in request &&
+      "jobKey" in request &&
+      "moveAction" in request &&
+      "collation" in request;
     if (!fields) return false;
+
     const types =
       isNumber(request.nonce) &&
       isString(request.jobKey) &&
       isString(request.moveAction);
     if (!types) return false;
-
-    if ("collation" in request) {
-      return validateCollation(request.collation);
-    }
     return true;
   };
 
   const validateMoveAction = (moveAction: string): boolean => {
     if (!moveAction) return false;
-    return moveAction in Object.values(MoveJobAction);
+    const moveActionValues: string[] = Object.values(MoveJobAction);
+    return moveActionValues.includes(moveAction);
   };
 
   if (!validateMoveRequestFields(request)) return false;
   if (!validateJSONKey(request.jobKey)) return false;
+  if (!validateCollation(request.collation)) return false;
   if (!validateMoveAction(request.moveAction)) return false;
   return true;
 };

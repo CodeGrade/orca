@@ -64,7 +64,7 @@ export const redisLPush = async (
   value: string,
 ): Promise<[number | null, Error | null]> => {
   try {
-    // number of values added (1)
+    // length of the list
     return [await client.lPush(key, value), null];
   } catch (error) {
     return [null, error];
@@ -76,7 +76,7 @@ export const redisRPush = async (
   value: string,
 ): Promise<[number | null, Error | null]> => {
   try {
-    // number of values added (1)
+    // length of the list
     return [await client.rPush(key, value), null];
   } catch (error) {
     return [null, error];

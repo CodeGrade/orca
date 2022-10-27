@@ -1,5 +1,5 @@
 import {
-  addToReservations,
+  createReservation,
   generateGradingJobFromConfig,
 } from "../utils/helpers";
 import { redisSet } from "../utils/redis";
@@ -17,7 +17,7 @@ const createImmediateJob = async (
     releaseTime,
   );
   // Create reservation
-  const reservationErr = await addToReservations(
+  const reservationErr = await createReservation(
     `immediate.${key}`,
     releaseTime,
   );

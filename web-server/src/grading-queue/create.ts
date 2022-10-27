@@ -1,5 +1,5 @@
 import {
-  addToReservations,
+  createReservation,
   generateGradingJobFromConfig,
 } from "../utils/helpers";
 import { redisLPush, redisSAdd, redisSet } from "../utils/redis";
@@ -26,7 +26,7 @@ const createJob = async (
   if (!length) return Error("Failed to push key to SubmitterInfo.");
 
   // Create reservation
-  const reservationErr = await addToReservations(
+  const reservationErr = await createReservation(
     `${nextTask}.${arrivalTime}`,
     releaseTime,
   );

@@ -22,7 +22,7 @@ import { upgradeJob } from "../grading-queue/upgrade";
 import deleteJobHandler from "../grading-queue/delete";
 
 const errorResponse = (res: Response, status: number, errors: string[]) => {
-  res.status(500);
+  res.status(status);
   res.json({ errors: errors });
   return;
 };
@@ -64,7 +64,7 @@ export const getGradingJobs = async (req: Request, res: Response) => {
   if (req.query.filter_type && req.query.filter_value) {
     const filterType = req.query.filter_type;
     const filterValue = req.query.filter_value;
-    // TODO: Validate filter_type and value - try catch this?
+    // TODO: Validate filterType and filterValue - try catch this?
     filteredGradingJobs = gradingJobs.filter(
       (gradingJob) => gradingJob[filterType as keyof GradingJob] == filterValue,
     );
@@ -221,8 +221,7 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
 };
 
 export const moveJob = async (req: Request, res: Response) => {
-  const moveRequest = req.body;
-
+  const moveRequest = req.body.moveJobRequest;
   try {
     if (!validateMoveRequest(moveRequest)) {
       errorResponse(res, 400, ["Invalid move request."]);
@@ -237,6 +236,7 @@ export const moveJob = async (req: Request, res: Response) => {
 
   const [releaseAt, moveErr] = await moveJobHandler(moveRequest);
   if (moveErr || releaseAt === null) {
+    console.error(moveErr);
     errorResponse(res, 500, [
       "An internal server error occurred while trying to move grading job.",
     ]);

@@ -34,21 +34,23 @@ const getCollatedGradingJobs = async (): Promise<
         const jobKey = reservationKeySplit[1];
         const [jobStr, getErr] = await redisGet(jobKey);
         const job = JSON.parse(jobStr!);
-        return { ...job, releaseAt, nonce: null };
+        return { ...job, release_at: releaseAt, nonce: null };
       }
 
       // Standard Grading Job - [<"team" | "user">, id, nonce]
       const nonce = reservationKeySplit.pop();
       const collationKey = reservationKeySplit.join(".");
-      let submitterInfo: string[];
 
-      if (!submitterInfoCache.collationKey) {
+      const cacheSubmitterInfo = async (collationKey: string) => {
         const [submitterInfo, submitterInfoErr] = await getSubmitterInfo(
           `SubmitterInfo.${collationKey}`,
         );
-        submitterInfoCache.collationKey = submitterInfo!;
-      }
-      submitterInfo = submitterInfoCache.collationKey;
+        submitterInfoCache[collationKey] = submitterInfo!;
+      };
+      if (!submitterInfoCache[collationKey])
+        await cacheSubmitterInfo(collationKey);
+
+      const submitterInfo = submitterInfoCache[collationKey];
 
       // Shift here because reservations are in order of increasing release time
       // and SubmitterInfo is in order of increasing arrival time and we want
@@ -56,7 +58,12 @@ const getCollatedGradingJobs = async (): Promise<
       const jobKey = submitterInfo.shift();
       const [jobStr, getErr] = await redisGet(jobKey!);
       const job = JSON.parse(jobStr!);
-      return { ...job, release_at: releaseAt, nonce };
+      return {
+        ...job,
+        release_at: releaseAt,
+        created_at: parseInt(nonce!),
+        nonce,
+      };
     }),
   );
   return [gradingJobs, null];

@@ -13,7 +13,7 @@ const gradingQueueRouter = Router();
 gradingQueueRouter.get("/grading_queue", getGradingJobs);
 gradingQueueRouter.post("/grading_queue", createOrUpdateJob);
 gradingQueueRouter.post("/grading_queue/immediate", createOrUpdateImmediateJob);
-gradingQueueRouter.put("/grading_queue/move/:sub_id", moveJob);
-gradingQueueRouter.delete("/grading_queue/:sub_id", deleteJob);
+gradingQueueRouter.put("/grading_queue/move", moveJob);
+gradingQueueRouter.delete("/grading_queue", deleteJob);
 
 export default gradingQueueRouter;

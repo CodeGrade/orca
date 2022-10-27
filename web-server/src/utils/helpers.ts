@@ -48,7 +48,8 @@ export const generateGradingJobFromConfig = (
   return gradingJob;
 };
 
-export const addToReservations = async (
+// TODO: Don't really need these wrappers
+export const createReservation = async (
   value: string,
   score: number,
 ): Promise<Error | null> => {
@@ -56,6 +57,17 @@ export const addToReservations = async (
   const [numAdded, zAddErr] = await redisZAdd("Reservations", score, value);
   if (zAddErr) return zAddErr;
   if (numAdded !== 1) return Error("Error while creating reservation.");
+  return null;
+};
+
+export const updateReservation = async (
+  value: string,
+  score: number,
+): Promise<Error | null> => {
+  // should always be 1 since we only ever add 1 entry at time
+  const [numAdded, zAddErr] = await redisZAdd("Reservations", score, value);
+  if (zAddErr) return zAddErr;
+  if (numAdded !== 0) return Error("Error while creating reservation.");
   return null;
 };
 

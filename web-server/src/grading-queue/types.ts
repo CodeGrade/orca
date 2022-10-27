@@ -27,7 +27,7 @@ export interface Collation {
 export interface GradingJobConfig {
   key: string; // JSONString
   collation: Collation;
-  metadata_table: Map<string, string>;
+  metadata_table: Map<string, string | string[]>;
   files: Map<string, CodeFileInfo>;
   priority: number;
   script: GradingScriptCommand[];
@@ -37,7 +37,7 @@ export interface GradingJobConfig {
 export interface GradingJob {
   key: string; // JSONString
   collation: Collation;
-  metadata_table: Map<string, string>;
+  metadata_table: Map<string, string | string[]>;
   files: Map<string, CodeFileInfo>;
   priority: number;
   script: GradingScriptCommand[];
@@ -81,7 +81,7 @@ export interface MoveJobRequest {
   nonce: number;
   jobKey: string; // JSONString
   moveAction: MoveJobAction;
-  collation?: Collation;
+  collation: Collation;
 }
 
 export interface DeleteJobRequest {

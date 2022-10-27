@@ -1,4 +1,10 @@
-import { Collation, GradingJob, MoveJobAction, MoveJobRequest } from "./types";
+import {
+  Collation,
+  GradingJob,
+  GradingJobConfig,
+  MoveJobAction,
+  MoveJobRequest,
+} from "./types";
 import { MOVE_TO_BACK_BUFFER } from "./constants";
 import {
   redisGet,
@@ -7,7 +13,7 @@ import {
   redisSet,
   redisZRangeWithScores,
 } from "../utils/redis";
-import { addToReservations } from "../utils/helpers";
+import { updateReservation } from "../utils/helpers";
 import { upgradeJob } from "./upgrade";
 
 const moveJobHandler = async (
@@ -34,9 +40,14 @@ const moveJobHandler = async (
   let newReleaseAt: number;
   switch (moveAction) {
     case MoveJobAction.RELEASE:
-      const upgradeErr = await upgradeJob(gradingJob);
-      if (upgradeErr) return [null, upgradeErr];
       newReleaseAt = now;
+      const newPriority = 0;
+      const upgradedJobConfig: GradingJobConfig = {
+        ...gradingJob,
+        priority: newPriority,
+      };
+      const upgradeErr = await upgradeJob(upgradedJobConfig);
+      if (upgradeErr) return [null, upgradeErr];
       break;
     case MoveJobAction.DELAY:
       const [delayedReleaseAt, delayErr] = await delayJob(
@@ -52,13 +63,13 @@ const moveJobHandler = async (
   }
 
   // Update stored grading job with newReleaseAt
-  const movedGradingJob: GradingJob = {
+  const releasedGradingJob: GradingJob = {
     ...gradingJob,
     release_at: newReleaseAt,
   };
   const [setStatus, setErr] = await redisSet(
     jobKey,
-    JSON.stringify(movedGradingJob),
+    JSON.stringify(releasedGradingJob),
   );
   if (setErr) return [null, setErr];
   if (setStatus !== "OK")
@@ -75,28 +86,34 @@ const delayJob = async (
   const [lastJob, getLastErr] = await getLastReservation();
   if (getLastErr) return [null, getLastErr];
 
-  const lastJobReleaseAt: number = lastJob![0]["score"];
+  const lastJobReleaseAt: number = lastJob!.score;
   const newReleaseAt = lastJobReleaseAt + MOVE_TO_BACK_BUFFER;
   const collationKey = `${collation.type}.${collation.id}`;
-  const reservationErr = await addToReservations(
+  const reservationErr = await updateReservation(
     `${collationKey}.${nonce}`,
     newReleaseAt,
   );
   if (reservationErr) return [null, reservationErr];
+
   const submitterInfoKey = `SubmitterInfo.${collationKey}`;
   const [numRemoved, lRemErr] = await redisLRem(submitterInfoKey, jobKey);
   if (lRemErr) return [null, lRemErr];
   if (numRemoved !== 1)
     return [
       null,
-      Error("Failed to update SubmitterInfo when delaying grading job"),
+      Error(
+        "Failed to remove key from current position in SubmitterInfo when delaying grading job",
+      ),
     ];
-  const [numAdded, rPushErr] = await redisRPush(submitterInfoKey, jobKey);
+  // TODO: Verify that the length is the same as when this process started
+  const [length, rPushErr] = await redisRPush(submitterInfoKey, jobKey);
   if (rPushErr) return [null, rPushErr];
-  if (numAdded !== 1)
+  if (!length)
     return [
       null,
-      Error("Failed to update SubmitterInfo when delaying grading job"),
+      Error(
+        "Failed to push key into new position in SubmitterInfo when delaying grading job",
+      ),
     ];
   return [newReleaseAt, null];
 };
