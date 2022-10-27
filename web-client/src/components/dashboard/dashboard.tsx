@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
 import {
-  getFilteredGradingQueue,
-  getGradingJobQueue,
+  getFilteredGradingJobs,
+  getGradingJobs,
 } from "../../actions/grading-job-actions";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch } from "redux";
 import {
   FilterInfo,
   GradingJob,
-  GradingQueue,
+  GradingJobTableInfo,
   State,
 } from "../grading_job_table/types";
 import GradingJobTableStats from "../grading_job_table/grading_job_table_stats/grading-job-table-stats";
@@ -23,25 +23,26 @@ import TestingPanel from "../testing/testing-panel";
 const Dashboard = () => {
   const [offset, setOffset] = useState(OFFSET_START);
 
-  const [filter_type, setFilterType] = useState("none");
-  const [filter_value, setFilterValue] = useState("");
-  const [filter_options, setFilterOptions] = useState([
+  const [filterType, setFilterType] = useState("none");
+  const [filterValue, setFilterValue] = useState("");
+  const [filterOptions, setFilterOptions] = useState([
     createDefaultFilterOption(),
   ]);
 
-  const grading_queue: GradingQueue = useSelector(
-    (state: State) => state.grading_queue
+  const gradingTableInfo: GradingJobTableInfo = useSelector(
+    (state: State) => state.grading_table_info
   );
 
   const dispatch: Dispatch = useDispatch();
   useEffect(() => {
-    if (filter_type === "none" || filter_value === "")
-      getGradingJobQueue(dispatch, offset);
-    else getFilteredGradingQueue(dispatch, filter_type, filter_value, offset);
-  }, [dispatch, offset, filter_value]);
+    if (filterType === "none" || filterValue === "")
+      getGradingJobs(dispatch, offset);
+    else getFilteredGradingJobs(dispatch, filterType, filterValue, offset);
+  }, [dispatch, offset, filterValue]);
 
-  const grading_jobs: GradingJob[] = grading_queue.grading_jobs;
-  const { first, prev, next, last, total, stats } = grading_queue;
+  const gradingJobs: GradingJob[] = gradingTableInfo.grading_jobs;
+  console.log(gradingJobs);
+  const { first, prev, next, last, total, stats } = gradingTableInfo;
 
   const handleFirstPage = () => {
     if (!first) return;
@@ -64,7 +65,7 @@ const Dashboard = () => {
     setFilterOptions(
       getActiveOptions(
         filter,
-        grading_queue.filter_info[filter as keyof FilterInfo]
+        gradingTableInfo.filter_info[filter as keyof FilterInfo]
       )
     );
     setFilterValue("");
@@ -92,7 +93,7 @@ const Dashboard = () => {
                   <select
                     className="form-select"
                     id="filter-by"
-                    value={filter_type}
+                    value={filterType}
                     onChange={(event) => {
                       handleSetFilter(event.target.value);
                     }}
@@ -104,24 +105,26 @@ const Dashboard = () => {
                 </div>
                 <div
                   className={`form-group ${
-                    filter_type !== "none" ? "visibile" : "invisible"
+                    filterType !== "none" ? "visibile" : "invisible"
                   }`}
                 >
                   <select
                     className="form-select"
                     id="filter-by"
-                    value={filter_value}
+                    value={filterValue}
                     onChange={(event) => {
                       setFilterValue(event.target.value);
                     }}
                   >
-                    {filter_options}
+                    {filterOptions}
                   </select>
                 </div>
               </div>
             </div>
             {/* End filter */}
-            <GradingJobTable grading_jobs={grading_jobs && grading_jobs} />
+            <GradingJobTable gradingJobs={gradingJobs} />
+
+            {/* TODO: Pull out as own component */}
             <div className="d-flex justify-content-between">
               <div>
                 <button

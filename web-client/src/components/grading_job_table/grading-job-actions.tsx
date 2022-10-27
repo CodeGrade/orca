@@ -1,29 +1,27 @@
 import React from "react";
 import { useDispatch } from "react-redux";
 import { Dispatch } from "redux";
-import {
-  deleteGradingJob,
-  moveGradingJob,
-} from "../../actions/grading-job-actions";
+import { deleteJob, moveJob } from "../../actions/grading-job-actions";
+import { MoveJobAction } from "../../services/types";
+import { Collation } from "./types";
 
 type GradingJobActionsProps = {
-  submission_id: number;
+  jobKey: string;
+  collation: Collation;
   nonce: string;
-  team_id?: number;
-  user_id?: number;
   released: boolean;
 };
 
 const GradingJobActions = ({
-  submission_id,
+  jobKey,
+  collation,
   nonce,
-  team_id,
-  user_id,
   released,
 }: GradingJobActionsProps) => {
   const dispatch: Dispatch = useDispatch();
   const handleDelete = () => {
-    deleteGradingJob(dispatch, submission_id, nonce);
+    // Immediate jobs do not have collation or nonce
+    deleteJob(dispatch, jobKey, collation, nonce);
   };
   // TODO: Pull out RELEASE and DELAY
   const handleRelease = () => {
@@ -32,7 +30,7 @@ const GradingJobActions = ({
       alert("Job is already released");
       return;
     }
-    moveGradingJob(dispatch, submission_id, nonce, "RELEASE", team_id, user_id);
+    moveJob(dispatch, jobKey, nonce, MoveJobAction.RELEASE, collation);
   };
   const handleDelay = () => {
     if (released) {
@@ -40,7 +38,7 @@ const GradingJobActions = ({
       // Job already release
       return;
     }
-    moveGradingJob(dispatch, submission_id, nonce, "DELAY", team_id, user_id);
+    moveJob(dispatch, jobKey, nonce, MoveJobAction.DELAY, collation);
   };
   // TODO: Abstract buttons
   return (

@@ -1,8 +1,8 @@
 import React from "react";
 import StatsBar from "./stats-bar";
-import { GradingQueueStats } from "../types";
+import { GradingJobStats } from "../types";
 
-const GradingJobTableStats = ({ stats }: { stats: GradingQueueStats }) => {
+const GradingJobTableStats = ({ stats }: { stats: GradingJobStats }) => {
   return (
     <div className="d-flex flex-column flex-lg-row justify-content-between align-items-center">
       <div className="me-lg-3">

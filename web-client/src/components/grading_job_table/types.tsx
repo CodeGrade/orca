@@ -1,26 +1,36 @@
-export type GradingScriptCommand = {
+export interface GradingScriptCommand {
   cmd: string;
-  on_fail: string;
-  on_complete: string;
-};
+  on_fail: "abort" | number;
+  on_complete: "output" | number;
+}
+
+export interface CodeFileInfo {
+  url: string;
+  mime_type: string;
+}
+
+export enum CollationType {
+  User = "user",
+  Team = "team",
+}
+
+export interface Collation {
+  type: CollationType;
+  id: string;
+}
 
 export interface GradingJob {
-  submission_id: number;
-  grade_id: number;
-  grader_id: number;
-  course_id: number;
-  starter_code?: string; // CodeFileInfo;
-  student_code: string; // CodeFileInfo;
-  professor_code?: string; // CodeFileInfo;
-  max_retries?: number;
-  script: [GradingScriptCommand];
-  team_id?: number;
-  user_id?: number;
-  user_names?: string[];
-  submitter_name: string;
-  release_at: number; // release timestamp in ms
-  created_at: number; // created at timestamp in ms
+  key: string; // JSONString
+  collation: Collation;
+  metadata_table: Map<string, string | string[]>;
+  files: Map<string, CodeFileInfo>;
+  priority: number;
+  script: GradingScriptCommand[];
+  response_url: string;
   nonce: string;
+  release_at: number; // Release timestamp in ms
+  created_at: number; // Created timestamp in ms
+  // updated_at: number; // Last updated timestamp in ms
 }
 
 export type PaginationInfo = {
@@ -35,7 +45,7 @@ export type TimeStats = {
   num: number;
 };
 
-export type GradingQueueStats = {
+export type GradingJobStats = {
   all: TimeStats;
   released: TimeStats;
 };
@@ -45,17 +55,17 @@ export type FilterInfo = {
   grader_id: string[];
 };
 
-export type GradingQueue = {
+export type GradingJobTableInfo = {
   grading_jobs: GradingJob[];
   first: PaginationInfo | null;
   last: PaginationInfo | null;
   prev: PaginationInfo | null;
   next: PaginationInfo | null;
   total: number;
-  stats: GradingQueueStats;
+  stats: GradingJobStats;
   filter_info: FilterInfo;
 };
 
 export type State = {
-  grading_queue: GradingQueue;
+  grading_table_info: GradingJobTableInfo;
 };

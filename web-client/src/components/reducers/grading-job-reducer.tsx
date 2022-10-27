@@ -1,14 +1,14 @@
 import { AnyAction } from "redux";
 import {
-  GET_GRADING_JOB_QUEUE,
+  GET_GRADING_JOBS,
   DELETE_GRADING_JOB,
   DELAY_GRADING_JOB,
   RELEASE_GRADING_JOB,
 } from "../../actions/grading-job-actions";
 import { State, GradingJob } from "../grading_job_table/types";
 
-const initial_state: State = {
-  grading_queue: {
+const initialState: State = {
+  grading_table_info: {
     grading_jobs: [],
     prev: null,
     next: null,
@@ -26,80 +26,91 @@ const initial_state: State = {
   },
 };
 
-const gradingJobReducer = (state: State = initial_state, action: AnyAction) => {
+const findGradingJobInArrByKey = (arr: GradingJob[], key: string) => {
+  return arr.find((job) => job.key === key);
+};
+
+const gradingJobReducer = (state: State = initialState, action: AnyAction) => {
+  let updatedGradingJobs: GradingJob[];
+  let gradingJob: GradingJob | undefined;
+  const now: number = new Date().getTime();
   switch (action.type) {
-    case GET_GRADING_JOB_QUEUE:
+    case GET_GRADING_JOBS:
       return (state = {
         ...state,
-        grading_queue: action.grading_job_queue,
+        grading_table_info: action.grading_job_queue,
       });
     case DELETE_GRADING_JOB:
-      const updated_queue_deleted = [
-        ...state.grading_queue.grading_jobs.filter(
-          (grading_job: GradingJob) => grading_job.nonce !== action.nonce
-        ),
-      ];
-      return (state = {
-        grading_queue: {
-          ...state.grading_queue,
-          grading_jobs: updated_queue_deleted,
-        },
-      });
+      // const updated_queue_deleted = [
+      //   ...state.grading_table_info.grading_jobs.filter(
+      //     (grading_job: GradingJob) => grading_job.nonce !== action.nonce
+      //   ),
+      // ];
+      // return (state = {
+      //   grading_table_info: {
+      //     ...state.grading_table_info,
+      //     grading_jobs: updated_queue_deleted,
+      //   },
+      // });
+      return state;
     // TODO: Abstract from moving back/front
     case DELAY_GRADING_JOB:
-      const job_to_delay = state.grading_queue.grading_jobs.find(
-        (job) => job.nonce === action.nonce
+      gradingJob = findGradingJobInArrByKey(
+        state.grading_table_info.grading_jobs,
+        action.key
       );
-      if (!job_to_delay) return state;
+      if (!gradingJob) return state;
 
       // Update release_at of job in state
-      const delayed_job: GradingJob = {
-        ...job_to_delay,
+      gradingJob = {
+        ...gradingJob,
         release_at: action.new_release_at,
       };
-      const queue_with_delayed_job = [
-        ...state.grading_queue.grading_jobs.filter(
-          (job) => job.nonce !== action.nonce
+      updatedGradingJobs = [
+        ...state.grading_table_info.grading_jobs.filter(
+          (job) => job.key !== action.key
         ),
-        delayed_job,
+        gradingJob,
       ];
       return (state = {
-        grading_queue: {
-          ...state.grading_queue,
-          grading_jobs: queue_with_delayed_job,
+        grading_table_info: {
+          ...state.grading_table_info,
+          grading_jobs: updatedGradingJobs,
         },
       });
     case RELEASE_GRADING_JOB:
-      const job_to_release = state.grading_queue.grading_jobs.find(
-        (job) => job.nonce === action.nonce
+      gradingJob = findGradingJobInArrByKey(
+        state.grading_table_info.grading_jobs,
+        action.key
       );
-      if (!job_to_release) return state;
+      if (!gradingJob) return state;
+
       // Update release_at of job in state
-      const release_job: GradingJob = {
-        ...job_to_release,
+      gradingJob = {
+        ...gradingJob,
         release_at: action.new_release_at,
       };
 
-      const now: number = new Date().getTime();
-      let released_ind = 0;
-      for (let i = 0; i < state.grading_queue.grading_jobs.length; i++) {
-        const grading_job = state.grading_queue.grading_jobs[i];
-        const is_released: boolean = grading_job.release_at < now;
-        if (!is_released) {
-          released_ind = i;
+      // eslint-disable-next-line no-case-declarations
+      let releasedInd = 0;
+      for (const job of state.grading_table_info.grading_jobs) {
+        const isReleased: boolean = job.release_at < now;
+        if (!isReleased) {
           break;
         }
+        releasedInd++;
       }
-      const queue_with_release_job = [
-        ...state.grading_queue.grading_jobs.filter(
-          (job) => job.nonce !== action.nonce
+
+      updatedGradingJobs = [
+        ...state.grading_table_info.grading_jobs.filter(
+          (job) => job.key !== action.key
         ),
       ];
-      queue_with_release_job.splice(released_ind, 0, release_job);
+      updatedGradingJobs.splice(releasedInd, 0, gradingJob);
       return (state = {
-        grading_queue: {
-          ...state.grading_queue,
-          grading_jobs: queue_with_release_job,
+        grading_table_info: {
+          ...state.grading_table_info,
+          grading_jobs: updatedGradingJobs,
         },
       });
     default:
