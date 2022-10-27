@@ -101,7 +101,9 @@ const delayJob = async (
   return [newReleaseAt, null];
 };
 
-const getLastReservation = async (): Promise<[string | null, Error | null]> => {
+const getLastReservation = async (): Promise<
+  [{ value: string; score: number } | null, Error | null]
+> => {
   const [lastJob, zRangeErr] = await redisZRangeWithScores(
     "Reservations",
     -1,
@@ -110,7 +112,7 @@ const getLastReservation = async (): Promise<[string | null, Error | null]> => {
   if (zRangeErr) return [null, zRangeErr];
   if (!lastJob || lastJob.length === 0)
     return [null, Error("Failed to find last reservation")];
-  return [lastJob, null];
+  return [lastJob[0], null];
 };
 
 export default moveJobHandler;

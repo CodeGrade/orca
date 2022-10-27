@@ -113,7 +113,7 @@ export const redisZRangeWithScores = async (
   key: string,
   start: number,
   stop: number,
-) => {
+): Promise<[{ value: string; score: number }[] | null, Error | null]> => {
   try {
     // zset values or []
     return [await client.zRangeWithScores(key, start, stop), null];

@@ -1,13 +1,4 @@
-export type SubmitterInfoData = {
-  submitter: string;
-  submissions: string[];
-};
-
-export type SubmitterInfo = {
-  [submitter: string]: string[];
-};
-
-export type GradingQueueEntry = {
+export type Reservation = {
   value: string;
   score: number;
 };
