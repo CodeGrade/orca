@@ -246,3 +246,15 @@ export const redisDel = async (
     return [null, error];
   }
 };
+
+export const redisSPopOne = async (
+  key: string,
+): Promise<[string | null, Error | null]> => {
+  try {
+    // value that was popped off of set or null if set empty
+    const popped = await client.sPop(key, 1);
+    return [popped[0], null];
+  } catch (error) {
+    return [null, error];
+  }
+};

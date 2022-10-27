@@ -7,6 +7,7 @@ import {
   redisExists,
   redisLRange,
   redisLRem,
+  redisSPopOne,
   redisSRem,
   redisZAdd,
   redisZRem,
@@ -82,24 +83,22 @@ export const removeNonImmediateJob = async (
   collation: Collation,
 ): Promise<null | Error> => {
   const collationKey = `${collation.type}.${collation.id}`;
-  const [numLRemoved, lRemErr] = await redisLRem(
-    `SubmitterInfo.${collationKey}`,
-    key,
-  );
+  const submitterInfoKey = `SubmitterInfo.${collationKey}`;
+
+  const [numLRemoved, lRemErr] = await redisLRem(submitterInfoKey, key);
   if (lRemErr) return lRemErr;
   if (numLRemoved !== 1)
     return Error(
-      "Something went wrong while removing existing non-immediate job.",
+      "Something went wrong while removing key from submitter info for existing non-immediate job.",
     );
 
-  // TODO: THIS IS WRONG - ASK JACKSON ABOUT THE SPOP LINE TO GET THE NONCE FOR SPECIFIC JOB
-  let nonce; // Need to get this here
-  const [numSRemoved, sRemErr] = await redisSRem(`Nonces.${collationKey}`, key);
-  if (sRemErr) return sRemErr;
-  if (numSRemoved !== 1)
+  const [nonce, sPopErr] = await redisSPopOne(`Nonces.${collationKey}`);
+  if (sPopErr) return sPopErr;
+  if (!nonce)
     return Error(
-      "Something went wrong while removing existing non-immediate job.",
+      "Something went wrong while removing nonce for non-immediate job.",
     );
+
   const [numZRemoved, zRemErr] = await redisZRem(
     "Reservations",
     `${collationKey}.${nonce}`,
@@ -107,7 +106,18 @@ export const removeNonImmediateJob = async (
   if (zRemErr) return zRemErr;
   if (numZRemoved !== 1)
     return Error(
-      "Something went wrong while removing existing non-immediate job.",
+      "Something went wrong while removing reservation for existing non-immediate job.",
     );
   return null;
+};
+
+const getJobKeyIndexInSubmitterInfo = async (
+  jobKey: string,
+  submitterInfoKey: string,
+): Promise<[number | null, Error | null]> => {
+  const [submitterInfo, submitterInfoErr] = await getSubmitterInfo(
+    submitterInfoKey,
+  );
+  if (submitterInfoErr) return [null, submitterInfoErr];
+  return [submitterInfo!.indexOf(jobKey), null];
 };

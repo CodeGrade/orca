@@ -5,7 +5,7 @@ import { DeleteJobRequest } from "./types";
 const deleteJobHandler = async (
   deleteJobRequest: DeleteJobRequest,
 ): Promise<null | Error> => {
-  const { jobKey, nonce } = deleteJobRequest;
+  const { jobKey } = deleteJobRequest;
   if (deleteJobRequest.collation) {
     const removeErr = await removeNonImmediateJob(
       jobKey,
