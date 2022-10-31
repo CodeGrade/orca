@@ -3,6 +3,7 @@ import { Collation } from "../components/grading_job_table/types";
 import * as service from "../services/grading-job-services";
 import {
   DeleteJobRequest,
+  FilterType,
   MoveJobAction,
   MoveJobRequest,
 } from "../services/types";
@@ -15,6 +16,7 @@ export const DELAY_GRADING_JOB = "DELAY_GRADING_JOB";
 
 // TODO: Check responses/status codes
 
+// TODO: Combine get and getFiltered
 export const getGradingJobs = async (
   dispatch: Dispatch,
   offset?: number,
@@ -24,19 +26,20 @@ export const getGradingJobs = async (
   const gradingJobs = await service.getGradingJobs(limit, offset);
   dispatch({
     type: GET_GRADING_JOBS,
-    grading_job_queue: gradingJobs,
+    grading_jobs: gradingJobs,
   });
 };
 
 export const getFilteredGradingJobs = async (
   dispatch: Dispatch,
-  filterType: string,
+  filterType: string, // FilterType,
   filterValue: string,
   offset?: number,
   limit: number = LIMIT
 ) => {
   if (!offset) offset = OFFSET_START;
-  const grading_job_queue = await service.getFilteredGradingJobs(
+
+  const gradingJobs = await service.getFilteredGradingJobs(
     limit,
     offset,
     filterType,
@@ -44,7 +47,7 @@ export const getFilteredGradingJobs = async (
   );
   dispatch({
     type: GET_GRADING_JOBS,
-    grading_job_queue,
+    grading_jobs: gradingJobs,
   });
 };
 

@@ -89,3 +89,12 @@ export interface DeleteJobRequest {
   nonce?: number;
   collation?: Collation;
 }
+
+export type FilterInfo = {
+  [type: string]: string[];
+};
+
+export enum FilterType {
+  CourseID = "course_id",
+  GraderID = "grader_id",
+}

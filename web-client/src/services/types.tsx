@@ -1,10 +1,10 @@
 import { Collation } from "../components/grading_job_table/types";
 
-export type DeleteJobRequest = {
+export interface DeleteJobRequest {
   jobKey: string;
   collation?: Collation;
   nonce?: number;
-};
+}
 
 export enum MoveJobAction {
   RELEASE = "release",
@@ -16,4 +16,10 @@ export interface MoveJobRequest {
   jobKey: string; // JSONstring
   moveAction: MoveJobAction;
   collation: Collation;
+}
+
+// TODO: Implement filter types
+export enum FilterType {
+  COURSE_ID = "course_id",
+  GRADER_ID = "grader_id",
 }

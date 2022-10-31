@@ -83,7 +83,7 @@ export const createOrUpdateXGradingJobs = async (numJobs: number) => {
     `${i}${i}${i}${i}`.substring(0, 4);
 
   const generateGraderId = (i: number): string =>
-    [`${i}`, `${i}`, `${i}`, `${i}`].reverse().join("");
+    `${i}${i}${i}${i}`.substring(0, 3);
 
   const generateGraderDescription = (): string => {
     const graderDescriptions = ["JUnit Grader", "Auto", "Manual"];

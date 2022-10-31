@@ -180,3 +180,10 @@ export const validateDeleteRequest = (
   if (!validateJSONKey(request.jobKey)) return false;
   return true;
 };
+
+// TODO: Implement filterType as FilterType
+export const validateFilterRequest = (filterType: any, filterValue: any) => {
+  const types = isString(filterType) && isString(filterValue);
+  if (!types) return false;
+  return true;
+};

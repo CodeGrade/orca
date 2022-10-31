@@ -38,7 +38,7 @@ const gradingJobReducer = (state: State = initialState, action: AnyAction) => {
     case GET_GRADING_JOBS:
       return (state = {
         ...state,
-        grading_table_info: action.grading_job_queue,
+        grading_table_info: action.grading_jobs,
       });
 
     case DELETE_GRADING_JOB:

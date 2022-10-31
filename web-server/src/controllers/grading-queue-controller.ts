@@ -9,10 +9,11 @@ import {
   getPageFromGradingQueue as getPageFromGradingJobs,
 } from "../utils/pagination";
 import { getGradingQueueStats } from "../grading-queue/stats";
-import { getFilterInfo } from "../grading-queue/filter";
+import { filterGradingJobs, getFilterInfo } from "../grading-queue/filter";
 import { GradingJob } from "../grading-queue/types";
 import {
   validateDeleteRequest,
+  validateFilterRequest,
   validateGradingJobConfig,
   validateMoveRequest,
 } from "../utils/validate";
@@ -44,7 +45,7 @@ export const getGradingJobs = async (req: Request, res: Response) => {
     req.query.limit,
   );
 
-  const [gradingJobs, gradingJobsErr] = await getCollatedGradingJobs();
+  let [gradingJobs, gradingJobsErr] = await getCollatedGradingJobs();
   if (gradingJobsErr || !gradingJobs) {
     errorResponse(res, 500, [
       "An internal server error occurred while trying to retrieve the grading queue.  Please try again or contact an administrator",
@@ -61,15 +62,24 @@ export const getGradingJobs = async (req: Request, res: Response) => {
 
   let filtered = false;
   let filteredGradingJobs: GradingJob[] = [];
+  // TODO: Use RequestHandler from express
   if (req.query.filter_type && req.query.filter_value) {
+    // TODO: Validate filter type and filter value
     const filterType = req.query.filter_type;
     const filterValue = req.query.filter_value;
-    // TODO: Validate filterType and filterValue - try catch this?
-    filteredGradingJobs = gradingJobs.filter(
-      (gradingJob) => gradingJob[filterType as keyof GradingJob] == filterValue,
+    if (!validateFilterRequest(req.query.filter_type, req.query.filter_value)) {
+      errorResponse(res, 500, ["Failed to validate filter request."]);
+      return;
+    }
+
+    filteredGradingJobs = filterGradingJobs(
+      gradingJobs,
+      filterType as string,
+      filterValue as string,
     );
     filtered = true;
   }
+
   const resGradingJobs = filtered ? filteredGradingJobs : gradingJobs;
 
   const paginationData = getPageFromGradingJobs(resGradingJobs, offset, limit);
@@ -263,7 +273,6 @@ export const deleteJob = async (req: Request, res: Response) => {
   if (deleteErr) {
     errorResponse(res, 500, [
       "An internal server error occurred while trying to delete grading job.",
-      deleteErr.message,
     ]);
     return;
   }
