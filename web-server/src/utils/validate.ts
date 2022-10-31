@@ -162,14 +162,16 @@ export const validateDeleteRequest = (
   request: any,
 ): request is DeleteJobRequest => {
   const validateDeleteRequestFields = (request: any): boolean => {
-    const requiredFields = "nonce" in request && "jobKey" in request;
+    const requiredFields = "jobKey" in request;
     if (!requiredFields) return false;
-    const requiredFieldTypes =
-      isNumber(request.nonce) && isString(request.jobKey);
+    const requiredFieldTypes = isString(request.jobKey);
     if (!requiredFieldTypes) return false;
 
     if ("collation" in request) {
-      return validateCollation(request.collation);
+      if ("nonce" in request) {
+        return validateCollation(request.collation) && isNumber(request.nonce);
+      }
+      return false;
     }
     return true;
   };

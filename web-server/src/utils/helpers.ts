@@ -5,11 +5,13 @@ import {
 } from "../grading-queue/types";
 import {
   redisExists,
+  redisLPos,
   redisLRange,
   redisLRem,
   redisSPopOne,
   redisSRem,
   redisZAdd,
+  redisZRange,
   redisZRem,
 } from "./redis";
 
@@ -49,25 +51,14 @@ export const generateGradingJobFromConfig = (
 };
 
 // TODO: Don't really need these wrappers
-export const createReservation = async (
-  value: string,
+export const addReservation = async (
+  member: string,
   score: number,
 ): Promise<Error | null> => {
   // should always be 1 since we only ever add 1 entry at time
-  const [numAdded, zAddErr] = await redisZAdd("Reservations", score, value);
+  const [numAdded, zAddErr] = await redisZAdd("Reservations", score, member);
   if (zAddErr) return zAddErr;
   if (numAdded !== 1) return Error("Error while creating reservation.");
-  return null;
-};
-
-export const updateReservation = async (
-  value: string,
-  score: number,
-): Promise<Error | null> => {
-  // should always be 1 since we only ever add 1 entry at time
-  const [numAdded, zAddErr] = await redisZAdd("Reservations", score, value);
-  if (zAddErr) return zAddErr;
-  if (numAdded !== 0) return Error("Error while creating reservation.");
   return null;
 };
 
@@ -96,7 +87,38 @@ export const removeNonImmediateJob = async (
 ): Promise<null | Error> => {
   const collationKey = `${collation.type}.${collation.id}`;
   const submitterInfoKey = `SubmitterInfo.${collationKey}`;
+  const noncesKey = `Nonces.${collationKey}`;
 
+  // Get index of job key in SubmitterInfo list
+  const [index, lPosErr] = await redisLPos(submitterInfoKey, key);
+  if (lPosErr) return lPosErr;
+  if (index === null)
+    return Error(
+      "Failed to find job key in submitter info when removing non-immediate job",
+    );
+
+  // Get nonce
+  const [nonces, zRangeErr] = await redisZRange(noncesKey, index, index);
+  if (zRangeErr) return zRangeErr;
+  if (!nonces || nonces.length !== 1)
+    return Error(
+      "Something went wrong while getting nonce for removing non-immediate job",
+    );
+  const [nonce] = nonces;
+  if (!nonce)
+    return Error(
+      "Something went wrong while deleting nonce for removing non-immediate job",
+    );
+
+  // Delete nonce
+  const [numNonceRemoved, remNonceErr] = await redisZRem(noncesKey, nonce);
+  if (remNonceErr) return remNonceErr;
+  if (numNonceRemoved !== 1)
+    return Error(
+      "Something went wrong while removing nonce for removing non-immediate job.",
+    );
+
+  // Delete job key from SubmitterInfo
   const [numLRemoved, lRemErr] = await redisLRem(submitterInfoKey, key);
   if (lRemErr) return lRemErr;
   if (numLRemoved !== 1)
@@ -104,13 +126,7 @@ export const removeNonImmediateJob = async (
       "Something went wrong while removing key from submitter info for existing non-immediate job.",
     );
 
-  const [nonce, sPopErr] = await redisSPopOne(`Nonces.${collationKey}`);
-  if (sPopErr) return sPopErr;
-  if (!nonce)
-    return Error(
-      "Something went wrong while removing nonce for non-immediate job.",
-    );
-
+  // Delete reservation
   const [numZRemoved, zRemErr] = await redisZRem(
     "Reservations",
     `${collationKey}.${nonce}`,
@@ -121,15 +137,4 @@ export const removeNonImmediateJob = async (
       "Something went wrong while removing reservation for existing non-immediate job.",
     );
   return null;
-};
-
-const getJobKeyIndexInSubmitterInfo = async (
-  jobKey: string,
-  submitterInfoKey: string,
-): Promise<[number | null, Error | null]> => {
-  const [submitterInfo, submitterInfoErr] = await getSubmitterInfo(
-    submitterInfoKey,
-  );
-  if (submitterInfoErr) return [null, submitterInfoErr];
-  return [submitterInfo!.indexOf(jobKey), null];
 };

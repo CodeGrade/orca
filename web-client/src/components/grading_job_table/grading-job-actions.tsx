@@ -8,7 +8,7 @@ import { Collation } from "./types";
 type GradingJobActionsProps = {
   jobKey: string;
   collation: Collation;
-  nonce: string;
+  nonce: string | null;
   released: boolean;
 };
 
@@ -20,7 +20,6 @@ const GradingJobActions = ({
 }: GradingJobActionsProps) => {
   const dispatch: Dispatch = useDispatch();
   const handleDelete = () => {
-    // Immediate jobs do not have collation or nonce
     deleteJob(dispatch, jobKey, collation, nonce);
   };
   // TODO: Pull out RELEASE and DELAY

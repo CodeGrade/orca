@@ -1,9 +1,9 @@
 import { Collation } from "../components/grading_job_table/types";
 
-export type DeleteJobConfig = {
+export type DeleteJobRequest = {
   jobKey: string;
   collation?: Collation;
-  nonce?: string;
+  nonce?: number;
 };
 
 export enum MoveJobAction {

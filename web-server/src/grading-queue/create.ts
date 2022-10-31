@@ -1,8 +1,5 @@
-import {
-  createReservation,
-  generateGradingJobFromConfig,
-} from "../utils/helpers";
-import { redisLPush, redisSAdd, redisSet } from "../utils/redis";
+import { addReservation, generateGradingJobFromConfig } from "../utils/helpers";
+import { redisLPush, redisSAdd, redisSet, redisZAdd } from "../utils/redis";
 import { GradingJobConfig } from "./types";
 
 const createJob = async (
@@ -26,18 +23,20 @@ const createJob = async (
   if (!length) return Error("Failed to push key to SubmitterInfo.");
 
   // Create reservation
-  const reservationErr = await createReservation(
+  const reservationErr = await addReservation(
     `${nextTask}.${arrivalTime}`,
     releaseTime,
   );
   if (reservationErr) return reservationErr;
+
   // Store nonce
-  const [numAdded, nonceErr] = await redisSAdd(
+  const [numAdded, nonceErr] = await redisZAdd(
     `Nonces.${collation.type}.${collation.id}`,
+    releaseTime,
     arrivalTime.toString(),
   );
   if (nonceErr) return nonceErr;
-  if (numAdded !== 1) return Error("Failed to store job nonce.");
+  if (numAdded !== 1) return Error("Failed to store nonce of grading job.");
 
   // Store grading job
   const [setStatus, setErr] = await redisSet(key, JSON.stringify(gradingJob));

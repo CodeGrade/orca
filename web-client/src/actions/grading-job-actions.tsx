@@ -2,7 +2,7 @@ import { Dispatch } from "redux";
 import { Collation } from "../components/grading_job_table/types";
 import * as service from "../services/grading-job-services";
 import {
-  DeleteJobConfig,
+  DeleteJobRequest,
   MoveJobAction,
   MoveJobRequest,
 } from "../services/types";
@@ -51,14 +51,24 @@ export const getFilteredGradingJobs = async (
 export const deleteJob = async (
   dispatch: Dispatch,
   jobKey: string,
-  collation?: Collation,
-  nonce?: string
+  collation: Collation | null,
+  nonce: string | null
 ) => {
-  const deleteJobConfig: DeleteJobConfig = { jobKey, collation, nonce };
-  const response = await service.deleteJob(deleteJobConfig);
+  let deleteJobRequest: DeleteJobRequest = {
+    jobKey,
+  };
+  if (nonce && collation) {
+    deleteJobRequest = {
+      ...deleteJobRequest,
+      collation,
+      nonce: parseInt(nonce),
+    };
+  }
+
+  const response = await service.deleteJob(deleteJobRequest);
   dispatch({
     type: DELETE_GRADING_JOB,
-    jobKey: jobKey,
+    key: jobKey,
   });
 };
 

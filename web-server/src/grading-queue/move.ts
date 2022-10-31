@@ -11,9 +11,10 @@ import {
   redisLRem,
   redisRPush,
   redisSet,
+  redisZAdd,
   redisZRangeWithScores,
 } from "../utils/redis";
-import { updateReservation } from "../utils/helpers";
+import { addReservation } from "../utils/helpers";
 import { upgradeJob } from "./upgrade";
 
 const moveJobHandler = async (
@@ -89,7 +90,7 @@ const delayJob = async (
   const lastJobReleaseAt: number = lastJob!.score;
   const newReleaseAt = lastJobReleaseAt + MOVE_TO_BACK_BUFFER;
   const collationKey = `${collation.type}.${collation.id}`;
-  const reservationErr = await updateReservation(
+  const reservationErr = await addReservation(
     `${collationKey}.${nonce}`,
     newReleaseAt,
   );
@@ -115,6 +116,16 @@ const delayJob = async (
         "Failed to push key into new position in SubmitterInfo when delaying grading job",
       ),
     ];
+
+  // Update nonce
+  const [numUpdated, nonceErr] = await redisZAdd(
+    `Nonces.${collation.type}.${collation.id}`,
+    newReleaseAt,
+    nonce.toString(),
+  );
+  if (nonceErr) return [null, nonceErr];
+  if (numUpdated !== 1)
+    return [null, Error("Failed to update nonce of grading job.")];
   return [newReleaseAt, null];
 };
 

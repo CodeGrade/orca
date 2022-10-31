@@ -27,7 +27,7 @@ export interface GradingJob {
   priority: number;
   script: GradingScriptCommand[];
   response_url: string;
-  nonce: string;
+  nonce: string | null;
   release_at: number; // Release timestamp in ms
   created_at: number; // Created timestamp in ms
   // updated_at: number; // Last updated timestamp in ms

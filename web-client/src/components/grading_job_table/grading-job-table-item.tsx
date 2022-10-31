@@ -16,7 +16,6 @@ const GradingJobTableItem = ({ gradingJob }: { gradingJob: GradingJob }) => {
   const releaseAtDT: DateTime = DateTime.fromMillis(releaseAt);
   const waitTimeDT: DateTime = DateTime.fromMillis(createdAt);
   const isReleased: boolean = releaseAt < now;
-
   return (
     <tr
       className={`text-wrap ${isReleased ? "table-success" : "table-primary"}`}
@@ -24,9 +23,7 @@ const GradingJobTableItem = ({ gradingJob }: { gradingJob: GradingJob }) => {
       <td>
         <GradingJobSubmitter user_names={studentNames} />
       </td>
-      {/* <td>{metadata.grader_id}</td> */}
-      {/* TODO: REMOVE AFTER TESTING */}
-      <td>{gradingJob.key}</td>
+      <td>{metadata.grader_id}</td>
 
       <td>{metadata.course_id}</td>
       <td>

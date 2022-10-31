@@ -49,11 +49,14 @@ export const redisExpireAt = async (
 export const redisZAdd = async (
   key: string,
   score: number,
-  value: string,
+  member: string,
 ): Promise<[number | null, Error | null]> => {
   try {
-    // number of values added (1)
-    return [await client.zAdd(key, [{ score: score, value: value }]), null];
+    // number of values added or updated (1)
+    return [
+      await client.zAdd(key, [{ score: score, value: member }], { CH: true }),
+      null,
+    ];
   } catch (error) {
     return [null, error];
   }
@@ -115,8 +118,21 @@ export const redisZRangeWithScores = async (
   stop: number,
 ): Promise<[{ value: string; score: number }[] | null, Error | null]> => {
   try {
-    // zset values or []
+    // zset values with scores or []
     return [await client.zRangeWithScores(key, start, stop), null];
+  } catch (error) {
+    return [null, error];
+  }
+};
+
+export const redisZRange = async (
+  key: string,
+  start: number,
+  stop: number,
+): Promise<[string[] | null, Error | null]> => {
+  try {
+    // zset values or []
+    return [await client.zRange(key, start, stop), null];
   } catch (error) {
     return [null, error];
   }
@@ -226,11 +242,11 @@ export const redisSRem = async (
 
 export const redisZRem = async (
   key: string,
-  value: string,
+  member: string,
 ): Promise<[number | null, Error | null]> => {
   try {
     // number of values removed - should only ever be 1
-    return [await client.zRem(key, value), null];
+    return [await client.zRem(key, member), null];
   } catch (error) {
     return [null, error];
   }
@@ -254,6 +270,18 @@ export const redisSPopOne = async (
     // value that was popped off of set or null if set empty
     const popped = await client.sPop(key, 1);
     return [popped[0], null];
+  } catch (error) {
+    return [null, error];
+  }
+};
+
+export const redisLPos = async (
+  key: string,
+  value: string,
+): Promise<[number | null, Error | null]> => {
+  try {
+    // index of value or null
+    return [await client.lPos(key, value), null];
   } catch (error) {
     return [null, error];
   }

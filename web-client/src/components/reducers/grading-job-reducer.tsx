@@ -40,20 +40,20 @@ const gradingJobReducer = (state: State = initialState, action: AnyAction) => {
         ...state,
         grading_table_info: action.grading_job_queue,
       });
+
     case DELETE_GRADING_JOB:
-      // const updated_queue_deleted = [
-      //   ...state.grading_table_info.grading_jobs.filter(
-      //     (grading_job: GradingJob) => grading_job.nonce !== action.nonce
-      //   ),
-      // ];
-      // return (state = {
-      //   grading_table_info: {
-      //     ...state.grading_table_info,
-      //     grading_jobs: updated_queue_deleted,
-      //   },
-      // });
-      return state;
-    // TODO: Abstract from moving back/front
+      updatedGradingJobs = [
+        ...state.grading_table_info.grading_jobs.filter(
+          (gradingJob: GradingJob) => gradingJob.key !== action.key
+        ),
+      ];
+      return (state = {
+        grading_table_info: {
+          ...state.grading_table_info,
+          grading_jobs: updatedGradingJobs,
+        },
+      });
+
     case DELAY_GRADING_JOB:
       gradingJob = findGradingJobInArrByKey(
         state.grading_table_info.grading_jobs,
@@ -78,6 +78,7 @@ const gradingJobReducer = (state: State = initialState, action: AnyAction) => {
           grading_jobs: updatedGradingJobs,
         },
       });
+
     case RELEASE_GRADING_JOB:
       gradingJob = findGradingJobInArrByKey(
         state.grading_table_info.grading_jobs,
@@ -88,6 +89,7 @@ const gradingJobReducer = (state: State = initialState, action: AnyAction) => {
       // Update release_at of job in state
       gradingJob = {
         ...gradingJob,
+        nonce: null,
         release_at: action.new_release_at,
       };
 

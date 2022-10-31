@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from "axios";
 import { GradingScriptCommand } from "../components/grading_job_table/types";
-import { DeleteJobConfig, MoveJobRequest } from "./types";
+import { DeleteJobRequest, MoveJobRequest } from "./types";
 // TODO: Environment variable
 const API_BASE = "http://localhost:4000/api/v1/grading_queue";
 
@@ -29,9 +29,9 @@ export const getFilteredGradingJobs = async (
   return response.data;
 };
 
-export const deleteJob = async (deleteJobConfig: DeleteJobConfig) => {
+export const deleteJob = async (deleteJobRequest: DeleteJobRequest) => {
   const response = await axios.delete(`${API_BASE}`, {
-    data: { deleteJobConfig },
+    data: { deleteJobRequest },
   });
   return response.data;
 };

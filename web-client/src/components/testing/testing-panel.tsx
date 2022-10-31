@@ -17,8 +17,7 @@ const TestingPanel = () => {
       } ms`
     );
     setJobsInput("");
-
-    // window.location.reload();
+    window.location.reload();
   };
   return (
     <div>

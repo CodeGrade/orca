@@ -132,8 +132,7 @@ export const createOrUpdateImmediateJob = async (
       return;
     }
   } else {
-    // TODO: This can currently be overwritten by nonImmediateJobExists because SET(key, job) happens inside of functions
-    // Update existing job
+    // Update content of existing job
     const updateErr = await updateGradingJob(gradingJobConfig);
     if (updateErr) {
       errorResponse(res, 500, [
@@ -207,7 +206,7 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
       return;
     }
   } else {
-    // Update existing job
+    // Update content of existing job
     const updateErr = await updateGradingJob(gradingJobConfig);
     if (updateErr) {
       errorResponse(res, 500, [
@@ -248,10 +247,10 @@ export const moveJob = async (req: Request, res: Response) => {
 };
 
 export const deleteJob = async (req: Request, res: Response) => {
-  const deleteRequest = req.body;
+  const deleteRequest = req.body.deleteJobRequest;
   try {
     if (!validateDeleteRequest(deleteRequest)) {
-      errorResponse(res, 400, ["Invalid move request."]);
+      errorResponse(res, 400, ["Invalid delete request."]);
       return;
     }
   } catch (error) {
@@ -260,15 +259,11 @@ export const deleteJob = async (req: Request, res: Response) => {
     ]);
     return;
   }
-
-  const deleteErr = await deleteJobHandler(
-    deleteRequest.jobKey,
-    deleteRequest.nonce,
-    deleteRequest.collation,
-  );
+  const deleteErr = await deleteJobHandler(deleteRequest);
   if (deleteErr) {
     errorResponse(res, 500, [
       "An internal server error occurred while trying to delete grading job.",
+      deleteErr.message,
     ]);
     return;
   }
