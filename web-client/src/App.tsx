@@ -1,7 +1,7 @@
-import './vendors/bootstrap.min.css';
-import './App.css';
-import Orca from './components/orca';
-import React from 'react';
+import "./App.css";
+import "./vendors/bootswatch/lux/bootstrap.min.css";
+import Orca from "./components/orca";
+import React from "react";
 
 const App = () => {
   return (

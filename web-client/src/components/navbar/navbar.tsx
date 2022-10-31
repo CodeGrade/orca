@@ -1,21 +1,18 @@
 import React from "react";
+import Navbar from "react-bootstrap/Navbar";
+import Container from "react-bootstrap/Container";
+import Nav from "react-bootstrap/Nav";
 
-const Navbar = () => {
+const OrcaNavbar = () => {
   return (
-    <nav className="navbar navbar-dark bg-primary">
-      <div className="container-fluid">
-        <a href="#" className="navbar-brand">
-          Orca
-        </a>
-        <ul className="navbar-nav">
-          <li className="nav-item active">
-            <a href="#" className="nav-link">
-              Dashboard
-            </a>
-          </li>
-        </ul>
-      </div>
-    </nav>
+    <Navbar bg="primary" variant="dark" className="px-3">
+      <Container fluid>
+        <Navbar.Brand href="#">Orca</Navbar.Brand>
+        <Nav>
+          <Nav.Link href="#">Dashboard</Nav.Link>
+        </Nav>
+      </Container>
+    </Navbar>
   );
 };
-export default Navbar;
+export default OrcaNavbar;

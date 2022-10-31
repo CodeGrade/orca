@@ -1,4 +1,5 @@
 import React from "react";
+import Button from "react-bootstrap/Button";
 import { PaginationInfo } from "../grading_job_table/types";
 
 type PaginationButtonProps = {
@@ -13,13 +14,13 @@ const PaginationButton = ({
   icon,
 }: PaginationButtonProps) => {
   return (
-    <button
-      type="button"
-      className={`btn btn-primary ${changeTo ? "visible" : "invisible"}`}
+    <Button
+      variant="primary"
+      className={`${changeTo ? "visible" : "invisible"}`}
       onClick={() => clickHandler(changeTo)}
     >
       {icon}
-    </button>
+    </Button>
   );
 };
 export default PaginationButton;

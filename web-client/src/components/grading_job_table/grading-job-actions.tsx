@@ -1,4 +1,5 @@
 import React from "react";
+import Button from "react-bootstrap/Button";
 import { useDispatch } from "react-redux";
 import { Dispatch } from "redux";
 import { deleteJob, moveJob } from "../../actions/grading-job-actions";
@@ -22,56 +23,45 @@ const GradingJobActions = ({
   const handleDelete = () => {
     deleteJob(dispatch, jobKey, collation, nonce);
   };
-  // TODO: Pull out RELEASE and DELAY
-  const handleRelease = () => {
-    if (released) {
-      // Should never need this
-      alert("Job is already released");
+  const handleMoveJob = (action: MoveJobAction) => {
+    if (released || !nonce) {
+      // Job already released
       return;
     }
-    moveJob(dispatch, jobKey, nonce, MoveJobAction.RELEASE, collation);
-  };
-  const handleDelay = () => {
-    if (released) {
-      // Should never need this
-      // Job already release
-      return;
-    }
-    moveJob(dispatch, jobKey, nonce, MoveJobAction.DELAY, collation);
+    moveJob(dispatch, jobKey, nonce, action, collation);
   };
   // TODO: Abstract buttons
   return (
     <div className="d-flex align-items-center justify-content-center">
       <div>
-        <button
-          type="button"
-          className={`btn btn-sm btn-success rounded ${
-            released ? "d-none" : "d-inline"
-          }`}
-          onClick={() => handleRelease()}
+        <Button
+          variant="success"
+          size="sm"
+          className={`rounded ${released ? "d-none" : "d-inline"}`}
+          onClick={() => handleMoveJob(MoveJobAction.RELEASE)}
         >
           Release
-        </button>
+        </Button>
       </div>
       <div>
-        <button
-          type="button"
-          className={`btn btn-sm btn-warning rounded ${
-            released ? "d-none" : "d-inline"
-          }`}
-          onClick={() => handleDelay()}
+        <Button
+          variant="warning"
+          size="sm"
+          className={`rounded ${released ? "d-none" : "d-inline"}`}
+          onClick={() => handleMoveJob(MoveJobAction.DELAY)}
         >
           Delay
-        </button>
+        </Button>
       </div>
       <div>
-        <button
-          type="button"
-          className="btn btn-sm btn-danger rounded"
+        <Button
+          variant="danger"
+          size="sm"
+          className="rounded"
           onClick={() => handleDelete()}
         >
           Delete
-        </button>
+        </Button>
       </div>
     </div>
   );

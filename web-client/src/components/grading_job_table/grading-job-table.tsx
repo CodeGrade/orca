@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Table from "react-bootstrap/Table";
 import { GradingJob, SortType } from "./types";
 import GradingJobTableBody from "./grading-job-table-body";
 import SortableHeaderItem from "./sortable-header-item";
@@ -18,7 +19,7 @@ const GradingJobTable = ({ gradingJobs }: { gradingJobs: GradingJob[] }) => {
   };
 
   return (
-    <table className="table table-hover text-center mb-2">
+    <Table striped hover className="text-center mb-2">
       {/* TODO: Pull out as own component */}
       <thead className="m-auto">
         <tr className="table-dark">
@@ -68,7 +69,7 @@ const GradingJobTable = ({ gradingJobs }: { gradingJobs: GradingJob[] }) => {
         sortBy={sortBy}
         gradingJobs={gradingJobs && [...gradingJobs]}
       />
-    </table>
+    </Table>
   );
 };
 export default GradingJobTable;
