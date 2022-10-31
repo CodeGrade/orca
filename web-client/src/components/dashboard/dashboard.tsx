@@ -9,6 +9,7 @@ import {
   FilterInfo,
   GradingJob,
   GradingJobTableInfo,
+  PaginationInfo,
   State,
 } from "../grading_job_table/types";
 import GradingJobTableStats from "../grading_job_table/grading_job_table_stats/grading-job-table-stats";
@@ -18,6 +19,7 @@ import {
   createDefaultFilterOption,
   getActiveOptions,
 } from "../../utils/filter";
+import PaginationButton from "../common/pagination-button";
 import TestingPanel from "../testing/testing-panel";
 
 const Dashboard = () => {
@@ -41,24 +43,11 @@ const Dashboard = () => {
   }, [dispatch, offset, filterValue]);
 
   const gradingJobs: GradingJob[] = gradingTableInfo.grading_jobs;
-  console.log(gradingJobs);
   const { first, prev, next, last, total, stats } = gradingTableInfo;
 
-  const handleFirstPage = () => {
-    if (!first) return;
-    setOffset(first.offset);
-  };
-  const handleLastPage = () => {
-    if (!last) return;
-    setOffset(last.offset);
-  };
-  const handleNextPage = () => {
-    if (!next) return;
-    setOffset(next.offset);
-  };
-  const handlePrevPage = () => {
-    if (!prev) return;
-    setOffset(prev.offset);
+  const handleChangePage = (changeTo: PaginationInfo | null) => {
+    if (!changeTo) return;
+    setOffset(changeTo.offset);
   };
 
   const handleSetFilter = (filter: string) => {
@@ -124,47 +113,31 @@ const Dashboard = () => {
             {/* End filter */}
             <GradingJobTable gradingJobs={gradingJobs} />
 
-            {/* TODO: Pull out as own component */}
+            {/* TODO: Pull out as own component - Pagination bar */}
             <div className="d-flex justify-content-between">
               <div>
-                <button
-                  type="button"
-                  className={`btn btn-primary ${
-                    first ? "visible" : "invisible"
-                  }`}
-                  onClick={() => handleFirstPage()}
-                >
-                  {"<<"}
-                </button>
-                <button
-                  type="button"
-                  className={`btn btn-primary ${
-                    prev ? "visible" : "invisible"
-                  }`}
-                  onClick={() => handlePrevPage()}
-                >
-                  {"<"}
-                </button>
+                <PaginationButton
+                  clickHandler={handleChangePage}
+                  changeTo={first}
+                  icon={"<<"}
+                />
+                <PaginationButton
+                  clickHandler={handleChangePage}
+                  changeTo={prev}
+                  icon={"<"}
+                />
               </div>
               <div>
-                <button
-                  type="button"
-                  className={`btn btn-primary ${
-                    next ? "visible" : "invisible"
-                  }`}
-                  onClick={() => handleNextPage()}
-                >
-                  {">"}
-                </button>
-                <button
-                  type="button"
-                  className={`btn btn-primary ${
-                    last ? "visible" : "invisible"
-                  }`}
-                  onClick={() => handleLastPage()}
-                >
-                  {">>"}
-                </button>
+                <PaginationButton
+                  clickHandler={handleChangePage}
+                  changeTo={next}
+                  icon={">"}
+                />
+                <PaginationButton
+                  clickHandler={handleChangePage}
+                  changeTo={last}
+                  icon={">>"}
+                />
               </div>
             </div>
           </div>
