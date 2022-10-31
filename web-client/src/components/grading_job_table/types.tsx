@@ -22,7 +22,10 @@ export interface Collation {
 export interface GradingJob {
   key: string; // JSONString
   collation: Collation;
-  metadata_table: Map<string, string | string[]>;
+  metadata_table: {
+    /* Map<string, string | string[]>; */
+    [property: string]: string | string[];
+  };
   files: Map<string, CodeFileInfo>;
   priority: number;
   script: GradingScriptCommand[];
@@ -69,3 +72,11 @@ export type GradingJobTableInfo = {
 export type State = {
   grading_table_info: GradingJobTableInfo;
 };
+
+export enum SortType {
+  RELEASE_AT = "release_at",
+  WAIT_TIME = "created_at",
+  GRADER_ID = "grader_id",
+  COURSE_ID = "course_id",
+  SUBMITTER_NAME = "submitter_name",
+}

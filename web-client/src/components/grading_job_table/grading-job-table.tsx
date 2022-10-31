@@ -1,12 +1,15 @@
 import React, { useState } from "react";
-import { GradingJob } from "./types";
+import { GradingJob, SortType } from "./types";
 import GradingJobTableBody from "./grading-job-table-body";
 import SortableHeaderItem from "./sortable-header-item";
 import "../../stylesheets/grading-job-table.css";
 
 const GradingJobTable = ({ gradingJobs }: { gradingJobs: GradingJob[] }) => {
-  const [sortBy, setSortBy] = useState({ type: "release_time", order: -1 });
-  const handleSetSortBy = (sortType: string) => {
+  const [sortBy, setSortBy] = useState({
+    type: SortType.RELEASE_AT,
+    order: -1,
+  });
+  const handleSetSortBy = (sortType: SortType) => {
     if (sortType === sortBy.type) {
       setSortBy({ type: sortType, order: sortBy.order * -1 });
     } else {
@@ -19,39 +22,42 @@ const GradingJobTable = ({ gradingJobs }: { gradingJobs: GradingJob[] }) => {
       {/* TODO: Pull out as own component */}
       <thead className="m-auto">
         <tr className="table-dark">
-          <th scope="col" onClick={() => handleSetSortBy("submitter_name")}>
+          <th
+            scope="col"
+            onClick={() => handleSetSortBy(SortType.SUBMITTER_NAME)}
+          >
             <SortableHeaderItem
               label={"Submitter(s)"}
-              active={sortBy.type === "submitter_name"}
+              active={sortBy.type === SortType.SUBMITTER_NAME}
               order={sortBy.order}
             />
           </th>
-          <th scope="col" onClick={() => handleSetSortBy("grader_id")}>
+          <th scope="col" onClick={() => handleSetSortBy(SortType.GRADER_ID)}>
             <SortableHeaderItem
               label={"Grader"}
-              active={sortBy.type === "grader_id"}
+              active={sortBy.type === SortType.GRADER_ID}
               order={sortBy.order}
             />
           </th>
-          <th scope="col" onClick={() => handleSetSortBy("course_id")}>
+          <th scope="col" onClick={() => handleSetSortBy(SortType.COURSE_ID)}>
             <SortableHeaderItem
               label={"Course ID"}
-              active={sortBy.type === "course_id"}
+              active={sortBy.type === SortType.COURSE_ID}
               order={sortBy.order}
             />
           </th>
           <th scope="col">Submission</th>
-          <th scope="col" onClick={() => handleSetSortBy("wait_time")}>
+          <th scope="col" onClick={() => handleSetSortBy(SortType.WAIT_TIME)}>
             <SortableHeaderItem
               label={"Wait Time"}
-              active={sortBy.type === "wait_time"}
+              active={sortBy.type === SortType.WAIT_TIME}
               order={sortBy.order}
             />
           </th>
-          <th scope="col" onClick={() => handleSetSortBy("release_time")}>
+          <th scope="col" onClick={() => handleSetSortBy(SortType.RELEASE_AT)}>
             <SortableHeaderItem
               label={"Release"}
-              active={sortBy.type === "release_time"}
+              active={sortBy.type === SortType.RELEASE_AT}
               order={sortBy.order}
             />
           </th>
