@@ -54,8 +54,7 @@ export type GradingJobStats = {
 };
 
 export type FilterInfo = {
-  course_id: string[];
-  grader_id: string[];
+  [filter_by: string]: string[];
 };
 
 export type PaginationInfo = {
@@ -81,6 +80,7 @@ export type State = {
   grading_table_info: GradingJobTableInfo;
 };
 
+// TODO: Replace this by object that is generated based on columns currently being displayed
 export enum SortType {
   RELEASE_AT = "release_at",
   WAIT_TIME = "created_at",

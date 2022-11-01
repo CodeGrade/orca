@@ -1,12 +1,6 @@
-import React, { createContext, useEffect, useState } from "react";
+import React, { createContext, useState } from "react";
+import { useSelector } from "react-redux";
 import {
-  getFilteredGradingJobs,
-  getGradingJobs,
-} from "../../actions/grading-job-actions";
-import { useDispatch, useSelector } from "react-redux";
-import { Dispatch } from "redux";
-import {
-  FilterInfo,
   GradingJob,
   GradingJobTableInfo,
   PageInfo,
@@ -18,7 +12,6 @@ import GradingJobTable from "../grading_job_table/grading-job-table";
 import { OFFSET_START, LIMIT } from "../../utils/constants";
 import PaginationBar from "../pagination/pagination-bar";
 import TestingPanel from "../testing/testing-panel";
-import CreateFilterModal from "../filter/create-filter-modal";
 import FilterBar from "../filter/filter-bar";
 
 export const OffsetContext = createContext<{
@@ -32,10 +25,6 @@ export const OffsetContext = createContext<{
 
 const Dashboard = () => {
   const [offset, setOffset] = useState<number>(OFFSET_START);
-
-  const [showModal, setShowModal] = useState<boolean>(false);
-  const handleShow = () => setShowModal(true);
-  const handleHide = () => setShowModal(false);
 
   const gradingTableInfo: GradingJobTableInfo = useSelector(
     (state: State) => state.grading_table_info
@@ -76,7 +65,6 @@ const Dashboard = () => {
         </div>
       </div>
       <TestingPanel />
-      <CreateFilterModal show={showModal} onClose={handleHide} />
     </div>
   );
 };

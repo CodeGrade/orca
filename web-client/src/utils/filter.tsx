@@ -20,7 +20,7 @@ export const createOptionElemsFromArr = (arr: string[]): JSX.Element[] => {
   return [createDefaultFilterOptionElem(), ...options];
 };
 
-export const getActiveOptionElems = (
+export const getFilterValueOptionElems = (
   filter: string,
   values: string[]
 ): JSX.Element[] => {

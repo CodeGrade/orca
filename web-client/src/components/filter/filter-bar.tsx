@@ -7,42 +7,54 @@ import { useDispatch } from "react-redux";
 import { Dispatch } from "redux";
 import {
   createDefaultFilterOptionElem,
-  getActiveOptionElems,
+  createOptionElemsFromArr,
+  getFilterValueOptionElems,
 } from "../../utils/filter";
 import { FilterInfo } from "../grading_job_table/types";
 import { OffsetContext } from "../dashboard/dashboard";
+import CreateFilterModal from "./create-filter-modal";
 
 type FilterBarProps = {
   filterInfo: FilterInfo;
 };
 
 const FilterBar = ({ filterInfo }: FilterBarProps) => {
+  // Create Filter Modal
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const handleShow = () => setShowModal(true);
+  const handleHide = () => setShowModal(false);
+
+  // Filter Settings
   const { offset, setOffset } = useContext(OffsetContext);
-  const [filterType, setFilterType] = useState<string>("none");
+  const [filterType, setFilterType] = useState<string>("");
   const [filterValue, setFilterValue] = useState<string>("");
-  const [filterOptionElems, setFilterOptionElems] = useState<JSX.Element[]>([
+  // Generate filter type options using provided filterInfo
+  const filterTypeOptions = createOptionElemsFromArr(
+    Array.from(Object.keys(filterInfo))
+  );
+  const [filterValueOptions, setFilterValueOptions] = useState<JSX.Element[]>([
     createDefaultFilterOptionElem(),
   ]);
 
+  const handleSetFilterValue = (filterValue: string): void => {
+    setOffset(0);
+    setFilterValue(filterValue);
+  };
+
+  const handleSetFilterType = (filterType: string): void => {
+    if (filterType)
+      setFilterValueOptions(
+        getFilterValueOptionElems(filterType, filterInfo[filterType])
+      );
+    setFilterValue("");
+    setFilterType(filterType);
+  };
+
   const dispatch: Dispatch = useDispatch();
   useEffect(() => {
-    if (filterType === "none" || filterValue === "")
-      getGradingJobs(dispatch, offset);
+    if (!filterType || !filterValue) getGradingJobs(dispatch, offset);
     else getFilteredGradingJobs(dispatch, filterType, filterValue, offset);
   }, [dispatch, offset, filterValue]);
-
-  const handleSetFilterValue = (value: string): void => {
-    setOffset(0);
-    setFilterValue(value);
-  };
-
-  const handleSetFilterType = (filter: string): void => {
-    setFilterOptionElems(
-      getActiveOptionElems(filter, filterInfo[filter as keyof FilterInfo])
-    );
-    setFilterValue("");
-    setFilterType(filter);
-  };
 
   return (
     <div className="form-group">
@@ -61,16 +73,10 @@ const FilterBar = ({ filterInfo }: FilterBarProps) => {
               handleSetFilterType(event.target.value);
             }}
           >
-            <option value={"none"}>None</option>
-            <option value={"grader_id"}>Grader</option>
-            <option value={"course_id"}>Course</option>
+            {filterTypeOptions}
           </select>
         </div>
-        <div
-          className={`form-group ${
-            filterType !== "none" ? "visibile" : "invisible"
-          }`}
-        >
+        <div className={`form-group ${filterType ? "visibile" : "invisible"}`}>
           <select
             className="form-select"
             id="filter-by"
@@ -79,10 +85,11 @@ const FilterBar = ({ filterInfo }: FilterBarProps) => {
               handleSetFilterValue(event.target.value);
             }}
           >
-            {filterOptionElems}
+            {filterValueOptions}
           </select>
         </div>
       </div>
+      <CreateFilterModal show={showModal} onClose={handleHide} />
     </div>
   );
 };
