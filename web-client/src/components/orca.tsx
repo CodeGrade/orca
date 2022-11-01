@@ -5,9 +5,6 @@ import gradingJobReducer from "./reducers/grading-job-reducer";
 import OrcaNavbar from "./navbar/navbar";
 import Dashboard from "./dashboard/dashboard";
 
-// const reducer = {
-//   grading_jobs: gradingJobReducer,
-// };
 const reducer = gradingJobReducer;
 
 const store = configureStore({ reducer });

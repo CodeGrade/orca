@@ -15,31 +15,28 @@ import { DateTime } from "luxon";
 //   return hhmmss;
 // };
 
-export const millisToDHHMMSS = (
-  millis: number,
-  written: boolean = false
-): string => {
+export const millisToDHHMMSS = (millis: number, written = false): string => {
   const seconds = millis / 1000;
   const d: number = Math.floor(seconds / (3600 * 24));
   const h: number = Math.floor((seconds % (3600 * 24)) / 3600);
   const m: number = Math.floor((seconds % 3600) / 60);
   const s: number = Math.floor(seconds % 60);
 
-  let out_str: string = "";
+  let outStr = "";
   if (written) {
-    const d_str = d > 0 ? d + (d === 1 ? " day, " : " days, ") : "";
-    const h_str = h > 0 ? h + (h === 1 ? " hour, " : " hours, ") : "";
-    const m_str = m > 0 ? m + (m === 1 ? " minute, " : " minutes, ") : "";
-    const s_str = s > 0 ? s + (s === 1 ? " second" : " seconds") : "";
-    out_str = d_str + h_str + m_str + s_str;
+    const dStr = d > 0 ? d + (d === 1 ? " day, " : " days, ") : "";
+    const hStr = h > 0 ? h + (h === 1 ? " hour, " : " hours, ") : "";
+    const mStr = m > 0 ? m + (m === 1 ? " minute, " : " minutes, ") : "";
+    const sStr = s > 0 ? s + (s === 1 ? " second" : " seconds") : "";
+    outStr = dStr + hStr + mStr + sStr;
   } else {
-    const d_str = d > 0 ? d + (d === 1 ? " day, " : " days, ") : "";
-    const h_str = h > 0 ? (h < 10 ? `0${h}:` : `${h}:`) : "00:";
-    const m_str = m > 0 ? (m < 10 ? `0${m}:` : `${m}:`) : "00:";
-    const s_str = s > 0 ? (s < 10 ? `0${s}` : `${s}`) : "00";
-    out_str = d_str + h_str + m_str + s_str;
+    const dStr = d > 0 ? d + (d === 1 ? " day, " : " days, ") : "";
+    const hStr = h > 0 ? (h < 10 ? `0${h}:` : `${h}:`) : "00:";
+    const mStr = m > 0 ? (m < 10 ? `0${m}:` : `${m}:`) : "00:";
+    const sStr = s > 0 ? (s < 10 ? `0${s}` : `${s}`) : "00";
+    outStr = dStr + hStr + mStr + sStr;
   }
-  return out_str;
+  return outStr;
 };
 
 const pluralize = (
@@ -104,7 +101,7 @@ export const makeReadableDate = (
   const yesterday = today.minus({ days: 1 });
   const tomorrow = today.plus({ days: 1 });
   const twodays = tomorrow.plus({ days: 1 });
-  let relDay: string = "";
+  let relDay = "";
   if (yesterday <= dd && dd < today) {
     relDay = capitalize ? "Yesterday" : "yesterday";
   } else if (today <= dd && dd < tomorrow) {

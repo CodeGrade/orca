@@ -2,19 +2,17 @@ import React, { useState } from "react";
 import { createOrUpdateXGradingJobs } from "../../services/grading-job-services";
 
 const TestingPanel = () => {
-  const [jobs_input, setJobsInput] = useState("");
+  const [jobsInput, setJobsInput] = useState("");
   const handleCreateJobs = async () => {
-    if (isNaN(Number(jobs_input))) return;
-    const jobs_to_create = Number(jobs_input);
-    if (!jobs_to_create) return;
+    if (isNaN(Number(jobsInput))) return;
+    const jobsToCreate = Number(jobsInput);
+    if (!jobsToCreate) return;
 
-    const start_time = performance.now();
-    const responses = await createOrUpdateXGradingJobs(jobs_to_create);
-    const end_time = performance.now();
+    const startTime = performance.now();
+    const responses = await createOrUpdateXGradingJobs(jobsToCreate);
+    const endTime = performance.now();
     console.log(
-      `Creating/Updating ${jobs_to_create} jobs took: ${
-        end_time - start_time
-      } ms`
+      `Creating/Updating ${jobsToCreate} jobs took: ${endTime - startTime} ms`
     );
     setJobsInput("");
     window.location.reload();
@@ -34,7 +32,7 @@ const TestingPanel = () => {
         <input
           type="text"
           className="form-control border border-dark"
-          value={jobs_input}
+          value={jobsInput}
           onChange={(event) => setJobsInput(event.target.value)}
         />
       </div>

@@ -36,11 +36,11 @@ export const redisExpireTime = async (
 
 export const redisExpireAt = async (
   key: string,
-  expire_at: number,
+  expireAt: number,
 ): Promise<[boolean | null, Error | null]> => {
   try {
     // 0 or 1
-    return [await client.expireAt(key, expire_at), null];
+    return [await client.expireAt(key, expireAt), null];
   } catch (error) {
     return [null, error];
   }

@@ -1,18 +1,18 @@
 import React from "react";
 
 type GradingJobSubmitterProps = {
-  user_names: string[];
+  usernames: string[];
 };
 
-const GradingJobSubmitter = ({ user_names }: GradingJobSubmitterProps) => {
+const GradingJobSubmitter = ({ usernames }: GradingJobSubmitterProps) => {
   return (
     <div className="text-wrap">
-      {user_names.map((user_name) => {
+      {usernames.map((username) => {
         // TODO: Get user id here
         return (
-          <div key={user_name}>
-            <a href={`https://handins.ccs.neu.edu/users/${user_name}`}>
-              {user_name}
+          <div key={username}>
+            <a href={`https://handins.ccs.neu.edu/users/${username}`}>
+              {username}
             </a>
           </div>
         );

@@ -90,13 +90,13 @@ export const moveJob = async (
   };
   const response = await service.moveJob(moveJobRequest);
 
-  const new_release_at: number = response.data;
+  const newReleaseAt: number = response.data;
   dispatch({
     type:
       moveAction === MoveJobAction.RELEASE
         ? RELEASE_GRADING_JOB
         : DELAY_GRADING_JOB,
     key: jobKey,
-    new_release_at,
+    new_release_at: newReleaseAt,
   });
 };

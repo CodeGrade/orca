@@ -21,7 +21,7 @@ const GradingJobTableItem = ({ gradingJob }: { gradingJob: GradingJob }) => {
       className={`text-wrap ${isReleased ? "table-success" : "table-primary"}`}
     >
       <td>
-        <GradingJobSubmitter user_names={studentNames} />
+        <GradingJobSubmitter usernames={studentNames} />
       </td>
       <td>{metadata.grader_id}</td>
 
