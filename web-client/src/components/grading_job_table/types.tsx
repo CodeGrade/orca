@@ -36,7 +36,7 @@ export interface GradingJob {
   // updated_at: number; // Last updated timestamp in ms
 }
 
-export type PaginationInfo = {
+export type PageInfo = {
   limit: number;
   offset: number;
 };
@@ -58,12 +58,20 @@ export type FilterInfo = {
   grader_id: string[];
 };
 
+export type PaginationInfo = {
+  first: PageInfo | null;
+  last: PageInfo | null;
+  prev: PageInfo | null;
+  next: PageInfo | null;
+};
+
+// TODO: Implement PaginationInfo type here
 export type GradingJobTableInfo = {
   grading_jobs: GradingJob[];
-  first: PaginationInfo | null;
-  last: PaginationInfo | null;
-  prev: PaginationInfo | null;
-  next: PaginationInfo | null;
+  first: PageInfo | null;
+  last: PageInfo | null;
+  prev: PageInfo | null;
+  next: PageInfo | null;
   total: number;
   stats: GradingJobStats;
   filter_info: FilterInfo;

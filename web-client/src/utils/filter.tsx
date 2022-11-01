@@ -1,6 +1,6 @@
 import React from "react";
 
-export const createDefaultFilterOption = () => {
+export const createDefaultFilterOptionElem = (): JSX.Element => {
   return (
     <option key={-1} value={""} /*disabled hidden*/>
       None
@@ -8,7 +8,7 @@ export const createDefaultFilterOption = () => {
   );
 };
 
-export const createOptionsFromArr = (arr: any[]): JSX.Element[] => {
+export const createOptionElemsFromArr = (arr: string[]): JSX.Element[] => {
   // Elements are their own value
   const options = arr.map((el, ind) => {
     return (
@@ -17,13 +17,13 @@ export const createOptionsFromArr = (arr: any[]): JSX.Element[] => {
       </option>
     );
   });
-  return [createDefaultFilterOption(), ...options];
+  return [createDefaultFilterOptionElem(), ...options];
 };
 
-export const getActiveOptions = (
+export const getActiveOptionElems = (
   filter: string,
-  values: any[]
+  values: string[]
 ): JSX.Element[] => {
   if (filter === "none") return [];
-  return createOptionsFromArr(values);
+  return createOptionElemsFromArr(values);
 };
