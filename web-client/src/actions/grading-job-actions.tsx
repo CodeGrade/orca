@@ -1,9 +1,9 @@
 import { Dispatch } from "redux";
-import { Collation } from "../components/grading_job_table/types";
+import { Collation, FilterInfo } from "../components/grading_job_table/types";
 import * as service from "../services/grading-job-services";
 import {
   DeleteJobRequest,
-  FilterType,
+  GetJobsParams,
   MoveJobAction,
   MoveJobRequest,
 } from "../services/types";
@@ -16,35 +16,19 @@ export const DELAY_GRADING_JOB = "DELAY_GRADING_JOB";
 
 // TODO: Check responses/status codes
 
-// TODO: Combine get and getFiltered
 export const getGradingJobs = async (
   dispatch: Dispatch,
   offset?: number,
+  filters?: FilterInfo,
   limit: number = LIMIT
 ) => {
   if (!offset) offset = OFFSET_START;
-  const gradingJobs = await service.getGradingJobs(limit, offset);
-  dispatch({
-    type: GET_GRADING_JOBS,
-    grading_jobs: gradingJobs,
-  });
-};
-
-export const getFilteredGradingJobs = async (
-  dispatch: Dispatch,
-  filterType: string, // FilterType,
-  filterValue: string,
-  offset?: number,
-  limit: number = LIMIT
-) => {
-  if (!offset) offset = OFFSET_START;
-
-  const gradingJobs = await service.getFilteredGradingJobs(
+  const getJobsParams: GetJobsParams = {
     limit,
     offset,
-    filterType,
-    filterValue
-  );
+    filters,
+  };
+  const gradingJobs = await service.getGradingJobs(getJobsParams);
   dispatch({
     type: GET_GRADING_JOBS,
     grading_jobs: gradingJobs,
@@ -57,15 +41,12 @@ export const deleteJob = async (
   collation: Collation | null,
   nonce: string | null
 ) => {
-  let deleteJobRequest: DeleteJobRequest = {
+  const deleteJobRequest: DeleteJobRequest = {
     jobKey,
   };
   if (nonce && collation) {
-    deleteJobRequest = {
-      ...deleteJobRequest,
-      collation,
-      nonce: parseInt(nonce),
-    };
+    deleteJobRequest.collation = collation;
+    deleteJobRequest.nonce = parseInt(nonce);
   }
 
   const response = await service.deleteJob(deleteJobRequest);

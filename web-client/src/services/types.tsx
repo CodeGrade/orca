@@ -1,4 +1,4 @@
-import { Collation } from "../components/grading_job_table/types";
+import { Collation, FilterInfo } from "../components/grading_job_table/types";
 
 export interface DeleteJobRequest {
   jobKey: string;
@@ -22,4 +22,10 @@ export interface MoveJobRequest {
 export enum FilterType {
   COURSE_ID = "course_id",
   GRADER_ID = "grader_id",
+}
+
+export interface GetJobsParams {
+  limit: number;
+  offset: number;
+  filters?: FilterInfo;
 }

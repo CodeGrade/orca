@@ -1,14 +1,23 @@
 import { GradingJob, FilterInfo, FilterType } from "./types";
 
+// TODO: Find out the desired behavior of filter
+// Right now, it returns all jobs that meet AT LEAST 1 filter requirement
+// Should this instead only return jobs that meet ALL filter requirements
 export const filterGradingJobs = (
   gradingJobs: GradingJob[],
-  filterType: string,
-  filterValue: string,
+  filterInfo: FilterInfo,
 ): GradingJob[] => {
-  return gradingJobs.filter(
-    (gradingJob) =>
-      gradingJob.metadata_table[filterType as keyof GradingJob] == filterValue,
-  );
+  let allJobs = [...gradingJobs];
+  let filteredJobs: GradingJob[] = [];
+  Object.entries(filterInfo).map(([filterType, filterValues]) => {
+    filterValues.forEach((value) => {
+      const filteredByValue = allJobs.filter(
+        (job) => job.metadata_table[filterType] === value,
+      );
+      filteredJobs.push(...filteredByValue);
+    });
+  });
+  return [...new Set(filteredJobs)];
 };
 
 // Get the filter info for all filterable fields of a GradingJob

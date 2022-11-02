@@ -3,13 +3,12 @@ import { useSelector } from "react-redux";
 import {
   GradingJob,
   GradingJobTableInfo,
-  PageInfo,
   PaginationInfo,
   State,
 } from "../grading_job_table/types";
 import GradingJobTableStats from "../grading_job_table/grading_job_table_stats/grading-job-table-stats";
 import GradingJobTable from "../grading_job_table/grading-job-table";
-import { OFFSET_START, LIMIT } from "../../utils/constants";
+import { OFFSET_START } from "../../utils/constants";
 import PaginationBar from "../pagination/pagination-bar";
 import TestingPanel from "../testing/testing-panel";
 import FilterBar from "../filter/filter-bar";
@@ -40,11 +39,6 @@ const Dashboard = () => {
     last,
   };
 
-  const handleChangePage = (changeTo: PageInfo | null) => {
-    if (!changeTo) return;
-    setOffset(changeTo.offset);
-  };
-
   return (
     <div className="container">
       <div className="row">
@@ -56,10 +50,7 @@ const Dashboard = () => {
             <OffsetContext.Provider value={{ offset, setOffset }}>
               <FilterBar filterInfo={gradingTableInfo.filter_info} />
               <GradingJobTable gradingJobs={gradingJobs} />
-              <PaginationBar
-                paginationInfo={paginationInfo}
-                clickHandler={handleChangePage}
-              />
+              <PaginationBar paginationInfo={paginationInfo} />
             </OffsetContext.Provider>
           </div>
         </div>

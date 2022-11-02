@@ -94,6 +94,7 @@ export type FilterInfo = {
   [type: string]: string[];
 };
 
+// TODO: Get rid of this?
 export enum FilterType {
   CourseID = "course_id",
   GraderID = "grader_id",

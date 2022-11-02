@@ -1,22 +1,31 @@
-import React, { useContext, useEffect, useState } from "react";
-import {
-  getFilteredGradingJobs,
-  getGradingJobs,
-} from "../../actions/grading-job-actions";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import Button from "react-bootstrap/Button";
+import InputGroup from "react-bootstrap/InputGroup";
 import { useDispatch } from "react-redux";
 import { Dispatch } from "redux";
+import { getGradingJobs } from "../../actions/grading-job-actions";
 import {
   createDefaultFilterOptionElem,
   createOptionElemsFromArr,
   getFilterValueOptionElems,
 } from "../../utils/filter";
-import { FilterInfo } from "../grading_job_table/types";
 import { OffsetContext } from "../dashboard/dashboard";
+import { FilterInfo } from "../grading_job_table/types";
+import ActiveFilter from "./active-filter";
 import CreateFilterModal from "./create-filter-modal";
 
 type FilterBarProps = {
   filterInfo: FilterInfo;
 };
+
+export const FilterContext = createContext<{
+  activeFilters: FilterInfo;
+  setActiveFilters: React.Dispatch<React.SetStateAction<FilterInfo>>;
+}>({
+  activeFilters: {},
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  setActiveFilters: () => {},
+});
 
 const FilterBar = ({ filterInfo }: FilterBarProps) => {
   // Create Filter Modal
@@ -24,72 +33,66 @@ const FilterBar = ({ filterInfo }: FilterBarProps) => {
   const handleShow = () => setShowModal(true);
   const handleHide = () => setShowModal(false);
 
-  // Filter Settings
-  const { offset, setOffset } = useContext(OffsetContext);
-  const [filterType, setFilterType] = useState<string>("");
-  const [filterValue, setFilterValue] = useState<string>("");
-  // Generate filter type options using provided filterInfo
-  const filterTypeOptions = createOptionElemsFromArr(
-    Array.from(Object.keys(filterInfo))
-  );
-  const [filterValueOptions, setFilterValueOptions] = useState<JSX.Element[]>([
-    createDefaultFilterOptionElem(),
-  ]);
+  const [activeFilters, setActiveFilters] = useState<FilterInfo>({});
 
-  const handleSetFilterValue = (filterValue: string): void => {
-    setOffset(0);
-    setFilterValue(filterValue);
+  const handleDeleteFilter = (
+    filterType: string,
+    filterValue: string
+  ): void => {
+    const updatedActiveFilters = { ...activeFilters };
+    updatedActiveFilters[filterType] = updatedActiveFilters[filterType].filter(
+      (value) => value !== filterValue
+    );
+    // Remove property if there are no filtered values remaining
+    if (updatedActiveFilters[filterType].length === 0)
+      delete updatedActiveFilters[filterType];
+    setActiveFilters(updatedActiveFilters);
   };
 
-  const handleSetFilterType = (filterType: string): void => {
-    if (filterType)
-      setFilterValueOptions(
-        getFilterValueOptionElems(filterType, filterInfo[filterType])
-      );
-    setFilterValue("");
-    setFilterType(filterType);
-  };
+  const { offset } = useContext(OffsetContext);
+
+  const noActiveFilters = (activeFilters: FilterInfo): boolean =>
+    Object.keys(activeFilters).length === 0;
 
   const dispatch: Dispatch = useDispatch();
   useEffect(() => {
-    if (!filterType || !filterValue) getGradingJobs(dispatch, offset);
-    else getFilteredGradingJobs(dispatch, filterType, filterValue, offset);
-  }, [dispatch, offset, filterValue]);
+    if (noActiveFilters(activeFilters)) getGradingJobs(dispatch, offset);
+    else getGradingJobs(dispatch, offset, activeFilters);
+  }, [dispatch, offset, activeFilters]);
 
   return (
-    <div className="form-group">
-      <div className="input-group mb-3">
-        <label htmlFor="filter-by">
-          <span className="input-group-text bg-dark text-white me-1">
-            Filter
-          </span>
-        </label>
-        <div className="form-group">
-          <select
-            className="form-select"
-            id="filter-by"
-            value={filterType}
-            onChange={(event) => {
-              handleSetFilterType(event.target.value);
-            }}
-          >
-            {filterTypeOptions}
-          </select>
+    <div>
+      <InputGroup className="mb-3">
+        <Button variant="success" onClick={() => handleShow()}>
+          +
+        </Button>
+        <InputGroup.Text className="bg-dark text-white">
+          Filters
+        </InputGroup.Text>
+        <div className="ms-3 d-flex gap-3">
+          {Object.entries(activeFilters).map(
+            ([filterType, filterValues], typeInd) => {
+              return filterValues.map((filterValue, valueInd) => {
+                return (
+                  <ActiveFilter
+                    key={`${typeInd}${valueInd}`}
+                    filterType={filterType}
+                    filterValue={filterValue}
+                    handleDelete={handleDeleteFilter}
+                  />
+                );
+              });
+            }
+          )}
         </div>
-        <div className={`form-group ${filterType ? "visibile" : "invisible"}`}>
-          <select
-            className="form-select"
-            id="filter-by"
-            value={filterValue}
-            onChange={(event) => {
-              handleSetFilterValue(event.target.value);
-            }}
-          >
-            {filterValueOptions}
-          </select>
-        </div>
-      </div>
-      <CreateFilterModal show={showModal} onClose={handleHide} />
+      </InputGroup>
+      <FilterContext.Provider value={{ activeFilters, setActiveFilters }}>
+        <CreateFilterModal
+          filterInfo={filterInfo}
+          show={showModal}
+          onHide={handleHide}
+        />
+      </FilterContext.Provider>
     </div>
   );
 };

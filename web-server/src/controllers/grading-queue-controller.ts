@@ -10,10 +10,10 @@ import {
 } from "../utils/pagination";
 import { getGradingQueueStats } from "../grading-queue/stats";
 import { filterGradingJobs, getFilterInfo } from "../grading-queue/filter";
-import { GradingJob } from "../grading-queue/types";
+import { FilterInfo, GradingJob } from "../grading-queue/types";
 import {
   validateDeleteRequest,
-  validateFilterRequest,
+  validateFilterInfo,
   validateGradingJobConfig,
   validateMoveRequest,
 } from "../utils/validate";
@@ -37,6 +37,7 @@ export const getGradingJobs = async (req: Request, res: Response) => {
     errorResponse(res, 400, [
       "Must send a valid offset and a limit with this request.",
     ]);
+    return;
   }
 
   // Get Pagination Data
@@ -62,21 +63,25 @@ export const getGradingJobs = async (req: Request, res: Response) => {
 
   let filtered = false;
   let filteredGradingJobs: GradingJob[] = [];
-  // TODO: Use RequestHandler from express
-  if (req.query.filter_type && req.query.filter_value) {
-    // TODO: Validate filter type and filter value
-    const filterType = req.query.filter_type;
-    const filterValue = req.query.filter_value;
-    if (!validateFilterRequest(req.query.filter_type, req.query.filter_value)) {
-      errorResponse(res, 500, ["Failed to validate filter request."]);
+  if (req.query.filters) {
+    let filterInfo: any;
+    try {
+      filterInfo = JSON.parse(req.query.filters as string);
+    } catch (error) {
+      errorResponse(res, 400, [
+        "Must send valid filter info with this request.",
+      ]);
+      return;
+    }
+    if (!filterInfo || !validateFilterInfo(filterInfo)) {
+      errorResponse(res, 400, [
+        "Must send valid filter info with this request.",
+      ]);
       return;
     }
 
-    filteredGradingJobs = filterGradingJobs(
-      gradingJobs,
-      filterType as string,
-      filterValue as string,
-    );
+    // Filter the grading jobs
+    filteredGradingJobs = filterGradingJobs(gradingJobs, filterInfo);
     filtered = true;
   }
 

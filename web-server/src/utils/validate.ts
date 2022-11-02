@@ -3,6 +3,7 @@ import {
   Collation,
   CollationType,
   DeleteJobRequest,
+  FilterInfo,
   GradingJobConfig,
   MoveJobAction,
   MoveJobRequest,
@@ -181,9 +182,19 @@ export const validateDeleteRequest = (
   return true;
 };
 
-// TODO: Implement filterType as FilterType
-export const validateFilterRequest = (filterType: any, filterValue: any) => {
-  const types = isString(filterType) && isString(filterValue);
-  if (!types) return false;
-  return true;
+// TODO: Do this in a better way
+export const validateFilterInfo = (
+  filterInfo: any,
+): filterInfo is FilterInfo => {
+  const valid = Object.entries(filterInfo).map(
+    ([filterType, filterValues]: [string, any]) => {
+      // TODO: Check if filterType is a supported filter type
+      if (!isString(filterType)) return false;
+      if (!isArray(filterValues)) return false;
+      if (!filterValues.every((filterValue) => isString(filterValue)))
+        return false;
+      return true;
+    },
+  );
+  return valid.every((x) => x);
 };

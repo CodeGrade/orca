@@ -1,30 +1,12 @@
 import axios, { AxiosResponse } from "axios";
 import { GradingScriptCommand } from "../components/grading_job_table/types";
-import { DeleteJobRequest, MoveJobRequest } from "./types";
+import { DeleteJobRequest, GetJobsParams, MoveJobRequest } from "./types";
 // TODO: Environment variable
 const API_BASE = "http://localhost:4000/api/v1/grading_queue";
 
-// TODO: Combine these
-export const getGradingJobs = async (limit: number, offset: number) => {
+export const getGradingJobs = async (getJobParams: GetJobsParams) => {
   const response: AxiosResponse = await axios.get(API_BASE, {
-    params: { limit: limit, offset: offset },
-  });
-  return response.data;
-};
-
-export const getFilteredGradingJobs = async (
-  limit: number,
-  offset: number,
-  filterType: string,
-  filterValue: string
-) => {
-  const response: AxiosResponse = await axios.get(API_BASE, {
-    params: {
-      limit: limit,
-      offset: offset,
-      filter_type: filterType,
-      filter_value: filterValue,
-    },
+    params: getJobParams,
   });
   return response.data;
 };
