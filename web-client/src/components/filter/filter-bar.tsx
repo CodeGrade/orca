@@ -4,11 +4,6 @@ import InputGroup from "react-bootstrap/InputGroup";
 import { useDispatch } from "react-redux";
 import { Dispatch } from "redux";
 import { getGradingJobs } from "../../actions/grading-job-actions";
-import {
-  createDefaultFilterOptionElem,
-  createOptionElemsFromArr,
-  getFilterValueOptionElems,
-} from "../../utils/filter";
 import { OffsetContext } from "../dashboard/dashboard";
 import { FilterInfo } from "../grading_job_table/types";
 import ActiveFilter from "./active-filter";
@@ -33,7 +28,9 @@ const FilterBar = ({ filterInfo }: FilterBarProps) => {
   const handleShow = () => setShowModal(true);
   const handleHide = () => setShowModal(false);
 
-  const [activeFilters, setActiveFilters] = useState<FilterInfo>({});
+  const [activeFilters, setActiveFilters] = useState<FilterInfo>({
+    course_id: ["1111", "2222", "3333", "4444", "5555", "6666"],
+  });
 
   const handleDeleteFilter = (
     filterType: string,
@@ -62,14 +59,18 @@ const FilterBar = ({ filterInfo }: FilterBarProps) => {
 
   return (
     <div>
-      <InputGroup className="mb-3">
-        <Button variant="success" onClick={() => handleShow()}>
-          +
-        </Button>
-        <InputGroup.Text className="bg-dark text-white">
-          Filters
-        </InputGroup.Text>
-        <div className="ms-3 d-flex gap-3">
+      <div className="mb-3 mx-0 row align-items-center">
+        <div className="col-2 p-0">
+          <InputGroup>
+            <Button variant="success" onClick={() => handleShow()}>
+              +
+            </Button>
+            <InputGroup.Text className="bg-dark text-white">
+              Filters
+            </InputGroup.Text>
+          </InputGroup>
+        </div>
+        <div className="col-10 d-flex gap-3 align-items-center justify-content-start overflow-auto">
           {Object.entries(activeFilters).map(
             ([filterType, filterValues], typeInd) => {
               return filterValues.map((filterValue, valueInd) => {
@@ -85,7 +86,7 @@ const FilterBar = ({ filterInfo }: FilterBarProps) => {
             }
           )}
         </div>
-      </InputGroup>
+      </div>
       <FilterContext.Provider value={{ activeFilters, setActiveFilters }}>
         <CreateFilterModal
           filterInfo={filterInfo}

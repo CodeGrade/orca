@@ -1,3 +1,31 @@
 .clickable-icon {
   cursor: pointer;
 }
+
+.filter-chip {
+  display: inline-block;
+  padding: 0 25px;
+  font-size: 1rem;
+  border-radius: 25px;
+  background-color: lightgray;
+}
+
+.filter-chip-type {
+  border-bottom: 1px solid gray;
+}
+.filter-chip-value {
+  font-size: 0.9rem;
+}
+
+.close-btn {
+  padding-left: 10px;
+  color: #888;
+  font-weight: bold;
+  float: right;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  color: #000;
+}

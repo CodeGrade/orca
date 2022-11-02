@@ -1,6 +1,5 @@
-import React, { useContext } from "react";
+import React from "react";
 import Button from "react-bootstrap/Button";
-import { FilterContext } from "./filter-bar";
 
 type ActiveFilterProps = {
   filterType: string;
@@ -14,19 +13,18 @@ const ActiveFilter = ({
   handleDelete,
 }: ActiveFilterProps) => {
   return (
-    <div className="border 2px solid black rounded">
-      <div className="d-flex justify-content-between">
-        <div>
-          <div>{filterType.toUpperCase().replace("_", " ")}</div>
-          <div>{filterValue}</div>
+    <div className="filter-chip">
+      <div className="d-flex align-items-center">
+        <div className="d-flex flex-column text-center">
+          <div className="filter-chip-type">{filterType}</div>
+          <div className="filter-chip-value">{filterValue}</div>
         </div>
-        <Button
-          variant="outline-danger"
-          size="sm"
+        <div
+          className="close-btn"
           onClick={() => handleDelete(filterType, filterValue)}
         >
-          X
-        </Button>
+          &times;
+        </div>
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ import { OFFSET_START } from "../../utils/constants";
 import PaginationBar from "../pagination/pagination-bar";
 import TestingPanel from "../testing/testing-panel";
 import FilterBar from "../filter/filter-bar";
+import { Container } from "react-bootstrap";
 
 export const OffsetContext = createContext<{
   offset: number;
@@ -40,23 +41,21 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="container">
-      <div className="row">
-        <div className="mt-2">
-          <div>
-            <GradingJobTableStats stats={stats} />
-          </div>
-          <div className="mt-3 d-flex flex-column">
-            <OffsetContext.Provider value={{ offset, setOffset }}>
-              <FilterBar filterInfo={gradingTableInfo.filter_info} />
-              <GradingJobTable gradingJobs={gradingJobs} />
-              <PaginationBar paginationInfo={paginationInfo} />
-            </OffsetContext.Provider>
-          </div>
+    <Container className="px-0">
+      <div className="mt-2">
+        <div>
+          <GradingJobTableStats stats={stats} />
+        </div>
+        <div className="mt-3">
+          <OffsetContext.Provider value={{ offset, setOffset }}>
+            <FilterBar filterInfo={gradingTableInfo.filter_info} />
+            <GradingJobTable gradingJobs={gradingJobs} />
+            <PaginationBar paginationInfo={paginationInfo} />
+          </OffsetContext.Provider>
         </div>
       </div>
       <TestingPanel />
-    </div>
+    </Container>
   );
 };
 export default Dashboard;
