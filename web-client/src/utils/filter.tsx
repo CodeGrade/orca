@@ -3,7 +3,7 @@ import React from "react";
 export const createDefaultFilterOptionElem = (): JSX.Element => {
   return (
     <option key={-1} value={""} disabled hidden>
-      Select an option
+      Select
     </option>
   );
 };

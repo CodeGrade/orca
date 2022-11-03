@@ -6,7 +6,7 @@ import { Dispatch } from "redux";
 import { getGradingJobs } from "../../actions/grading-job-actions";
 import { OffsetContext } from "../dashboard/dashboard";
 import { FilterInfo } from "../grading_job_table/types";
-import ActiveFilter from "./active-filter";
+import FilterChip from "./filter-chip";
 import CreateFilterModal from "./create-filter-modal";
 
 type FilterBarProps = {
@@ -23,15 +23,16 @@ export const FilterContext = createContext<{
 });
 
 const FilterBar = ({ filterInfo }: FilterBarProps) => {
+  const { offset, setOffset } = useContext(OffsetContext);
+
   // Create Filter Modal
   const [showModal, setShowModal] = useState<boolean>(false);
   const handleShow = () => setShowModal(true);
   const handleHide = () => setShowModal(false);
 
-  const [activeFilters, setActiveFilters] = useState<FilterInfo>({
-    course_id: ["1111", "2222", "3333", "4444", "5555", "6666"],
-  });
+  const [activeFilters, setActiveFilters] = useState<FilterInfo>({});
 
+  // TODO: Abstract this for use in add-filter.tsx
   const handleDeleteFilter = (
     filterType: string,
     filterValue: string
@@ -46,36 +47,28 @@ const FilterBar = ({ filterInfo }: FilterBarProps) => {
     setActiveFilters(updatedActiveFilters);
   };
 
-  const { offset } = useContext(OffsetContext);
-
-  const noActiveFilters = (activeFilters: FilterInfo): boolean =>
-    Object.keys(activeFilters).length === 0;
-
   const dispatch: Dispatch = useDispatch();
   useEffect(() => {
-    if (noActiveFilters(activeFilters)) getGradingJobs(dispatch, offset);
+    if (Object.keys(activeFilters).length === 0)
+      getGradingJobs(dispatch, offset);
     else getGradingJobs(dispatch, offset, activeFilters);
+    setOffset(0);
   }, [dispatch, offset, activeFilters]);
 
   return (
     <div>
       <div className="mb-3 mx-0 row align-items-center">
         <div className="col-2 p-0">
-          <InputGroup>
-            <Button variant="success" onClick={() => handleShow()}>
-              +
-            </Button>
-            <InputGroup.Text className="bg-dark text-white">
-              Filters
-            </InputGroup.Text>
-          </InputGroup>
+          <Button variant="dark" onClick={() => handleShow()}>
+            Filter
+          </Button>
         </div>
         <div className="col-10 d-flex gap-3 align-items-center justify-content-start overflow-auto">
           {Object.entries(activeFilters).map(
             ([filterType, filterValues], typeInd) => {
               return filterValues.map((filterValue, valueInd) => {
                 return (
-                  <ActiveFilter
+                  <FilterChip
                     key={`${typeInd}${valueInd}`}
                     filterType={filterType}
                     filterValue={filterValue}

@@ -1,5 +1,5 @@
-import React, { createContext, useState } from "react";
-import { useSelector } from "react-redux";
+import React, { createContext, useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   GradingJob,
   GradingJobTableInfo,
@@ -13,6 +13,8 @@ import PaginationBar from "../pagination/pagination-bar";
 import TestingPanel from "../testing/testing-panel";
 import FilterBar from "../filter/filter-bar";
 import { Container } from "react-bootstrap";
+import { Dispatch } from "redux";
+import { getGradingJobs } from "../../actions/grading-job-actions";
 
 export const OffsetContext = createContext<{
   offset: number;
@@ -39,6 +41,11 @@ const Dashboard = () => {
     next,
     last,
   };
+
+  const dispatch: Dispatch = useDispatch();
+  useEffect(() => {
+    getGradingJobs(dispatch, offset);
+  }, [dispatch]);
 
   return (
     <Container className="px-0">

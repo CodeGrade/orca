@@ -1,31 +1,38 @@
-import React from "react";
+import React, { useContext } from "react";
 import Button from "react-bootstrap/Button";
+import { CreateFilterContext } from "./create-filter-modal";
+import { FilterBuilderContext } from "./filter-builder";
 
 type ActiveFilterProps = {
   filterType: string;
   filterValue: string;
-  handleDelete: (filterValue: string, filterType: string) => void;
+  id: number;
 };
 
-const ActiveFilter = ({
-  filterType,
-  filterValue,
-  handleDelete,
-}: ActiveFilterProps) => {
+const ActiveFilter = ({ filterType, filterValue, id }: ActiveFilterProps) => {
+  const { newFilters: filters, setNewFilters: setFilters } =
+    useContext(CreateFilterContext);
+
+  // TODO: Abstract for use in add-filter.tsx
+  const handleRemove = () => {
+    const updatedFilters = {
+      ...filters,
+    };
+    updatedFilters[filterType] = updatedFilters[filterType].filter(
+      (value) => value !== filterValue
+    );
+    if (updatedFilters[filterType].length === 0)
+      delete updatedFilters[filterType];
+    setFilters(updatedFilters);
+  };
   return (
-    <div className="filter-chip">
-      <div className="d-flex align-items-center">
-        <div className="d-flex flex-column text-center">
-          <div className="filter-chip-type">{filterType}</div>
-          <div className="filter-chip-value">{filterValue}</div>
-        </div>
-        <div
-          className="close-btn"
-          onClick={() => handleDelete(filterType, filterValue)}
-        >
-          &times;
-        </div>
-      </div>
+    <div className="d-flex my-2 confirmed-filter">
+      <div>Filter</div>
+      <div>{filterType}</div>
+      <div>{filterValue}</div>
+      <Button variant="danger" onClick={() => handleRemove()}>
+        &times;
+      </Button>
     </div>
   );
 };

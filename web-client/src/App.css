@@ -29,3 +29,7 @@
 .close-btn:hover {
   color: #000;
 }
+
+.confirmed-filter {
+  border: 2px solid lightgreen;
+}
