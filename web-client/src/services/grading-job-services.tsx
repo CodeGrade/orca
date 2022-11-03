@@ -76,6 +76,7 @@ export const createOrUpdateXGradingJobs = async (numJobs: number) => {
 
   const responses = [];
   for (let i = 1; i < numJobs + 1; i++) {
+    const courseId = i < numJobs / 2 ? "1111" : "2222";
     const gradingJobConfig: GradingJobConfig = {
       key: `key${i}`,
       collation: {
@@ -97,7 +98,7 @@ export const createOrUpdateXGradingJobs = async (numJobs: number) => {
         assignment_name: `Assignment ${i}`,
         grader_description: generateGraderDescription(),
         grader_id: generateGraderId(i),
-        course_id: generateCourseId(i),
+        course_id: courseId, // generateCourseId(i),
         submitter_name: `user${100 + i}`,
       },
       script: [

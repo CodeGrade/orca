@@ -9,22 +9,30 @@ import {
 } from "../../utils/filter";
 import { FilterInfo } from "../grading_job_table/types";
 import { CreateFilterContext } from "./create-filter-modal";
-import { FilterContext } from "./filter-bar";
 import { FilterBuilderContext } from "./filter-builder";
 
-type AddFilterProps = {
+type NewFilterProps = {
   filterInfo: FilterInfo;
   id: number;
 };
 
-const AddFilter = ({ filterInfo, id }: AddFilterProps) => {
-  const { newFilters: filters, setNewFilters: setFilters } =
-    useContext(CreateFilterContext);
+/**
+ * Form component for configuring new filters.
+ * Filter types and values are generated according to the provided filterInfo.
+ * Can be confirmed or removed.  Confirmed filters will be
+ * applied when filter creation modal is closed (not cancelled).
+ */
+const NewFilter = ({ filterInfo, id }: NewFilterProps) => {
+  // Filters being configured
+  const { newFilters, setNewFilters } = useContext(CreateFilterContext);
+  // Information needed to be able to remove new filter
   const { elemList, indexList, setElemList, setIndexList } =
     useContext(FilterBuilderContext);
+  // Generate the <option> elements for filter types
   const filterTypeOptions = createOptionElemsFromArr(
     Array.from(Object.keys(filterInfo))
   );
+  // Holds the <option> elements for filter values of the selected type
   const [filterValueOptions, setFilterValueOptions] = useState<JSX.Element[]>([
     createDefaultFilterOptionElem(),
   ]);
@@ -33,6 +41,11 @@ const AddFilter = ({ filterInfo, id }: AddFilterProps) => {
   const [filterValue, setFilterValue] = useState<string>("");
   const [confirmed, setConfirmed] = useState<boolean>(false);
 
+  /**
+   * Handler for selecting filter type when creating a new filter.
+   * Generates the corresponding filter values for the selected type.
+   * @param filterType - The selected filter type
+   */
   const handleSetFilterType = (filterType: string): void => {
     if (filterType)
       setFilterValueOptions(
@@ -42,6 +55,13 @@ const AddFilter = ({ filterInfo, id }: AddFilterProps) => {
     setFilterType(filterType);
   };
 
+  /**
+   * Checks if a given filters object contains a given filter (type and value).
+   * @param filters - FilterInfo object to check for existing filter
+   * @param filterType - The filter type to check values of
+   * @param filterValue - The value to check
+   * @returns true if filter exists, false otherwise
+   */
   const filterAlreadyExists = (
     filters: FilterInfo,
     filterType: string,
@@ -50,34 +70,44 @@ const AddFilter = ({ filterInfo, id }: AddFilterProps) => {
     return filterType in filters && filters[filterType].includes(filterValue);
   };
 
-  const handleSetFilterValue = (filterValue: string) => {
-    setFilterValue(filterValue);
-  };
-
+  /**
+   * Returns if the remove button should be rendered.
+   * @returns true if render, false otherwise
+   */
   const renderRemoveButton = (): boolean => {
     return elemList.length > 1 || confirmed;
   };
+
+  /**
+   * Returns if confirm button should be rendered.
+   * @returns true if render, false otherwise
+   */
   const renderConfirmButton = (): boolean => {
     return (
       filterType !== "" &&
       filterValue != "" &&
       !confirmed &&
-      !filterAlreadyExists(filters, filterType, filterValue)
+      !filterAlreadyExists(newFilters, filterType, filterValue)
     );
   };
 
+  /**
+   * Handles removing a new filter being configured.
+   */
   const handleRemove = () => {
+    // If filter is already confirmed, then remove it from the FilterInfo object
     if (confirmed && filterType && filterValue) {
       const updatedFilters = {
-        ...filters,
+        ...newFilters,
       };
       updatedFilters[filterType] = updatedFilters[filterType].filter(
         (value) => value !== filterValue
       );
       if (updatedFilters[filterType].length === 0)
         delete updatedFilters[filterType];
-      setFilters(updatedFilters);
+      setNewFilters(updatedFilters);
     }
+    // Remove the element
     const index = indexList.indexOf(id);
     const updatedIndexList = [...indexList];
     const updatedElemList = [...elemList];
@@ -89,30 +119,34 @@ const AddFilter = ({ filterInfo, id }: AddFilterProps) => {
     setFilterType("");
   };
 
+  /**
+   * Handles confirming a new filter.
+   */
   const handleConfirm = () => {
-    if (filterAlreadyExists(filters, filterType, filterValue)) {
-      // TODO: Alert user with message in modal
+    // TODO: Remove this - confirm button isn't rendered for duplicate filters
+    if (filterAlreadyExists(newFilters, filterType, filterValue)) {
       alert("Filter already exists");
       return;
     }
-    const values = filters[filterType] ? filters[filterType] : [];
+    // Update FilterInfo being built
+    const values = newFilters[filterType] ? newFilters[filterType] : [];
     const updatedFilters = {
-      ...filters,
+      ...newFilters,
     };
     updatedFilters[filterType] = [...values, filterValue];
-    setFilters(updatedFilters);
+    setNewFilters(updatedFilters);
     setConfirmed(true);
   };
 
   return (
     <div className={`d-flex my-2 ${confirmed ? "confirmed-filter" : ""}`}>
       <InputGroup className="w-50">
-        <InputGroup.Text>
-          <label htmlFor="filter-by">Filter</label>
-        </InputGroup.Text>
+        <label htmlFor="filter-type">
+          <InputGroup.Text>Filter</InputGroup.Text>
+        </label>
         <Form.Select
           disabled={confirmed}
-          id="filter-by"
+          id="filter-type"
           value={filterType}
           onChange={(event) => handleSetFilterType(event.target.value)}
         >
@@ -125,7 +159,7 @@ const AddFilter = ({ filterInfo, id }: AddFilterProps) => {
             disabled={confirmed}
             id="filter-value"
             value={filterValue}
-            onChange={(event) => handleSetFilterValue(event.target.value)}
+            onChange={(event) => setFilterValue(event.target.value)}
           >
             {filterValueOptions}
           </Form.Select>
@@ -150,4 +184,4 @@ const AddFilter = ({ filterInfo, id }: AddFilterProps) => {
     </div>
   );
 };
-export default AddFilter;
+export default NewFilter;

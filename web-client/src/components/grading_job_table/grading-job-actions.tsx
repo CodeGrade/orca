@@ -30,7 +30,6 @@ const GradingJobActions = ({
     }
     moveJob(dispatch, jobKey, nonce, action, collation);
   };
-  // TODO: Abstract buttons
   return (
     <div className="d-flex align-items-center justify-content-center">
       <div>

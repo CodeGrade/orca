@@ -1,10 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import Button from "react-bootstrap/Button";
-import InputGroup from "react-bootstrap/InputGroup";
-import { useDispatch } from "react-redux";
-import { Dispatch } from "redux";
-import { getGradingJobs } from "../../actions/grading-job-actions";
-import { OffsetContext } from "../dashboard/dashboard";
+import { ActiveFilterContext, OffsetContext } from "../dashboard/dashboard";
 import { FilterInfo } from "../grading_job_table/types";
 import FilterChip from "./filter-chip";
 import CreateFilterModal from "./create-filter-modal";
@@ -13,27 +9,26 @@ type FilterBarProps = {
   filterInfo: FilterInfo;
 };
 
-export const FilterContext = createContext<{
-  activeFilters: FilterInfo;
-  setActiveFilters: React.Dispatch<React.SetStateAction<FilterInfo>>;
-}>({
-  activeFilters: {},
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  setActiveFilters: () => {},
-});
-
+/**
+ * Main filter component. Displays active filters and provides access to
+ * filter creation modal.
+ */
 const FilterBar = ({ filterInfo }: FilterBarProps) => {
-  const { offset, setOffset } = useContext(OffsetContext);
+  const { activeFilters, setActiveFilters } = useContext(ActiveFilterContext);
+  const { setOffset } = useContext(OffsetContext);
 
-  // Create Filter Modal
+  // Interacting with modal
   const [showModal, setShowModal] = useState<boolean>(false);
   const handleShow = () => setShowModal(true);
   const handleHide = () => setShowModal(false);
 
-  const [activeFilters, setActiveFilters] = useState<FilterInfo>({});
-
   // TODO: Abstract this for use in add-filter.tsx
-  const handleDeleteFilter = (
+  /**
+   * Handles removing given filter from the active filters.
+   * @param filterType - Type of filter to remove value from.
+   * @param filterValue - Value of filter type being removed.
+   */
+  const handleRemoveFilter = (
     filterType: string,
     filterValue: string
   ): void => {
@@ -47,20 +42,30 @@ const FilterBar = ({ filterInfo }: FilterBarProps) => {
     setActiveFilters(updatedActiveFilters);
   };
 
-  const dispatch: Dispatch = useDispatch();
+  const handleRemoveAllFilters = () => {
+    setActiveFilters({});
+  };
+
   useEffect(() => {
-    if (Object.keys(activeFilters).length === 0)
-      getGradingJobs(dispatch, offset);
-    else getGradingJobs(dispatch, offset, activeFilters);
+    // Go back to first page whenever active filters change
     setOffset(0);
-  }, [dispatch, offset, activeFilters]);
+  }, [activeFilters]);
 
   return (
     <div>
       <div className="mb-3 mx-0 row align-items-center">
         <div className="col-2 p-0">
-          <Button variant="dark" onClick={() => handleShow()}>
+          <Button variant="info" onClick={() => handleShow()}>
             Filter
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => handleRemoveAllFilters()}
+            className={`${
+              Object.keys(activeFilters).length === 0 ? "d-none" : "d-inline"
+            }`}
+          >
+            &times;
           </Button>
         </div>
         <div className="col-10 d-flex gap-3 align-items-center justify-content-start overflow-auto">
@@ -72,7 +77,7 @@ const FilterBar = ({ filterInfo }: FilterBarProps) => {
                     key={`${typeInd}${valueInd}`}
                     filterType={filterType}
                     filterValue={filterValue}
-                    handleDelete={handleDeleteFilter}
+                    handleRemove={handleRemoveFilter}
                   />
                 );
               });
@@ -80,13 +85,11 @@ const FilterBar = ({ filterInfo }: FilterBarProps) => {
           )}
         </div>
       </div>
-      <FilterContext.Provider value={{ activeFilters, setActiveFilters }}>
-        <CreateFilterModal
-          filterInfo={filterInfo}
-          show={showModal}
-          onHide={handleHide}
-        />
-      </FilterContext.Provider>
+      <CreateFilterModal
+        filterInfo={filterInfo}
+        show={showModal}
+        onHide={handleHide}
+      />
     </div>
   );
 };

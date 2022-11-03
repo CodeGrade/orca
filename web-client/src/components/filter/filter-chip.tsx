@@ -3,13 +3,17 @@ import React from "react";
 type FilterChipProps = {
   filterType: string;
   filterValue: string;
-  handleDelete: (filterValue: string, filterType: string) => void;
+  handleRemove: (filterValue: string, filterType: string) => void;
 };
 
+/**
+ * Filter chip component that displays a single active filter.
+ * Each chip displays a filter type and a value.
+ */
 const FilterChip = ({
   filterType,
   filterValue,
-  handleDelete,
+  handleRemove,
 }: FilterChipProps) => {
   return (
     <div className="filter-chip">
@@ -20,7 +24,7 @@ const FilterChip = ({
         </div>
         <div
           className="close-btn"
-          onClick={() => handleDelete(filterType, filterValue)}
+          onClick={() => handleRemove(filterType, filterValue)}
         >
           &times;
         </div>

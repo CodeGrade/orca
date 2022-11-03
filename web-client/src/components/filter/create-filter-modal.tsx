@@ -1,17 +1,8 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
-import { useDispatch } from "react-redux";
-import { Dispatch } from "redux";
-import { getGradingJobs } from "../../actions/grading-job-actions";
-import {
-  createDefaultFilterOptionElem,
-  createOptionElemsFromArr,
-  getFilterValueOptionElems,
-} from "../../utils/filter";
-import { OffsetContext } from "../dashboard/dashboard";
 import { FilterInfo } from "../grading_job_table/types";
-import { FilterContext } from "./filter-bar";
+import { ActiveFilterContext } from "../dashboard/dashboard";
 import FilterBuilder from "./filter-builder";
 
 type CreateFilterModalProps = {
@@ -20,6 +11,11 @@ type CreateFilterModalProps = {
   onHide: () => void;
 };
 
+/**
+ * Context for CreateFilterModal.
+ * Contains a FilterInfo object of the filter being built
+ * along with the a setter function.
+ */
 export const CreateFilterContext = createContext<{
   newFilters: FilterInfo;
   setNewFilters: React.Dispatch<React.SetStateAction<FilterInfo>>;
@@ -29,13 +25,18 @@ export const CreateFilterContext = createContext<{
   setNewFilters: () => {},
 });
 
+/**
+ * Modal for configuring active filters.
+ */
 const CreateFilterModal = ({
   filterInfo,
   show,
   onHide,
 }: CreateFilterModalProps) => {
-  const { activeFilters, setActiveFilters } = useContext(FilterContext);
+  // Existing active filters
+  const { activeFilters, setActiveFilters } = useContext(ActiveFilterContext);
 
+  // Filters being configured
   const [newFilters, setNewFilters] = useState<FilterInfo>({
     ...activeFilters,
   });
@@ -44,22 +45,32 @@ const CreateFilterModal = ({
     onHide();
   };
 
-  const handleCreateFilter = (): void => {
+  const handleCancel = () => {
+    setActiveFilters(activeFilters);
+    setNewFilters(activeFilters);
+    handleClose();
+  };
+
+  const handleSaveFilter = (): void => {
     setActiveFilters(newFilters);
     handleClose();
   };
 
+  useEffect(() => {
+    // Keep newFilters up to date with activeFilters for configuring existing filters
+    setNewFilters(activeFilters);
+  }, [activeFilters]);
+
   return (
     <Modal
       show={show}
-      onHide={handleClose}
+      onHide={handleCancel}
       backdrop="static"
       keyboard={false}
       centered
-      className="primary"
       size="lg"
     >
-      <Modal.Header closeButton>
+      <Modal.Header>
         <Modal.Title>Create Filter</Modal.Title>
       </Modal.Header>
       <Modal.Body>
@@ -76,16 +87,16 @@ const CreateFilterModal = ({
         <Button
           variant="outline-danger"
           className="rounded"
-          onClick={handleClose}
+          onClick={handleCancel}
         >
           Cancel
         </Button>
         <Button
           variant="outline-success"
           className="rounded"
-          onClick={handleCreateFilter}
+          onClick={handleSaveFilter}
         >
-          Save
+          Done
         </Button>
       </Modal.Footer>
     </Modal>

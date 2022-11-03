@@ -18,12 +18,6 @@ export interface MoveJobRequest {
   collation: Collation;
 }
 
-// TODO: Implement filter types
-export enum FilterType {
-  COURSE_ID = "course_id",
-  GRADER_ID = "grader_id",
-}
-
 export interface GetJobsParams {
   limit: number;
   offset: number;
