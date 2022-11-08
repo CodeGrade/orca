@@ -14,6 +14,7 @@ import { FilterInfo, GradingJob } from "../grading-queue/types";
 import {
   validateDeleteRequest,
   validateFilterInfo,
+  validateFilterSettings,
   validateGradingJobConfig,
   validateMoveRequest,
 } from "../utils/validate";
@@ -64,12 +65,20 @@ export const getGradingJobs = async (req: Request, res: Response) => {
   let filtered = false;
   let filteredGradingJobs: GradingJob[] = [];
   if (req.query.filters) {
+    if (!req.query.settings) {
+      errorResponse(res, 400, [
+        "Must send valid filter settings with this request.",
+      ]);
+      return;
+    }
     let filterInfo: any;
+    let filterSettings: any;
     try {
       filterInfo = JSON.parse(req.query.filters as string);
+      filterSettings = JSON.parse(req.query.settings as string);
     } catch (error) {
       errorResponse(res, 400, [
-        "Must send valid filter info with this request.",
+        "Must send valid filter info and settings with this request.",
       ]);
       return;
     }
@@ -79,9 +88,19 @@ export const getGradingJobs = async (req: Request, res: Response) => {
       ]);
       return;
     }
+    if (!filterInfo || !validateFilterSettings(filterSettings)) {
+      errorResponse(res, 400, [
+        "Must send valid filter settings with this request.",
+      ]);
+      return;
+    }
 
     // Filter the grading jobs
-    filteredGradingJobs = filterGradingJobs(gradingJobs, filterInfo);
+    filteredGradingJobs = filterGradingJobs(
+      gradingJobs,
+      filterInfo,
+      filterSettings,
+    );
     filtered = true;
   }
 

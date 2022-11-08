@@ -1,4 +1,5 @@
-.clickable-icon {
+.clickable-icon,
+.clickable {
   cursor: pointer;
 }
 

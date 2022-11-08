@@ -72,6 +72,9 @@ const FilterBuilder = ({ filterInfo }: { filterInfo: FilterInfo }) => {
     return Object.keys(newFilters).length !== 0;
   };
 
+  /**
+   * Create elements for currently active filters on load.
+   */
   useEffect(() => {
     const activeFilterElems = Object.entries(activeFilters)
       .map(([filterType, filterValues], typeInd) => {
@@ -89,6 +92,9 @@ const FilterBuilder = ({ filterInfo }: { filterInfo: FilterInfo }) => {
     setActiveElemList(activeFilterElems);
   }, []);
 
+  /**
+   * Render default state on reload.
+   */
   useEffect(() => {
     createNewFilterComponent();
   }, [reload]);

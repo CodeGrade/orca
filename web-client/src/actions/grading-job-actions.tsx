@@ -1,5 +1,9 @@
 import { Dispatch } from "redux";
-import { Collation, FilterInfo } from "../components/grading_job_table/types";
+import {
+  Collation,
+  FilterInfo,
+  FilterSettings,
+} from "../components/grading_job_table/types";
 import * as service from "../services/grading-job-services";
 import {
   DeleteJobRequest,
@@ -20,6 +24,7 @@ export const getGradingJobs = async (
   dispatch: Dispatch,
   offset?: number,
   filters?: FilterInfo,
+  settings?: FilterSettings,
   limit: number = LIMIT
 ) => {
   if (!offset) offset = OFFSET_START;
@@ -27,6 +32,7 @@ export const getGradingJobs = async (
     limit,
     offset,
     filters,
+    settings,
   };
   const gradingJobs = await service.getGradingJobs(getJobsParams);
   dispatch({

@@ -56,6 +56,9 @@ export type GradingJobStats = {
 export type FilterInfo = {
   [filter_by: string]: string[];
 };
+export type FilterSettings = {
+  and: boolean;
+};
 
 export type PaginationInfo = {
   first: PageInfo | null;

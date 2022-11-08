@@ -1,4 +1,4 @@
-import { GradingJob, FilterInfo, FilterType } from "./types";
+import { GradingJob, FilterInfo, FilterType, FilterSettings } from "./types";
 
 // TODO: Find out the desired behavior of filter
 // Right now, it returns all jobs that meet AT LEAST 1 filter requirement
@@ -6,18 +6,35 @@ import { GradingJob, FilterInfo, FilterType } from "./types";
 export const filterGradingJobs = (
   gradingJobs: GradingJob[],
   filterInfo: FilterInfo,
+  filterSettings: FilterSettings,
 ): GradingJob[] => {
   let allJobs = [...gradingJobs];
   let filteredJobs: GradingJob[] = [];
-  Object.entries(filterInfo).map(([filterType, filterValues]) => {
-    filterValues.forEach((value) => {
-      const filteredByValue = allJobs.filter(
-        (job) => job.metadata_table[filterType] === value,
-      );
-      filteredJobs.push(...filteredByValue);
+  // Apply settings
+  const and = filterSettings.and;
+
+  if (and) {
+    filteredJobs = allJobs;
+    Object.entries(filterInfo).map(([filterType, filterValues]) => {
+      filterValues.forEach((value) => {
+        const filteredByValue = filteredJobs.filter(
+          (job) => job.metadata_table[filterType] === value,
+        );
+        filteredJobs = [...filteredByValue];
+      });
     });
-  });
-  return [...new Set(filteredJobs)];
+    return [...new Set(filteredJobs)];
+  } else {
+    Object.entries(filterInfo).map(([filterType, filterValues]) => {
+      filterValues.forEach((value) => {
+        const filteredByValue = allJobs.filter(
+          (job) => job.metadata_table[filterType] === value,
+        );
+        filteredJobs.push(...filteredByValue);
+      });
+    });
+    return [...new Set(filteredJobs)];
+  }
 };
 
 // Get the filter info for all filterable fields of a GradingJob

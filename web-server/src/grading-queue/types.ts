@@ -90,8 +90,12 @@ export interface DeleteJobRequest {
   collation?: Collation;
 }
 
+// TODO: Combine
 export type FilterInfo = {
   [type: string]: string[];
+};
+export type FilterSettings = {
+  and: boolean;
 };
 
 // TODO: Get rid of this?

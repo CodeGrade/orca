@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import Button from "react-bootstrap/Button";
+import Form from "react-bootstrap/Form";
+import InputGroup from "react-bootstrap/InputGroup";
 import Modal from "react-bootstrap/Modal";
-import { FilterInfo } from "../grading_job_table/types";
+import { FilterInfo, FilterSettings } from "../grading_job_table/types";
 import { ActiveFilterContext } from "../dashboard/dashboard";
 import FilterBuilder from "./filter-builder";
 
@@ -34,11 +36,17 @@ const CreateFilterModal = ({
   onHide,
 }: CreateFilterModalProps) => {
   // Existing active filters
-  const { activeFilters, setActiveFilters } = useContext(ActiveFilterContext);
+  const { activeFilters, setActiveFilters, activeSettings, setActiveSettings } =
+    useContext(ActiveFilterContext);
 
   // Filters being configured
   const [newFilters, setNewFilters] = useState<FilterInfo>({
     ...activeFilters,
+  });
+
+  // Filter settings
+  const [newSettings, setNewSettings] = useState<FilterSettings>({
+    ...activeSettings,
   });
 
   const handleClose = () => {
@@ -47,18 +55,22 @@ const CreateFilterModal = ({
 
   const handleCancel = () => {
     setActiveFilters(activeFilters);
+    setActiveSettings(activeSettings);
     setNewFilters(activeFilters);
+    setNewSettings(activeSettings);
     handleClose();
   };
 
   const handleSaveFilter = (): void => {
     setActiveFilters(newFilters);
+    setActiveSettings(newSettings);
     handleClose();
   };
 
   useEffect(() => {
-    // Keep newFilters up to date with activeFilters for configuring existing filters
+    // Keep new filters up to date with active filters for configuring existing filters
     setNewFilters(activeFilters);
+    setNewSettings(activeSettings);
   }, [activeFilters]);
 
   return (
@@ -91,13 +103,35 @@ const CreateFilterModal = ({
         >
           Cancel
         </Button>
-        <Button
-          variant="outline-success"
-          className="rounded"
-          onClick={handleSaveFilter}
-        >
-          Done
-        </Button>
+        <div className="d-flex justify-content-between align-items-center gap-3">
+          <InputGroup>
+            <label
+              htmlFor="and-switch"
+              className="border border-info clickable"
+            >
+              <InputGroup.Text>
+                {newSettings.and ? "AND" : "OR"}
+              </InputGroup.Text>
+            </label>
+            <Form.Check
+              type="switch"
+              id="and-switch"
+              checked={newSettings.and}
+              hidden
+              className="d-none"
+              onChange={() =>
+                setNewSettings({ ...newSettings, and: !newSettings.and })
+              }
+            />
+          </InputGroup>
+          <Button
+            variant="outline-success"
+            className="rounded"
+            onClick={handleSaveFilter}
+          >
+            Done
+          </Button>
+        </div>
       </Modal.Footer>
     </Modal>
   );

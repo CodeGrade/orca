@@ -2,6 +2,7 @@ import React, { createContext, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   FilterInfo,
+  FilterSettings,
   GradingJob,
   GradingJobTableInfo,
   PaginationInfo,
@@ -36,11 +37,15 @@ export const OffsetContext = createContext<{
  */
 export const ActiveFilterContext = createContext<{
   activeFilters: FilterInfo;
+  activeSettings: FilterSettings;
   setActiveFilters: React.Dispatch<React.SetStateAction<FilterInfo>>;
+  setActiveSettings: React.Dispatch<React.SetStateAction<FilterSettings>>;
 }>({
   activeFilters: {},
+  activeSettings: { and: false },
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   setActiveFilters: () => {},
+  setActiveSettings: () => {},
 });
 
 const Dashboard = () => {
@@ -48,7 +53,11 @@ const Dashboard = () => {
   const [offset, setOffset] = useState<number>(OFFSET_START);
 
   // Filters
+  // TODO: Combine into one object
   const [activeFilters, setActiveFilters] = useState<FilterInfo>({});
+  const [activeSettings, setActiveSettings] = useState<FilterSettings>({
+    and: false,
+  });
 
   // Get grading table info from state
   const gradingTableInfo: GradingJobTableInfo = useSelector(
@@ -72,8 +81,8 @@ const Dashboard = () => {
     // Get grading jobs. Reload when offset or active filters change.
     if (Object.keys(activeFilters).length === 0)
       getGradingJobs(dispatch, offset);
-    else getGradingJobs(dispatch, offset, activeFilters);
-  }, [dispatch, offset, activeFilters]);
+    else getGradingJobs(dispatch, offset, activeFilters, activeSettings);
+  }, [dispatch, offset, activeFilters, activeSettings]);
 
   return (
     <Container className="px-0">
@@ -84,7 +93,12 @@ const Dashboard = () => {
         <div className="mt-3">
           <OffsetContext.Provider value={{ offset, setOffset }}>
             <ActiveFilterContext.Provider
-              value={{ activeFilters, setActiveFilters }}
+              value={{
+                activeFilters,
+                activeSettings,
+                setActiveFilters,
+                setActiveSettings,
+              }}
             >
               <FilterBar filterInfo={gradingTableInfo.filter_info} />
             </ActiveFilterContext.Provider>

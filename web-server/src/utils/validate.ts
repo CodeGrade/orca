@@ -4,11 +4,13 @@ import {
   CollationType,
   DeleteJobRequest,
   FilterInfo,
+  FilterSettings,
   GradingJobConfig,
   MoveJobAction,
   MoveJobRequest,
 } from "../grading-queue/types";
 
+const isBoolean = (value: any): boolean => typeof value === "boolean";
 const isNumber = (value: any): boolean => typeof value === "number";
 const isInteger = (value: any): boolean => Number.isInteger(value);
 const isString = (value: any): boolean => typeof value === "string";
@@ -182,7 +184,6 @@ export const validateDeleteRequest = (
   return true;
 };
 
-// TODO: Do this in a better way
 export const validateFilterInfo = (
   filterInfo: any,
 ): filterInfo is FilterInfo => {
@@ -197,4 +198,13 @@ export const validateFilterInfo = (
     },
   );
   return valid.every((x) => x);
+};
+
+export const validateFilterSettings = (
+  filterSettings: any,
+): filterSettings is FilterSettings => {
+  // TODO: Check for required settings
+  if (!("and" in filterSettings)) return false;
+  if (!isBoolean(filterSettings.and)) return false;
+  return true;
 };

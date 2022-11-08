@@ -1,4 +1,8 @@
-import { Collation, FilterInfo } from "../components/grading_job_table/types";
+import {
+  Collation,
+  FilterInfo,
+  FilterSettings,
+} from "../components/grading_job_table/types";
 
 export interface DeleteJobRequest {
   jobKey: string;
@@ -22,4 +26,5 @@ export interface GetJobsParams {
   limit: number;
   offset: number;
   filters?: FilterInfo;
+  settings?: FilterSettings;
 }
