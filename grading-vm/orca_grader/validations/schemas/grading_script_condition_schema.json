@@ -1,4 +1,4 @@
-GradingScriptConditionSchema = {
+{
   "type": "object",
   "properties": {
     "predicate": {

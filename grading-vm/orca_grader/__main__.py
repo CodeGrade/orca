@@ -1,18 +1,21 @@
 import json
 import os
 import subprocess
-import sys
 from orca_grader.common.grading_job.grading_job_output import GradingJobOutput
 from orca_grader.common.services.push_results import push_results_to_bottlenose
 from orca_grader.job_retrieval.grading_job_retriever import GradingJobRetriever
 from orca_grader.job_retrieval.local.local_grading_job_retriever import LocalGradingJobRetriever
 from orca_grader.job_retrieval.redis.redis_grading_queue import RedisGradingJobRetriever
+from orca_grader.validations.exceptions import InvalidGradingJobJSONException
+from orca_grader.validations.grading_job import is_valid_grading_job_json
 
 CONTAINER_WORKING_DIR = '/usr/local/grading'
 DEFAULT_REDIS_URL = "redis://localhost:6379"
 
 def grading_job_handler(retriever: GradingJobRetriever):
   job_string = retriever.retrieve_grading_job()
+  # if not is_valid_grading_job_json(json.loads(job_string)):
+  #   raise InvalidGradingJobJSONException()
   file_name = 'grading_job.json'
   with open(file_name, 'w') as fp:
     fp.write(job_string)
@@ -21,8 +24,8 @@ def grading_job_handler(retriever: GradingJobRetriever):
   try:
     result = subprocess.run(f"docker run -v {file_abs_path}:{container_path} orca-grader:latest python3 -m orca_grader.container.do_grading {file_name}", 
       capture_output=True, shell=True)
-    print(result.stdout)
-    print(result.stderr)
+    print(result.stdout.decode())
+    print(result.stderr.decode())
   except Exception as e:
     push_results_with_exception(job_string, e)
 

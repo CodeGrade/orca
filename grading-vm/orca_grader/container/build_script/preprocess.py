@@ -2,6 +2,7 @@ from typing import Dict, List
 import os
 from orca_grader.container.build_script.code_file.code_file_info import CodeFileInfo
 from orca_grader.container.build_script.code_file.processing.code_file_processor import CodeFileProcessor
+from orca_grader.container.build_script.cycle_detector import CycleDetector
 from orca_grader.container.build_script.exceptions import InvalidGradingScriptCommand, NotADAGException
 from orca_grader.container.grading_script.bash_grading_script_command import BashGradingScriptCommand
 from orca_grader.container.grading_script.conditional_grading_script_command import ConditionalGradingScriptCommand, GradingScriptPredicate

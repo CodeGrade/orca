@@ -12,18 +12,10 @@ from orca_grader.container.build_script.exceptions import PreprocessingException
 from orca_grader.container.build_script.code_file.code_file_info import CodeFileInfo
 from orca_grader.container.build_script.code_file.code_file_source import CodeFileSource
 from orca_grader.container.build_script.code_file.sub_mime_types import SubmissionMIMEType
-from orca_grader.container.validations.exceptions import InvalidGradingJobJSONException
 from orca_grader.common.types.grading_job_json_types import CodeFileInfoJSON, GradingJobJSON, GradingJobOutputJSON, GradingScriptCommandJSON
-from orca_grader.container.validations.schemas.grading_job_schema import GradingJobSchema
-from jsonschema import validate, ValidationError
 
 def get_job_from_input_stream(input_stream: TextIO) -> GradingJobJSON:
-  try:  
-    job_json = json.load(input_stream)
-    validate(job_json, GradingJobSchema)
-    return job_json
-  except json.JSONDecodeError or ValidationError:
-    raise InvalidGradingJobJSONException()
+  return json.load(input_stream)
 
 def extract_code_file_info_from_grading_job_json(grading_job_json: GradingJobJSON) -> List[CodeFileInfo]:
   code_files: List[CodeFileInfo] = []
@@ -71,6 +63,7 @@ if __name__ == "__main__":
     grading_job = get_job_from_input_stream(job_json_fp)
     job_json_fp.close()
     secret = GradingJobExecutionSecret.get_secret()
+    do_grading(secret, grading_job)
   except Exception as e:
     output = GradingJobOutput([], [e])
     push_results_to_bottlenose(output)

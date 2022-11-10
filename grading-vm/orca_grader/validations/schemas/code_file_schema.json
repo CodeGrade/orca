@@ -1,4 +1,4 @@
-CodeFileSchema = {
+{
   "type": "object",
   "properties": {
     "url": { "type": "string" },

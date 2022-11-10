@@ -41,5 +41,5 @@ class BashGradingScriptCommand:
       return self.__on_complete.execute(responses)
     else:
       response_with_tap = responses[-1] # If successful, TAP will be stored in last response.
-      return GradingJobOutput(responses, response_with_tap.get_stdout_output())
+      return GradingJobOutput(responses, tap_output=response_with_tap.get_stdout_output())
   

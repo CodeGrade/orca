@@ -1,4 +1,4 @@
-BashGradingScriptCommandSchema = {
+{
   "type": "object",
   "properties": {
     "cmd": { "type": "string" },

@@ -1,0 +1,31 @@
+{
+  "type": "object",
+  "properties": {
+    "priority": { "type": "integer" },
+    "submission_id": { "type": "integer" },
+    "grade_id": { "type": "integer" },
+    "grader_id": { "type": "integer" },
+    "course_id": { "type": "integer" },
+    "target_code": { "$ref": "code_file_schema.json" },
+    "fixture_code": { "$ref": "code_file_schema.json" },
+    "test_code": { "$ref": "code_file_schema.json" },
+    "script": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "bash_grading_script_command_schema.json" },
+          { "$ref": "conditional_grading_script_comamnd_schema.json" }
+        ]
+      }
+    },
+    "team_id": { "type": "integer" },
+    "user_id": { "type": "integer" },
+    "user_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "submitter_name": { "type": "string" }
+  }
+}
