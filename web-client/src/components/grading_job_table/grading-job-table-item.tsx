@@ -1,7 +1,6 @@
 import React, { useContext } from "react";
 import GradingJobActions from "./grading-job-actions";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
-import Popover from "react-bootstrap/Popover";
 import { ColumnInfo, GradingJob } from "./types";
 import { TableContext } from "./grading-job-table";
 import {
@@ -11,11 +10,14 @@ import {
 } from "../../utils/common";
 import UpdatingPopover from "../common/updating-popover";
 
+/**
+ * Record in the grading job table that contains the information for a single grading job.
+ */
 const GradingJobTableItem = ({ gradingJob }: { gradingJob: GradingJob }) => {
   const { tableConfig } = useContext(TableContext);
   const { metadata_table: metadata } = gradingJob;
 
-  // TODO: Enforced that submitter is always here?
+  // TODO: Can we assume that submitter is always here?
   const { submitter_name: submitter, usernames } = metadata;
   let studentNames: string[] = [submitter as string];
   if (usernames) studentNames = [submitter as string, usernames].flat(1);
@@ -24,22 +26,12 @@ const GradingJobTableItem = ({ gradingJob }: { gradingJob: GradingJob }) => {
   const { release_at: releaseAt, created_at: createdAt } = gradingJob;
   const isReleased: boolean = releaseAt < now;
 
-  const actionsPopover = (
-    <Popover className="text-center">
-      <Popover.Header>Actions</Popover.Header>
-      <Popover.Body>
-        <GradingJobActions
-          jobKey={gradingJob.key}
-          collation={gradingJob.collation}
-          nonce={createdAt.toString()}
-          released={isReleased}
-        />
-      </Popover.Body>
-    </Popover>
-  );
-
-  const actionsRef = React.createRef<HTMLDivElement>();
-
+  /**
+   * Create table data element using provided property string on a grading job.
+   * @param prop - String of path to property within a GradingJob object
+   * @param ind - Column index used as component key
+   * @returns Table data element with data from given property
+   */
   // TODO: Test for when data is missing
   const createTableData = (prop: string, ind: number) => {
     let data = getPropByString(gradingJob, prop) || null;
@@ -70,7 +62,6 @@ const GradingJobTableItem = ({ gradingJob }: { gradingJob: GradingJob }) => {
       rootClose
       overlay={
         <UpdatingPopover
-          ref={actionsRef}
           title={"Actions"}
           // onClick={() => document.body.click()} // Used to close the actions popover when an action button is clicked
         >
