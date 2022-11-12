@@ -60,6 +60,11 @@ export type FilterSettings = {
   and: boolean;
 };
 
+export type SortInfo = {
+  type: SortType;
+  asc: boolean; // Ascending
+};
+
 export type PaginationInfo = {
   first: PageInfo | null;
   last: PageInfo | null;
@@ -91,3 +96,9 @@ export enum SortType {
   COURSE_ID = "course_id",
   SUBMITTER_NAME = "submitter_name",
 }
+
+export type ColumnInfo = {
+  label: string;
+  prop: string; // Corresponding GradingJob property
+  sortType?: SortType;
+};

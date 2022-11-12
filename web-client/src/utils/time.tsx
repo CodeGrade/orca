@@ -1,20 +1,5 @@
 import { DateTime } from "luxon";
 
-// export const formatReleaseTimestamp = (release_timestamp: number): string => {
-//   const release_date = new Date(release_timestamp * 1000); // milliseconds to seconds
-//   const date = release_date.toLocaleDateString();
-//   const time = release_date.toLocaleTimeString();
-//   const datetime = `${date} ${time}`;
-//   return datetime;
-// };
-
-// export const convertHHMMSS = (seconds_to_convert: number): string => {
-//   const hhmmss: string = new Date(seconds_to_convert * 1000) // milliseconds to seconds
-//     .toISOString()
-//     .substring(11, 19);
-//   return hhmmss;
-// };
-
 export const millisToDHHMMSS = (millis: number, written = false): string => {
   const seconds = millis / 1000;
   const d: number = Math.floor(seconds / (3600 * 24));
