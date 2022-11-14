@@ -3,6 +3,13 @@
   cursor: pointer;
 }
 
+.grading-job-item {
+  transition: 0.1s ease-in-out;
+}
+.grading-job-item:hover {
+  transform: scale(101%);
+}
+
 .filter-chip {
   display: inline-block;
   padding: 0 25px;

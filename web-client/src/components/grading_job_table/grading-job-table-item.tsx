@@ -54,6 +54,7 @@ const GradingJobTableItem = ({ gradingJob }: { gradingJob: GradingJob }) => {
     );
   };
 
+  // TODO: Add some effect for currently selected graidng job ??
   return (
     // TODO: Figure out better positioning - maybe use Overlay instead of Popover
     <OverlayTrigger
@@ -75,7 +76,7 @@ const GradingJobTableItem = ({ gradingJob }: { gradingJob: GradingJob }) => {
       }
     >
       <tr
-        className={`text-wrap ${
+        className={`grading-job-item text-wrap ${
           isReleased ? "table-success" : "table-primary"
         }`}
       >

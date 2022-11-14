@@ -31,7 +31,7 @@ const GradingJobActions = ({
     moveJob(dispatch, jobKey, nonce, action, collation);
   };
   return (
-    <div className="d-flex align-items-center justify-content-center">
+    <div className="d-flex align-items-around justify-content-center">
       <div>
         <Button
           variant="success"

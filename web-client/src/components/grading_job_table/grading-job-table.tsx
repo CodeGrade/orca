@@ -4,6 +4,7 @@ import { ColumnInfo, GradingJob, SortInfo, SortType } from "./types";
 import GradingJobTableBody from "./grading-job-table-body";
 import "../../stylesheets/grading-job-table.css";
 import GradingJobTableHeader from "./grading-job-table-header";
+import { DEFAULT_TABLE } from "../../utils/constants";
 
 /**
  * Table context for the grading job header and body
@@ -32,26 +33,7 @@ const GradingJobTable = ({ gradingJobs }: { gradingJobs: GradingJob[] }) => {
     asc: true,
   });
 
-  const DEFAULT_TABLE = [
-    { label: "Submission", prop: "files.student_code.url" },
-    {
-      label: "Submitter(s)",
-      sortType: SortType.SUBMITTER_NAME,
-      prop: "metadata_table.submitter_name",
-    },
-    {
-      label: "Grader",
-      sortType: SortType.GRADER_ID,
-      prop: "metadata_table.grader_id",
-    },
-    {
-      label: "Course",
-      sortType: SortType.COURSE_ID,
-      prop: "metadata_table.course_id",
-    },
-    { label: "Wait Time", sortType: SortType.WAIT_TIME, prop: "created_at" },
-    { label: "Release", sortType: SortType.RELEASE_AT, prop: "release_at" },
-  ];
+  // TODO: Move this up to dashboard
   const [tableConfig, setTableConfig] = useState<ColumnInfo[]>(DEFAULT_TABLE);
 
   // TODO: GET new jobs on sortInfo changing
@@ -60,18 +42,29 @@ const GradingJobTable = ({ gradingJobs }: { gradingJobs: GradingJob[] }) => {
   }, [sortInfo]);
 
   return (
-    <Table striped hover className="text-center mb-2">
-      <TableContext.Provider
-        value={{
-          tableConfig,
-          setTableConfig,
-          sorting: { sortInfo, setSortInfo },
-        }}
-      >
-        <GradingJobTableHeader />
-        <GradingJobTableBody gradingJobs={gradingJobs && [...gradingJobs]} />
-      </TableContext.Provider>
-    </Table>
+    <div className="row">
+      <div className="col-12 col-lg-11">
+        <Table striped hover className="text-center mb-2">
+          <TableContext.Provider
+            value={{
+              tableConfig,
+              setTableConfig,
+              sorting: { sortInfo, setSortInfo },
+            }}
+          >
+            <GradingJobTableHeader />
+            <GradingJobTableBody
+              gradingJobs={gradingJobs && [...gradingJobs]}
+            />
+          </TableContext.Provider>
+        </Table>
+      </div>
+      {/* TODO: Move this? */}
+      <div className="col-1 d-lg-flex d-none">
+        <div className="text-center">Set Columns</div>
+        {/* Multiple select dropdown of all supported columns */}
+      </div>
+    </div>
   );
 };
 export default GradingJobTable;
