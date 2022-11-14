@@ -36,29 +36,29 @@ export interface GradingJob {
   // updated_at: number; // Last updated timestamp in ms
 }
 
-export type PaginationInfo = {
+export interface PaginationInfo {
   limit: number;
   offset: number;
-};
+}
 
-export type TimeStats = {
+export interface TimeStats {
   avg: number;
   min: number;
   max: number;
   num: number;
-};
+}
 
-export type GradingJobStats = {
+export interface GradingJobStats {
   all: TimeStats;
   released: TimeStats;
-};
+}
 
-export type FilterInfo = {
+export interface FilterInfo {
   course_id: string[];
   grader_id: string[];
-};
+}
 
-export type GradingJobTableInfo = {
+export interface GradingJobTableInfo {
   grading_jobs: GradingJob[];
   first: PaginationInfo | null;
   last: PaginationInfo | null;
@@ -67,11 +67,11 @@ export type GradingJobTableInfo = {
   total: number;
   stats: GradingJobStats;
   filter_info: FilterInfo;
-};
+}
 
-export type State = {
+export interface State {
   grading_table_info: GradingJobTableInfo;
-};
+}
 
 export enum SortType {
   RELEASE_AT = "release_at",

@@ -1,10 +1,10 @@
 import React from "react";
 
-type SortableHeaderItemProps = {
+interface SortableHeaderItemProps {
   label: string;
   active: boolean;
   order: number;
-};
+}
 
 const SortableHeaderItem = ({
   label,

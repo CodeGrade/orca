@@ -6,12 +6,12 @@ import { deleteJob, moveJob } from "../../actions/grading-job-actions";
 import { MoveJobAction } from "../../services/types";
 import { Collation } from "./types";
 
-type GradingJobActionsProps = {
+interface GradingJobActionsProps {
   jobKey: string;
   collation: Collation;
   nonce: string | null;
   released: boolean;
-};
+}
 
 const GradingJobActions = ({
   jobKey,

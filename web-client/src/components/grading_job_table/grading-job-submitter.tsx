@@ -1,8 +1,8 @@
 import React from "react";
 
-type GradingJobSubmitterProps = {
+interface GradingJobSubmitterProps {
   user_names: string[];
-};
+}
 
 const GradingJobSubmitter = ({ user_names }: GradingJobSubmitterProps) => {
   return (

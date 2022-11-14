@@ -3,13 +3,13 @@ import { GradingJob, SortType } from "./types";
 import GradingJobTableItem from "./grading-job-table-item";
 import "../../stylesheets/grading-job-table.css";
 
-type GradingJobTableBodyProps = {
+interface GradingJobTableBodyProps {
   gradingJobs: GradingJob[];
   sortBy: {
     type: SortType;
     order: number;
   };
-};
+}
 
 const GradingJobTableBody = ({
   gradingJobs,

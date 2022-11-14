@@ -1,7 +1,7 @@
-export type Reservation = {
+export interface Reservation {
   value: string;
   score: number;
-};
+}
 
 interface GradingScriptCommand {
   cmd: string;
@@ -47,30 +47,30 @@ export interface GradingJob {
   // updated_at: number; // Last updated timestamp in ms
 }
 
-export type PaginationInfo = {
+export interface PaginationInfo {
   offset: number;
   limit: number;
-};
+}
 
-export type PaginationData = {
+export interface PaginationData {
   first: PaginationInfo | null;
   last: PaginationInfo | null;
   prev: PaginationInfo | null;
   next: PaginationInfo | null;
   data: GradingJob[];
-};
+}
 
-export type TimeStats = {
+export interface TimeStats {
   avg: number;
   min: number;
   max: number;
   num: number;
-};
+}
 
-export type GradingQueueStats = {
+export interface GradingQueueStats {
   all: TimeStats;
   released: TimeStats;
-};
+}
 
 export enum MoveJobAction {
   RELEASE = "release",
@@ -90,9 +90,9 @@ export interface DeleteJobRequest {
   collation?: Collation;
 }
 
-export type FilterInfo = {
+export interface FilterInfo {
   [type: string]: string[];
-};
+}
 
 export enum FilterType {
   CourseID = "course_id",
