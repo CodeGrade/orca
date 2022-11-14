@@ -53,10 +53,10 @@ export interface PaginationInfo {
 }
 
 export interface PaginationData {
-  first: PaginationInfo | null;
-  last: PaginationInfo | null;
-  prev: PaginationInfo | null;
-  next: PaginationInfo | null;
+  first?: PaginationInfo;
+  last?: PaginationInfo;
+  prev?: PaginationInfo;
+  next?: PaginationInfo;
   data: GradingJob[];
 }
 

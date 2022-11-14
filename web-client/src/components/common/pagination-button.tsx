@@ -3,8 +3,8 @@ import Button from "react-bootstrap/Button";
 import { PaginationInfo } from "../grading_job_table/types";
 
 interface PaginationButtonProps {
-  clickHandler: (changeTo: PaginationInfo | null) => void;
-  changeTo: PaginationInfo | null;
+  clickHandler: (changeTo?: PaginationInfo) => void;
+  changeTo?: PaginationInfo;
   icon: string;
 }
 

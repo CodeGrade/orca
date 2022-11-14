@@ -9,7 +9,7 @@ import { Collation } from "./types";
 interface GradingJobActionsProps {
   jobKey: string;
   collation: Collation;
-  nonce: string | null;
+  nonce?: string;
   released: boolean;
 }
 

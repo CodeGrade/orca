@@ -30,7 +30,7 @@ export interface GradingJob {
   priority: number;
   script: GradingScriptCommand[];
   response_url: string;
-  nonce: string | null;
+  nonce?: string;
   release_at: number; // Release timestamp in ms
   created_at: number; // Created timestamp in ms
   // updated_at: number; // Last updated timestamp in ms
@@ -60,10 +60,10 @@ export interface FilterInfo {
 
 export interface GradingJobTableInfo {
   grading_jobs: GradingJob[];
-  first: PaginationInfo | null;
-  last: PaginationInfo | null;
-  prev: PaginationInfo | null;
-  next: PaginationInfo | null;
+  first?: PaginationInfo;
+  last?: PaginationInfo;
+  prev?: PaginationInfo;
+  next?: PaginationInfo;
   total: number;
   stats: GradingJobStats;
   filter_info: FilterInfo;

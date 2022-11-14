@@ -26,7 +26,7 @@ const findLastPageOffset = (limit: number, grading_queue_length: number) => {
 export const getPageFromGradingQueue = (
   grading_queue: GradingJob[],
   offset: number,
-  limit: number
+  limit: number,
 ): PaginationData => {
   let prev: PaginationInfo | null,
     next: PaginationInfo | null,
@@ -53,7 +53,7 @@ export const getPageFromGradingQueue = (
   const end_index_of_list = grading_queue.length;
   const data = grading_queue.slice(
     start_index,
-    Math.min(end_index_based_on_offset, end_index_of_list)
+    Math.min(end_index_based_on_offset, end_index_of_list),
   );
   return { first, prev, next, last, data };
 };

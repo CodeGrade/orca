@@ -45,7 +45,7 @@ const Dashboard = () => {
   const gradingJobs: GradingJob[] = gradingTableInfo.grading_jobs;
   const { first, prev, next, last, total, stats } = gradingTableInfo;
 
-  const handleChangePage = (changeTo: PaginationInfo | null) => {
+  const handleChangePage = (changeTo?: PaginationInfo) => {
     if (!changeTo) return;
     setOffset(changeTo.offset);
   };

@@ -54,8 +54,8 @@ export const getFilteredGradingJobs = async (
 export const deleteJob = async (
   dispatch: Dispatch,
   jobKey: string,
-  collation: Collation | null,
-  nonce: string | null
+  collation?: Collation,
+  nonce?: string
 ) => {
   let deleteJobRequest: DeleteJobRequest = {
     jobKey,
