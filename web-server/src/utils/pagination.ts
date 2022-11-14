@@ -28,21 +28,21 @@ export const getPageFromGradingQueue = (
   offset: number,
   limit: number,
 ): PaginationData => {
-  let prev: PaginationInfo | null,
-    next: PaginationInfo | null,
-    first: PaginationInfo | null,
-    last: PaginationInfo | null;
+  let prev: PaginationInfo | undefined,
+    next: PaginationInfo | undefined,
+    first: PaginationInfo | undefined,
+    last: PaginationInfo | undefined;
   if (offset == 0) {
-    prev = null;
-    first = null; // already on first page
+    prev = undefined;
+    first = undefined; // already on first page
   } else {
     prev = { offset: offset - limit, limit };
     first = { offset: 0, limit };
   }
 
   if (offset + limit >= grading_queue.length) {
-    next = null;
-    last = null; // already on last page
+    next = undefined;
+    last = undefined; // already on last page
   } else {
     next = { offset: offset + limit, limit };
     last = { offset: findLastPageOffset(limit, grading_queue.length), limit };
