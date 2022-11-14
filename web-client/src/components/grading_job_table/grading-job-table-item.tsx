@@ -1,6 +1,6 @@
 import React from "react";
 import { describeTime, makeReadableDate } from "../../utils/time";
-import GradingJobActions from "./grading-job-actions";
+import GradingJobActions from "./grading-job-options";
 import { DateTime } from "luxon";
 import { GradingJob } from "./types";
 import GradingJobSubmitter from "./grading-job-submitter";
