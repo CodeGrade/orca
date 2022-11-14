@@ -101,7 +101,7 @@ export const createOrUpdateXGradingJobs = async (numJobs: number) => {
         id: `${100 + i}`,
       },
       files: {
-        student_code: {
+        target_code: {
           url: `https://handins.ccs.neu.edu/files/submission${i}.zip`,
           mime_type: "application/zip",
         },

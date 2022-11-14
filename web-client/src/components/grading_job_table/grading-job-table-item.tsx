@@ -27,7 +27,7 @@ const GradingJobTableItem = ({ gradingJob }: { gradingJob: GradingJob }) => {
 
       <td>{metadata.course_id}</td>
       <td>
-        <a href={files.student_code.url}>View</a>
+        <a href={files.target_code.url}>View</a>
       </td>
       {/* Remove 'ago' from described time*/}
       <td>{describeTime(waitTimeDT).slice(0, -4)}</td>
