@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "properties": {
+    "condition": {
+      "$ref": "grading_script_condition_schema.json"
+    },
+    "on_true": { "type": ["string", "number"] },
+    "on_false": { "type": ["string", "number"] }
+  },
+  "required": ["cmd", "on_complete", "on_fail"]
+}
