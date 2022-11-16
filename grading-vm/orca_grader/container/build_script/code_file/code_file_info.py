@@ -31,12 +31,6 @@ class CodeFileInfo:
 
   def get_save_dir_name(self) -> str:
     return self.__save_dir_name
-
-  def get_save_path(self, secret: str) -> str:
-    """
-    Gets the name of the directory to save and extract files to.
-    """
-    return f"{secret}_{self.__save_dir_name}"
   
   # https://stackoverflow.com/questions/18727347/how-to-extract-a-filename-from-a-url-append-a-word-to-it
   def get_file_name(self) -> str:
