@@ -132,6 +132,7 @@ interface GradingJobOutput {
   shell_responses: [GradingScriptCommandResponse];
   errors?: [string];
   key: JSONString;
+  container_path: string;
 }
 
 interface GradingScriptCommandResponse {
@@ -143,6 +144,6 @@ interface GradingScriptCommandResponse {
 }
 ```
 
-The output includes the key given in the original job for use on the Bottlenose side. The `shell_responses` array contains a transcript of the output from each `GradingScriptCommand`.
+For use on the Bottlenose side, the output includes the key given in the original job, as well as the path code was stored in for formatting file paths in TAP. The `shell_responses` array contains a transcript of the output from each `GradingScriptCommand`.
 
 A successful `GradingJobOutput` will _always_ contain TAP output. An unsuccessful `GradingJobOutput` will still contain any responses of commands executed by the script; if the Orca VM harness fails (e.g., due to resource limits) the `errors` array will be non-empty.
