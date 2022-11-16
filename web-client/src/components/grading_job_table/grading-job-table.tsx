@@ -22,6 +22,7 @@ export const TableContext = createContext<{
   setTableConfig: () => {},
   sorting: {
     sortInfo: { type: SortType.RELEASE_AT, asc: true },
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     setSortInfo: () => {},
   },
 });
@@ -42,29 +43,18 @@ const GradingJobTable = ({ gradingJobs }: { gradingJobs: GradingJob[] }) => {
   }, [sortInfo]);
 
   return (
-    <div className="row">
-      <div className="col-12 col-lg-11">
-        <Table striped hover className="text-center mb-2">
-          <TableContext.Provider
-            value={{
-              tableConfig,
-              setTableConfig,
-              sorting: { sortInfo, setSortInfo },
-            }}
-          >
-            <GradingJobTableHeader />
-            <GradingJobTableBody
-              gradingJobs={gradingJobs && [...gradingJobs]}
-            />
-          </TableContext.Provider>
-        </Table>
-      </div>
-      {/* TODO: Move this? */}
-      <div className="col-1 d-lg-flex d-none">
-        <div className="text-center">Set Columns</div>
-        {/* Multiple select dropdown of all supported columns */}
-      </div>
-    </div>
+    <Table striped hover className="text-center mb-2">
+      <TableContext.Provider
+        value={{
+          tableConfig,
+          setTableConfig,
+          sorting: { sortInfo, setSortInfo },
+        }}
+      >
+        <GradingJobTableHeader />
+        <GradingJobTableBody gradingJobs={gradingJobs && [...gradingJobs]} />
+      </TableContext.Provider>
+    </Table>
   );
 };
 export default GradingJobTable;

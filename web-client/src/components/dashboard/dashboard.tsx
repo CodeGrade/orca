@@ -45,6 +45,7 @@ export const ActiveFilterContext = createContext<{
   activeSettings: { and: false },
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   setActiveFilters: () => {},
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   setActiveSettings: () => {},
 });
 
