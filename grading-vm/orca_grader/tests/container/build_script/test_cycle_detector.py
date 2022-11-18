@@ -1,7 +1,7 @@
 import json
 import os
 import unittest
-from orca_grader.container.build_script.cycle_detection.cycle_detector import CycleDetector
+from orca_grader.container.build_script.cycle_detector import CycleDetector
 
 class TestCycleDetector(unittest.TestCase):
 
