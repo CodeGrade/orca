@@ -1,0 +1,20 @@
+[
+  {
+    "condition": {
+      "path": "example.py",
+      "predicate": "file"
+    },
+    "on_true": 1,
+    "on_false": 2
+  },
+  {
+    "cmd": "echo File Was Not Found.",
+    "on_complete": "output",
+    "on_fail": "abort"
+  },
+  {
+    "cmd": "echo The File Was Found",
+    "on_complete": "output",
+    "on_fail": "abort"
+  }
+]
