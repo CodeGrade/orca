@@ -28,6 +28,8 @@ def grading_job_handler(retriever: GradingJobRetriever):
     print(result.stderr.decode())
   except Exception as e:
     push_results_with_exception(job_string, e)
+  finally:
+    os.remove(file_name)
 
 def push_results_with_exception(job_json_string: str, e: Exception):
   # job_json = json.loads(job_json_string) # To be added when credentials are added to output
