@@ -49,10 +49,7 @@ class CycleDetector:
     rev_adj_list = { i: [] for i in range(len(json_script))}
     for i in range(len(json_script)):
       command = json_script[i]
-      if is_conditional_command(command):
-        CycleDetector.append_edges_to_adjacency_lists_conditional_command(command, i, adj_list, rev_adj_list)
-      else:
-        CycleDetector.append_edges_to_adjacency_lists_bash_command(command, i, adj_list, rev_adj_list)
+      CycleDetector.append_to_adjacency_lists(command, i, adj_list, rev_adj_list)
     return adj_list, rev_adj_list
   
   @staticmethod
@@ -63,26 +60,14 @@ class CycleDetector:
       if neighbor not in visited:
         CycleDetector.visit_command(vertex, adj_list, visited, stack)
     stack is not None and stack.append(vertex)
-      
+  
   @staticmethod
-  def append_edges_to_adjacency_lists_conditional_command(command: GradingScriptCommandJSON, 
-    index: int, adj_list: Dict[int, List[int]], rev_adj_list: Dict[int, List[int]]) -> None:
-    if type(command["on_true"]) == int:
-      adj_list[index].append(command["on_true"])
-      rev_adj_list[command["on_true"]].append(index)
-    if type(command["on_false"]) == int:
-      adj_list[index].append(command["on_false"])
-      rev_adj_list[command["on_false"]].append(index)
-    
-  @staticmethod
-  def append_edges_to_adjacency_lists_bash_command(command: GradingScriptCommandJSON, index: int, 
-    adj_list: Dict[int, List[int]], rev_adj_list: Dict[int, List[int]]) -> None:
-    if type(command["on_complete"]) == int:
-      adj_list[index].append(command["on_complete"])
-      rev_adj_list[command["on_complete"]].append(index)
-    if type(command["on_fail"]) == int:
-      adj_list[index].append(command["on_fail"])
-      rev_adj_list[command["on_fail"]].append(index)
+  def append_edges_to_adjacency_lists(command: GradingScript, index: int,
+    adj_list: Dict[int, List[int]], rev_adj_list: Dict[int, List[int]]):
+    for k in list(filter(lambda s: s.startswith('on_'), command.keys())):
+      if type(command[k]) == int:
+        adj_list[index] = command[k]
+        rev_adj_list[k] = index
 
   @staticmethod
   def cmd_has_self_ref(json_command: GradingScriptCommandJSON, index: int) -> bool:
