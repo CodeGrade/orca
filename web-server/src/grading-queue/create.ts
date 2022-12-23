@@ -1,62 +1,49 @@
-import { client } from "../index";
+import { addReservation, generateGradingJobFromConfig } from "../utils/helpers";
+import { redisLPush, redisSAdd, redisSet, redisZAdd } from "../utils/redis";
+import { GradingJobConfig } from "./types";
 
-// TODO: Implement logic for adding GradingJobs to the Redis Queue.
+const createJob = async (
+  gradingJobConfig: GradingJobConfig,
+  arrivalTime: number,
+): Promise<Error | null> => {
+  const { key, priority, collation } = gradingJobConfig;
+  const releaseTime = priority + arrivalTime;
 
-const LIFETIME_BUFFER = 86400; // 1 day in seconds
-
-// TODO: Check out to use zAdd with this redis library
-
-// TODO: type grading_job
-const createGradingJob = async (grading_job_config: Object) => {
-  // TODO: Check if valid
-
-  const sub_id = grading_job_config["submission_id"];
-  const priority = grading_job_config["priority"];
-
-  const lifetime = Math.max(
-    priority + LIFETIME_BUFFER,
-    await client.expireTime(`QueuedGradingInfo.${sub_id}`)
+  const gradingJob = generateGradingJobFromConfig(
+    gradingJobConfig,
+    arrivalTime,
+    releaseTime,
   );
 
-  await client.set(
-    `QueuedGradingInfo.${sub_id}`,
-    JSON.stringify(grading_job_config)
+  const nextTask = `${collation.type}.${collation.id}`;
+
+  // Push key to SubmitterInfo list
+  const [length, pushErr] = await redisLPush(`SubmitterInfo.${nextTask}`, key);
+  if (pushErr) return pushErr;
+  if (!length) return Error("Failed to push key to SubmitterInfo.");
+
+  // Create reservation
+  const reservationErr = await addReservation(
+    `${nextTask}.${arrivalTime}`,
+    releaseTime,
   );
-  client.expireAt(`QueuedGradingInfo.${sub_id}`, lifetime);
+  if (reservationErr) return reservationErr;
 
-  let next_task: string = "";
+  // Store nonce
+  const [numAdded, nonceErr] = await redisZAdd(
+    `Nonces.${collation.type}.${collation.id}`,
+    releaseTime,
+    arrivalTime.toString(),
+  );
+  if (nonceErr) return nonceErr;
+  if (numAdded !== 1) return Error("Failed to store nonce of grading job.");
 
-  // TODO: Test this
-  // Submission timestamp to add at end of GradingQueue entry key string
-  const now = new Date().getTime();
+  // Store grading job
+  const [setStatus, setErr] = await redisSet(key, JSON.stringify(gradingJob));
+  if (setErr) return setErr;
+  if (setStatus !== "OK") return Error("Failed to set grading job");
 
-  if (grading_job_config["user_id"]) {
-    const user_id = grading_job_config["user_id"];
-    next_task = `user.${user_id}`;
-  } else if (grading_job_config["team_id"]) {
-    const team_id = grading_job_config["team_id"];
-    next_task = `team.${team_id}`;
-  } else {
-    client.zAdd("GradingQueue", [
-      { score: priority, value: `sub.${sub_id}.${now}` },
-    ]);
-    return 1;
-  }
-
-  if (
-    (await client.exists(`SubmitterInfo.${next_task}`)) &&
-    (await client.lPos(`SubmitterInfo.${next_task}`, `${sub_id}`)) !== null
-  ) {
-    // Duplicate - Submission ID already exists in SubmitterInfo
-    return 0;
-  }
-
-  await client.lPush(`SubmitterInfo.${next_task}`, `${sub_id}`);
-  await client.expireAt(`SubmitterInfo.${next_task}`, lifetime);
-  await client.zAdd("GradingQueue", [
-    { score: priority, value: `${next_task}.${now}` },
-  ]);
-  return 1;
+  return null;
 };
 
-export default createGradingJob;
+export default createJob;
