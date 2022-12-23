@@ -13,32 +13,32 @@ import requests
 import fileinput
 
 def extract_tar_file(from_path: str, to_path: str) -> None:
-  f = tarfile.open(from_path, "r:")
-  f.extractall(to_path)
-  f.close()
+  with tarfile.open(from_path, "r:") as f:
+    f.extractall(to_path)
+    f.close()
 
 def extract_tar_gz_file(from_path: str, to_path: str) -> None:
-  f = tarfile.open(from_path, "r:gz")
-  f.extractall(to_path)
-  f.close()
+  with tarfile.open(from_path, "r:gz") as f:
+    f.extractall(to_path)
+    f.close()
 
 def extract_gz_file(from_path: str, to_path: str) -> None:
   from_f_name = path.basename(from_path)
-  f_in = gzip.open(from_path, "rb")
-  f_out = gzip.open(path.join(to_path, from_f_name))
-  copyfileobj(f_in, f_out)
-  f_in.close()
-  f_out.close()
+  with gzip.open(from_path, "rb") as f_in:
+    with gzip.open(path.join(to_path, from_f_name)) as f_out:
+      copyfileobj(f_in, f_out)
+      f_in.close()
+      f_out.close()
 
 def extract_zip_file(from_path: str, to_path: str) -> None:
-  f = ZipFile(from_path)
-  f.extractall(to_path)
-  f.close()
+  with ZipFile(from_path) as f:
+    f.extractall(to_path)
+    f.close()
 
 def extract_7zip_file(from_path: str, to_path: str) -> None:
-  f = SevenZipFile(from_path, mode='r')
-  f.extractall(path=to_path)
-  f.close()
+  with SevenZipFile(from_path, mode='r') as f:
+    f.extractall(path=to_path)
+    f.close()
 
 class CodeFileProcessor:
 
