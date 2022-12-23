@@ -1,174 +1,146 @@
-import { client } from "../index";
+import {
+  Collation,
+  GradingJob,
+  GradingJobConfig,
+  MoveJobAction,
+  MoveJobRequest,
+} from "./types";
+import { MOVE_TO_BACK_BUFFER } from "./constants";
+import {
+  redisGet,
+  redisLRem,
+  redisRPush,
+  redisSet,
+  redisZAdd,
+  redisZRangeWithScores,
+} from "../utils/redis";
+import { addReservation } from "../utils/helpers";
+import { upgradeJob } from "./upgrade";
 
-// TODO: Implement logic for moving GradingJobs position in Redis Queue.
+const moveJobHandler = async (
+  moveRequest: MoveJobRequest,
+): Promise<[number | null, Error | null]> => {
+  const { nonce, jobKey, moveAction, collation } = moveRequest;
+  if (!collation)
+    return [null, Error("No collation data given for moving grading job.")];
+  const now = new Date().getTime();
 
-// TODO: Fix typing everywhere
+  // Get the grading job being moved
+  const [gradingJobStr, getErr] = await redisGet(jobKey);
+  if (getErr) return [null, getErr];
+  if (!gradingJobStr)
+    return [null, Error("Something went wrong while getting job to move.")];
 
-// TODO: Move these to constants file
-const LIFETIME_BUFFER = 86400; // 1 day in seconds
-const MOVE_TO_BACK_BUFFER = 10; // 10 seconds
-
-// TODO: Check out to use zAdd with this redis library
-
-// TODO: type update_config
-const moveGradingJob = async (sub_id: string, update_config: Object) => {
-  // TODO: Check if valid
-  const new_priority_pos = update_config["priority"]; // 'front' or 'back'
-  const grading_job_to_move = await client.get(`QueuedGradingInfo.${sub_id}`);
-
-  if (!grading_job_to_move) {
-    // error - job not found
-    return -1;
+  let gradingJob: GradingJob;
+  try {
+    gradingJob = JSON.parse(gradingJobStr);
+  } catch (error) {
+    return [null, error];
   }
 
-  const grading_job: Object = JSON.parse(grading_job_to_move);
-
-  let new_priority: number = -1;
-  if (new_priority_pos === "front") {
-    new_priority = await moveGradingJobToFront(
-      sub_id,
-      grading_job,
-      update_config
-    );
-  } else if (new_priority_pos === "back") {
-    new_priority = await moveGradingJobToBack(
-      sub_id,
-      grading_job,
-      update_config
-    );
-  } else {
-    // error - invalid priority (must be 'front' or 'back')
-    return -1;
+  let newReleaseAt: number;
+  switch (moveAction) {
+    case MoveJobAction.RELEASE:
+      newReleaseAt = now;
+      const newPriority = 0;
+      const upgradedJobConfig: GradingJobConfig = {
+        ...gradingJob,
+        priority: newPriority,
+      };
+      const upgradeErr = await upgradeJob(upgradedJobConfig);
+      if (upgradeErr) return [null, upgradeErr];
+      break;
+    case MoveJobAction.DELAY:
+      const [delayedReleaseAt, delayErr] = await delayJob(
+        jobKey,
+        nonce,
+        collation,
+      );
+      if (delayErr) return [null, delayErr];
+      newReleaseAt = delayedReleaseAt!;
+      break;
+    default:
+      return [null, Error("Invalid MoveJobAction in MoveJobRequest.")];
   }
-  // new_priority will be -1 if something went wrong
-  return new_priority;
+
+  // Update stored grading job with newReleaseAt
+  const releasedGradingJob: GradingJob = {
+    ...gradingJob,
+    release_at: newReleaseAt,
+  };
+  const [setStatus, setErr] = await redisSet(
+    jobKey,
+    JSON.stringify(releasedGradingJob),
+  );
+  if (setErr) return [null, setErr];
+  if (setStatus !== "OK")
+    return [null, Error("Failed to update job when moving grading job.")];
+  return [newReleaseAt, null];
 };
 
-// TODO: Make this async?
-const moveGradingJobToFront = async (
-  sub_id: string,
-  grading_job: Object,
-  config: Object
-) => {
-  const new_priority: number = new Date().getTime(); // timestamp now
+const delayJob = async (
+  jobKey: string,
+  nonce: number,
+  collation: Collation,
+): Promise<[number | null, Error | null]> => {
+  // Get last job in Reservations to calculate out the delayed release time
+  const [lastJob, getLastErr] = await getLastReservation();
+  if (getLastErr) return [null, getLastErr];
 
-  // Find GradingQueue Entry
-  const priority: number = grading_job["priority"];
-  const grading_queue_entry_results = await client.zRangeByScore(
-    "GradingQueue",
-    priority,
-    priority
+  const lastJobReleaseAt: number = lastJob!.score;
+  const newReleaseAt = lastJobReleaseAt + MOVE_TO_BACK_BUFFER;
+  const collationKey = `${collation.type}.${collation.id}`;
+  const reservationErr = await addReservation(
+    `${collationKey}.${nonce}`,
+    newReleaseAt,
   );
-  if (grading_queue_entry_results.length === 0) {
-    // Error - did not find grading job
-    return -1;
-  }
-  // Searched exactly for given 'priority' so it is first and only entry
-  const grading_queue_entry: string = grading_queue_entry_results[0];
+  if (reservationErr) return [null, reservationErr];
 
-  // TODO: Abstract
-  const updated_grading_job = { ...grading_job, priority: new_priority };
-  // Update priority
-  await client.set(
-    `QueuedGradingInfo.${sub_id}`,
-    JSON.stringify(updated_grading_job)
+  const submitterInfoKey = `SubmitterInfo.${collationKey}`;
+  const [numRemoved, lRemErr] = await redisLRem(submitterInfoKey, jobKey);
+  if (lRemErr) return [null, lRemErr];
+  if (numRemoved !== 1)
+    return [
+      null,
+      Error(
+        "Failed to remove key from current position in SubmitterInfo when delaying grading job",
+      ),
+    ];
+  // TODO: Verify that the length is the same as when this process started
+  const [length, rPushErr] = await redisRPush(submitterInfoKey, jobKey);
+  if (rPushErr) return [null, rPushErr];
+  if (!length)
+    return [
+      null,
+      Error(
+        "Failed to push key into new position in SubmitterInfo when delaying grading job",
+      ),
+    ];
+
+  // Update nonce
+  const [numUpdated, nonceErr] = await redisZAdd(
+    `Nonces.${collation.type}.${collation.id}`,
+    newReleaseAt,
+    nonce.toString(),
   );
-
-  // TODO: Abstract
-  if (config["user_id"] || config["team_id"]) {
-    // Move Submitter Info
-    const submitter_info_key = config["user_id"]
-      ? `SubmitterInfo.user.${config["user_id"]}`
-      : `SubmitterInfo.team.${config["team_id"]}`;
-    // Check if it is the only submitterinfo entry in the list - don't need to move
-    const submitter_info_list: string[] = await client.lRange(
-      submitter_info_key,
-      0,
-      -1
-    );
-    if (submitter_info_list.length > 1) {
-      // Move to front of SubmitterInfo list
-      await client.lRem(submitter_info_key, -1, `${sub_id}`);
-      client.lPush(submitter_info_key, `${sub_id}`);
-    }
-  } else {
-    // Submission Id - No Submitter Info
-  }
-  client.zAdd("GradingQueue", [
-    { score: new_priority, value: grading_queue_entry },
-  ]);
-  return new_priority;
+  if (nonceErr) return [null, nonceErr];
+  if (numUpdated !== 1)
+    return [null, Error("Failed to update nonce of grading job.")];
+  return [newReleaseAt, null];
 };
 
-const moveGradingJobToBack = async (
-  sub_id: string,
-  grading_job: Object,
-  config: Object
-): Promise<number> => {
-  // TODO: test this
-  const last_job_info: Object[] = await client.zRangeWithScores(
-    "GradingQueue",
+const getLastReservation = async (): Promise<
+  [{ value: string; score: number } | null, Error | null]
+> => {
+  const [lastJob, zRangeErr] = await redisZRangeWithScores(
+    "Reservations",
     -1,
-    -1
+    -1,
   );
-  if (last_job_info.length === 0) {
-    // Error - last job not found
-    return -1;
-  }
-  const last_job_priority: number = last_job_info[0]["score"];
-  const new_priority: number = last_job_priority + MOVE_TO_BACK_BUFFER;
-  const lifetime: number = new_priority + LIFETIME_BUFFER;
-
-  // TODO: Abstract this
-  // Find GradingQueue Entry
-  const priority: number = grading_job["priority"];
-
-  const grading_queue_entry_results: string[] = await client.zRangeByScore(
-    "GradingQueue",
-    priority,
-    priority
-  );
-  if (grading_queue_entry_results.length === 0) {
-    // Error - did not find grading job
-    return -1;
-  }
-  // Searched exactly for given 'priority' so it is first and only entry
-  const grading_queue_entry: string = grading_queue_entry_results[0];
-
-  const updated_grading_job = { ...grading_job, priority: new_priority };
-  // Update priority
-  await client.set(
-    `QueuedGradingInfo.${sub_id}`,
-    JSON.stringify(updated_grading_job)
-  );
-  client.expireAt(`QueuedGradingInfo.${sub_id}`, lifetime);
-
-  // TODO: Abstract some of this
-  if (config["user_id"] || config["team_id"]) {
-    // Move Submitter Info
-    const submitter_info_key = config["user_id"]
-      ? `SubmitterInfo.user.${config["user_id"]}`
-      : `SubmitterInfo.team.${config["team_id"]}`;
-
-    // Check if it is the only submitterinfo entry in the list - don't need to move
-    const submitter_info_list: string[] = await client.lRange(
-      submitter_info_key,
-      0,
-      -1
-    );
-    if (submitter_info_list.length > 1) {
-      // Move to back of SubmitterInfo list
-      await client.lRem(submitter_info_key, -1, `${sub_id}`);
-      await client.rPush(submitter_info_key, `${sub_id}`);
-    }
-    client.expireAt(submitter_info_key, lifetime);
-  } else {
-    // Submission Id - No Submitter Info to Move
-  }
-  client.zAdd("GradingQueue", [
-    { score: new_priority, value: grading_queue_entry },
-  ]);
-  return new_priority;
+  if (zRangeErr) return [null, zRangeErr];
+  if (!lastJob || lastJob.length === 0)
+    return [null, Error("Failed to find last reservation")];
+  return [lastJob[0], null];
 };
 
-export default moveGradingJob;
+export default moveJobHandler;

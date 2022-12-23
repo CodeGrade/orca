@@ -15,7 +15,7 @@ DEFAULT_COMMAND_TIMEOUT = 60 # 1 minute
 class GradingScriptPreprocessor:
 
   def __init__(self, secret: str, json_cmds: List[GradingScriptCommandJSON], 
-    code_files: List[CodeFileInfo], file_processor: CodeFileProcessor, 
+    code_files: Dict[str, CodeFileInfo], code_file_processor: CodeFileProcessor, 
     cmd_timeout: int = DEFAULT_COMMAND_TIMEOUT) -> None:
     self.__interpolated_dirs = {
       "$ASSETS": "assets",
@@ -23,7 +23,7 @@ class GradingScriptPreprocessor:
       "$EXTRACTED": f"{secret}/extracted",
       "$BUILD": f"{secret}/build"
     }
-    self.__file_processing_command = file_processor
+    self.__code_file_processor = code_file_processor
     self.__json_cmds = json_cmds
     self.__code_files = code_files
     self.__cmds = [None for _ in range(len(json_cmds))]
@@ -43,13 +43,10 @@ class GradingScriptPreprocessor:
     self.__create_script_dirs()
     download_dir = self.__interpolated_dirs["$DOWNLOADED"]
     extract_dir = self.__interpolated_dirs["$EXTRACTED"]
-    for code_file in self.__code_files:
-      source_name = code_file.get_source().value
-      file_download_dir = os.path.join(download_dir, source_name)
-      file_extract_dir = os.path.join(extract_dir, source_name)
-      os.makedirs(file_download_dir)
-      os.makedirs(file_extract_dir)
-      self.__file_processing_command.process_file(code_file, file_download_dir, 
+    for name, code_file in self.__code_files.items():
+      file_download_dir = os.path.join(download_dir, name)
+      file_extract_dir = os.path.join(extract_dir, name)
+      self.__code_file_processor.process_file(code_file, file_download_dir, 
         file_extract_dir)
 
   def __generate_grading_script(self):
