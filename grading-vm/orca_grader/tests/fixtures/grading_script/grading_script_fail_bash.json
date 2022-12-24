@@ -1,0 +1,25 @@
+[
+  {
+    "cmd": "echo This is the first command",
+    "on_complete": 1,
+    "on_fail": "abort"
+  },
+  {
+    "condition": {
+      "predicate": "exists",
+      "path": "orca_grader/tests/fixtures/grading_script/basic-grading-script.json",
+    },
+    "on_true": 2,
+    "on_false": 3
+  },
+  {
+    "cmd": "(exit 1)",
+    "on_complete": 3,
+    "on_fail": "abort"
+  },
+  {
+    "cmd": "we should not get here",
+    "on_complete": "output",
+    "on_fail": "abort"
+  }
+]
