@@ -49,7 +49,7 @@ class GradingScriptPreprocessor:
       self.__code_file_processor.process_file(code_file, file_download_dir, 
         file_extract_dir)
 
-  def __generate_grading_script(self):
+  def __generate_grading_script(self) -> GradingScriptCommand:
     for i in range(len(self.__cmds)):
       if self.__cmds[i] is None:
         self.__get_grading_command_by_index(i)
@@ -60,7 +60,7 @@ class GradingScriptPreprocessor:
       return self.__cmds[index]
     if is_bash_command(self.__json_cmds[index]):
       return self.__process_bash_command_json(self.__json_cmds[index], index)
-    elif is_conditional_command(self.__json_cmds[index], index):
+    elif is_conditional_command(self.__json_cmds[index]):
       return self.__process_conditional_command_json(self.__json_cmds[index], index)
     else:
       raise InvalidGradingScriptCommand()
