@@ -4,7 +4,7 @@ from orca_grader.common.types.grading_job_json_types import GradingJobOutputJSON
 
 class GradingJobOutput:
   
-  def __init__(self, command_responses: List[GradingScriptCommandResponse], execution_errors: List[Exception] = None, 
+  def __init__(self, command_responses: List[GradingScriptCommandResponse], execution_errors: List[Exception] = [], 
     tap_output: str = None) -> None:
     self.__command_responses = command_responses
     self.__execution_errors = execution_errors
