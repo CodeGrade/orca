@@ -30,9 +30,6 @@ class GradingScriptCommandResponse:
   def get_stderr_output(self) -> str:
     return self.__stderr_output
   
-  def get_next(self) -> str:
-    return self.__next
-  
   def get_original_cmd(self) -> str:
     return self.__cmd
 
