@@ -8,10 +8,10 @@ jobs:
     runs-on: ubuntu-20.04
     defaults:
       run:
-        working-directory: grading_vm
+        working-directory: grading-vm
     strategy:
       matrix:
-        python-version: ["3.8"]
+        python-version: ["3.8.10"]
     steps:
       - name: checkout
         uses: actions/checkout@v3
