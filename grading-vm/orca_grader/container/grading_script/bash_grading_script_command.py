@@ -16,7 +16,19 @@ class BashGradingScriptCommand:
     self.__on_complete = on_complete
     self.__on_fail = on_fail
     self.__timeout = timeout
-  
+
+  def get_on_complete(self) -> GradingScriptCommand:
+    return self.__on_complete
+
+  def get_on_fail(self) -> GradingScriptCommand:
+    return self.__on_fail
+
+  def get_cmd(self) -> str:
+    return self.__cmd
+
+  def get_timeout(self) -> int:
+    return self.__timeout
+
   def execute(self, responses: List[GradingScriptCommandResponse]) -> GradingJobOutput:
     did_fail: bool = False
     try:
