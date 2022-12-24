@@ -2,7 +2,8 @@
   "type": "object",
   "properties": {
     "url": { "type": "string" },
-    "mime_type": { "type": "string" }
+    "mime_type": { "type": "string" },
+    "should_be_updated": { "type": "boolean" }
   },
   "required": ["url", "mime_type"]
 }

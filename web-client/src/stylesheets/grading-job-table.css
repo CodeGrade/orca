@@ -1,4 +1,5 @@
-table {
+/* Responsive table */
+/* table {
   display: flex;
   flex-flow: column;
   width: 100%;
@@ -19,4 +20,5 @@ tr {
   width: 100%;
   display: table;
   table-layout: fixed;
-}
+} */
+/* End */

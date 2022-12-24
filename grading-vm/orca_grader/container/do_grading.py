@@ -1,6 +1,7 @@
 import json
 import sys
-from typing import List, TextIO
+import traceback
+from typing import Dict, List, TextIO
 from orca_grader.common.services.push_results import push_results_to_bottlenose
 from orca_grader.container.exec_secret import GradingJobExecutionSecret
 from orca_grader.common.grading_job.grading_job_output import GradingJobOutput
@@ -9,7 +10,7 @@ from orca_grader.container.grading_script.grading_script_command_response import
 from orca_grader.container.build_script.preprocess import GradingScriptPreprocessor
 from orca_grader.container.build_script.code_file.processing.code_file_processor import CodeFileProcessor
 from orca_grader.container.build_script.exceptions import PreprocessingException
-from orca_grader.container.build_script.code_file.code_file_info import CodeFileInfo
+from orca_grader.container.build_script.code_file.code_file_info import CodeFileInfo, json_to_code_file_info
 from orca_grader.container.build_script.code_file.code_file_source import CodeFileSource
 from orca_grader.container.build_script.code_file.sub_mime_types import SubmissionMIMEType
 from orca_grader.common.types.grading_job_json_types import CodeFileInfoJSON, GradingJobJSON, GradingJobOutputJSON, GradingScriptCommandJSON
@@ -17,16 +18,9 @@ from orca_grader.common.types.grading_job_json_types import CodeFileInfoJSON, Gr
 def get_job_from_input_stream(input_stream: TextIO) -> GradingJobJSON:
   return json.load(input_stream)
 
-def extract_code_file_info_from_grading_job_json(grading_job_json: GradingJobJSON) -> List[CodeFileInfo]:
-  code_files: List[CodeFileInfo] = []
-  for source in [s.value for s in CodeFileSource]:
-      if source not in grading_job_json:
-        continue
-      json_code_file: CodeFileInfoJSON = grading_job_json[source]
-      code_file = CodeFileInfo(json_code_file["url"], SubmissionMIMEType(json_code_file["mime_type"]), 
-        CodeFileSource(source))
-      code_files.append(code_file)
-  return code_files
+def produce_code_files_dictionary(code_files_json: Dict[str, any]) -> Dict[str, CodeFileInfo]:
+  return { name: json_to_code_file_info(code_file_json, name) for (name, code_file_json) in code_files_json.items() }
+    
 
 def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobOutput:
   secret: str = GradingJobExecutionSecret.get_secret()
@@ -41,18 +35,27 @@ def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobOutpu
   # *Handled outside in the "if name == '__main__'" section.
   try:
     # TODO: Pull credentials (e.g., submission id, student id, etc.) 
-    code_files = extract_code_file_info_from_grading_job_json(grading_job_json)
+    code_files = produce_code_files_dictionary(grading_job_json["code_files"])
+    print(code_files)
     commands: List[GradingScriptCommandJSON] = grading_job_json["script"]
+    interpolated_dirs = {
+      "$ASSETS": "assets",
+      "$DOWNLOADED": f"{secret}/downloaded",
+      "$EXTRACTED": f"{secret}/extracted",
+      "$BUILD": f"{secret}/build"
+    }
     if "timeout" in grading_job_json:
-      preprocessor = GradingScriptPreprocessor(secret, commands, code_files, CodeFileProcessor(), 
-        grading_job_json["timeout"])
+      preprocessor = GradingScriptPreprocessor(secret, commands, code_files,
+        CodeFileProcessor(interpolated_dirs), grading_job_json["timeout"])
     else:
-      preprocessor = GradingScriptPreprocessor(secret, commands, code_files, CodeFileProcessor())
+      preprocessor = GradingScriptPreprocessor(secret, commands, code_files, 
+        CodeFileProcessor(interpolated_dirs))
     script: GradingScriptCommand = preprocessor.preprocess_job()
     output: GradingJobOutput = script.execute(command_responses)
   except PreprocessingException as preprocess_e:
     output = GradingJobOutput(command_responses, [preprocess_e])
   except Exception as e:
+    traceback.print_tb(e.__traceback__)
     output = GradingJobOutput(command_responses, [e])
   push_results_to_bottlenose(output)
 

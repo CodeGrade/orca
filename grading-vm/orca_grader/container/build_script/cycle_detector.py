@@ -1,4 +1,5 @@
-from typing import Dict, List, Set
+from functools import reduce
+from typing import Dict, List, Set, Tuple
 from orca_grader.container.build_script.json_helpers.grading_script_command import is_conditional_command
 from orca_grader.common.types.grading_job_json_types import GradingScriptCommandJSON
 
@@ -15,18 +16,61 @@ class CycleDetector:
       json_command = json_script[i]
       if CycleDetector.cmd_has_self_ref(json_command, i):
         return True
+    
+    # Create G and G_reversed (in the form of adjacency lists using command list indices).
+    adj_list, rev_adj_list = CycleDetector.generate_adjacency_lists_from_script(json_script)
+
     # First DFS Iteration:
-    unvisited: Set[int] = set([i for i in range(len(json_script))])
-    command_stack = CycleDetector.generate_command_stack(json_script, unvisited)
-    # Second DFS Iteration:
-    assignments: Dict[int, int] = dict()
+    visited = set()
+    command_stack = list()
+    for vertex in adj_list:
+      CycleDetector.visit_command(vertex, adj_list, visited, command_stack)
+
+    # Second DFS Iteration and counting of Strongly Connected Components:
+    visited.clear()
+    num_scc = 0
     while len(command_stack) > 0:
       vertex = command_stack.pop()
-      CycleDetector.assign_components(json_script, vertex, vertex, assignments)
-    # Check for cycles between nodes:
-    num_scc = CycleDetector.count_number_of_strongly_connected_components(assignments)
+      if vertex not in visited:
+        num_scc += 1
+        CycleDetector.visit_command(vertex, rev_adj_list, visited)
     return num_scc != len(json_script)
   
+  @staticmethod
+  def generate_adjacency_lists_from_script(json_script: List[GradingScriptCommandJSON]) \
+    -> Tuple[Dict[int, List[int]], Dict[int, List[int]]]:
+    """
+    Given a GradingScriptJSON, or a JSON representation of a graph/state machine of 
+    GradingScriptCommands, return a pair with the original and reversed adjacency lists
+    (using indices in the list), respectively.
+    """
+    adj_list = { i: [] for i in range(len(json_script))}
+    rev_adj_list = { i: [] for i in range(len(json_script))}
+    for i in range(len(json_script)):
+      command = json_script[i]
+      CycleDetector.append_edges_to_adjacency_lists(command, i, adj_list, rev_adj_list)
+    return adj_list, rev_adj_list
+  
+  @staticmethod
+  def visit_command(vertex: int, adj_list: Dict[int, List[int]], visited: Set[int], 
+    stack: List[int] = None) -> None:
+    if vertex in visited:
+      return
+    visited.add(vertex)
+    for neighbor in adj_list[vertex]:
+      if neighbor not in visited:
+        CycleDetector.visit_command(neighbor, adj_list, visited, stack)
+    if stack is not None:
+      stack.append(vertex)
+  
+  @staticmethod
+  def append_edges_to_adjacency_lists(command: GradingScriptCommandJSON, index: int,
+    adj_list: Dict[int, List[int]], rev_adj_list: Dict[int, List[int]]):
+    for k in list(filter(lambda s: s.startswith('on_'), command.keys())):
+      if type(command[k]) == int:
+        adj_list[index].append( command[k])
+        rev_adj_list[command[k]].append(index)
+
   @staticmethod
   def cmd_has_self_ref(json_command: GradingScriptCommandJSON, index: int) -> bool:
     for item in json_command.items():
@@ -34,90 +78,3 @@ class CycleDetector:
       if "on_" in k and type(v) == int and v == index:
         return True
     return False
-
-  @staticmethod
-  # Integral piece of the algorithm; separated out for testability.
-  def generate_command_stack(json_script: List[GradingScriptCommandJSON], unvisited: Set[int]) \
-    -> List[int]:
-    command_stack: List[int] = []
-    for u in range(len(json_script)):
-      CycleDetector.visit_command(json_script, unvisited, command_stack, u)
-    return command_stack
-
-  @staticmethod
-  def visit_command(json_script: List[GradingScriptCommandJSON], unvisited: Set[int], 
-    command_stack: List[int], vertex: int) -> None:
-    if vertex in unvisited:
-      unvisited.remove(vertex)
-      command: GradingScriptCommandJSON = json_script[vertex]
-      if is_conditional_command(command):
-        CycleDetector.visit_conditional_command(json_script, unvisited, command_stack, vertex)
-      else:
-        CycleDetector.visit_bash_command(json_script, unvisited, command_stack, vertex)
-      command_stack.append(vertex)
-  
-  @staticmethod
-  def visit_conditional_command(json_script: List[GradingScriptCommandJSON], unvisited: Set[int],
-    command_stack: List[int], vertex: int) -> None:
-    json_command = json_script[vertex]
-    on_false_vertex: int = json_command["on_false"]
-    CycleDetector.visit_command(json_script, unvisited, command_stack, 
-      on_false_vertex)
-    on_true_vertex: int = json_command["on_true"]
-    CycleDetector.visit_command(json_script, unvisited, command_stack,
-      on_true_vertex)
-  
-  @staticmethod
-  def visit_bash_command(json_script: List[GradingScriptCommandJSON], unvisited: Set[int], 
-    command_stack: List[int], vertex: int) -> None:
-    json_command = json_script[vertex]
-    if json_command["on_fail"] != "abort":
-      fail_vertex = int(json_command["on_fail"])
-      CycleDetector.visit_command(json_script, unvisited, command_stack, fail_vertex)
-    if json_command["on_complete"] != "output":
-      complete_vertex = int(json_command["on_complete"])
-      CycleDetector.visit_command(json_script, unvisited, command_stack, complete_vertex)
-
-  @staticmethod
-  def assign_components(json_script: List[GradingScriptCommandJSON], vertex: int, 
-    root: int, assignments: Dict[int, int]) -> None:
-    if vertex not in assignments:
-      assignments[vertex] = root
-      command = json_script[vertex]
-      if is_conditional_command(command):
-        CycleDetector.assign_components_conditional_command(json_script, vertex, root, assignments)
-      else:
-        CycleDetector.assign_components_bash_command(json_script, vertex, root, assignments)
-  
-  @staticmethod
-  def assign_components_conditional_command(json_script: List[GradingScriptCommandJSON], 
-    vertex: int, root: int, assignments: Dict[int, int]) -> None:
-    json_command = json_script[vertex]
-    true_vertex: int = json_command["on_true"]
-    CycleDetector.assign_components(json_script, true_vertex, root, assignments)
-    false_vertex: int = json_command["on_false"]
-    CycleDetector.assign_components(json_script, false_vertex, root, assignments)
-
-  @staticmethod
-  def assign_components_bash_command(json_script: List[GradingScriptCommandJSON],
-    vertex: int, root: int, assignments: Dict[int, int]) -> None:
-    json_command = json_script[vertex]
-    if json_command["on_fail"] != "abort":
-      fail_vertex = int(json_command["on_fail"])
-      CycleDetector.assign_components(json_script, fail_vertex, root, assignments)
-    if json_command["on_complete"] != "output":
-      complete_vertex = int(json_command["on_complete"])
-      CycleDetector.assign_components(json_script, complete_vertex, root, assignments)
-    
-  @staticmethod
-  def count_number_of_strongly_connected_components(assigned_components: Dict[int, int]) -> int:
-    num_strong_components = 0
-    for item in assigned_components.items():
-      vertex, root = item
-      if vertex == root:
-        num_strong_components += 1
-    return num_strong_components
-
-    
-  
-      

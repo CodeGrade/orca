@@ -74,8 +74,11 @@ A `CodeFileInfo` contains a URL to files necessary to grade this submission. A M
 interface CodeFileInfo {
   url: string;
   mime_type: string;
+  should_replace_paths: boolean;
 }
 ```
+
+A given file may contain file paths to be updated for use on the grading VM. For example, `javac` can utilize a list of files for compilation. The `should_replace_paths` field indicates to the VM whether if a file should be updated.
 
 <hr>
 
