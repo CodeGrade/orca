@@ -35,14 +35,14 @@ class BashGradingScriptCommand:
       proc_res: CompletedProcess = run(self.__cmd, timeout=self.__timeout, 
         shell=True, check=True, capture_output=True)
       responses.append(GradingScriptCommandResponse(False, self.__cmd, proc_res.returncode, 
-        proc_res.stdout.decode()))
+        proc_res.stdout.decode().rstrip(), proc_res.stderr.decode().rstrip()))
     except CalledProcessError as cpe:
       responses.append(GradingScriptCommandResponse(True, self.__cmd, 
-        cpe.returncode, cpe.stdout.decode(), cpe.stderr.decode()))
+        cpe.returncode, cpe.stdout.decode().rstrip(), cpe.stderr.decode().rstrip()))
       did_fail = True
     except TimeoutExpired as te:
       responses.append(GradingScriptCommandResponse(True, self.__cmd, None, 
-        te.stdout.decode(), te.stderr.decode(), True))
+        te.stdout.decode().rstrip(), te.stderr.decode().rstrip(), True))
       did_fail = True
     
     if did_fail and self.__on_fail:
