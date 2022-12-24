@@ -74,7 +74,10 @@ class CodeFileProcessor:
     }
     mime_type = code_file.get_mime_type()
     if mime_type in mime_to_extraction:
-      mime_to_extraction[mime_type](from_path, to_path)
+      dir_name = path.splitext(code_file.get_file_name())[0]
+      if mime_type == SubmissionMIMEType.TAR_GZ:
+        dir_name = path.splitext(dir_name)[0] # TarGZ will go to _.tar, so we need to get the basename of that as wel.
+      mime_to_extraction[mime_type](from_path, path.join(to_path, dir_name))
     else:
       copyfile(from_path, to_path)
     return path.join(to_path, code_file.get_file_name())
@@ -97,4 +100,4 @@ class CodeFileProcessor:
                 line)
             )
       os.remove(file_path)
-      os.rename(path.join(dir_name, edited_file), file_path)
+      os.rename(path.join(dir_name, edited_file_name), file_path)

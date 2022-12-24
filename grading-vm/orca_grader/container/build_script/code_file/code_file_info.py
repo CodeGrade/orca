@@ -42,5 +42,5 @@ class CodeFileInfo:
     return basename(file_path)
 
 def json_to_code_file_info(json_code_file: CodeFileInfoJSON, dir_name: str) -> CodeFileInfo:
-  return CodeFileInfo(json_code_file["url"], json_code_file["mime_type"], 
+  return CodeFileInfo(json_code_file["url"], SubmissionMIMEType(json_code_file["mime_type"]), 
     dir_name, json_code_file["should_replace_paths"])

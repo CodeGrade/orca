@@ -1,5 +1,6 @@
 import json
 import sys
+import traceback
 from typing import Dict, List, TextIO
 from orca_grader.common.services.push_results import push_results_to_bottlenose
 from orca_grader.container.exec_secret import GradingJobExecutionSecret
@@ -18,7 +19,7 @@ def get_job_from_input_stream(input_stream: TextIO) -> GradingJobJSON:
   return json.load(input_stream)
 
 def produce_code_files_dictionary(code_files_json: Dict[str, any]) -> Dict[str, CodeFileInfo]:
-  return { name: json_to_code_file_info(code_file_json, name) for (name, code_file_json) in code_files_json }
+  return { name: json_to_code_file_info(code_file_json, name) for (name, code_file_json) in code_files_json.items() }
     
 
 def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobOutput:
@@ -35,6 +36,7 @@ def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobOutpu
   try:
     # TODO: Pull credentials (e.g., submission id, student id, etc.) 
     code_files = produce_code_files_dictionary(grading_job_json["code_files"])
+    print(code_files)
     commands: List[GradingScriptCommandJSON] = grading_job_json["script"]
     interpolated_dirs = {
       "$ASSETS": "assets",
@@ -53,6 +55,7 @@ def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobOutpu
   except PreprocessingException as preprocess_e:
     output = GradingJobOutput(command_responses, [preprocess_e])
   except Exception as e:
+    traceback.print_tb(e.__traceback__)
     output = GradingJobOutput(command_responses, [e])
   push_results_to_bottlenose(output)
 

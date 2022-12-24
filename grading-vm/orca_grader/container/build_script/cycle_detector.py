@@ -49,7 +49,7 @@ class CycleDetector:
     rev_adj_list = { i: [] for i in range(len(json_script))}
     for i in range(len(json_script)):
       command = json_script[i]
-      CycleDetector.append_to_adjacency_lists(command, i, adj_list, rev_adj_list)
+      CycleDetector.append_edges_to_adjacency_lists(command, i, adj_list, rev_adj_list)
     return adj_list, rev_adj_list
   
   @staticmethod
@@ -62,7 +62,7 @@ class CycleDetector:
     stack is not None and stack.append(vertex)
   
   @staticmethod
-  def append_edges_to_adjacency_lists(command: GradingScript, index: int,
+  def append_edges_to_adjacency_lists(command: GradingScriptCommandJSON, index: int,
     adj_list: Dict[int, List[int]], rev_adj_list: Dict[int, List[int]]):
     for k in list(filter(lambda s: s.startswith('on_'), command.keys())):
       if type(command[k]) == int:
