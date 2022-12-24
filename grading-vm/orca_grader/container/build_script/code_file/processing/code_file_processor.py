@@ -10,7 +10,6 @@ from orca_grader.container.build_script.code_file.sub_mime_types import Submissi
 from py7zr import SevenZipFile
 from zipfile import ZipFile
 import requests
-import fileinput
 
 def extract_tar_file(from_path: str, to_path: str) -> None:
   with tarfile.open(from_path, "r:") as f:
@@ -23,7 +22,7 @@ def extract_tar_gz_file(from_path: str, to_path: str) -> None:
     f.close()
 
 def extract_gz_file(from_path: str, to_path: str) -> None:
-  from_f_name = path.basename(from_path)
+  from_f_name = path.splitext(path.basename(from_path))[0] # Remove .gz from file name.
   with gzip.open(from_path, "rb") as f_in:
     with gzip.open(path.join(to_path, from_f_name)) as f_out:
       copyfileobj(f_in, f_out)
@@ -74,7 +73,7 @@ class CodeFileProcessor:
     }
     mime_type = code_file.get_mime_type()
     if mime_type in mime_to_extraction:
-      dir_name = path.splitext(code_file.get_file_name())[0]
+      dir_name = "" if mime_type == SubmissionMIMEType.GZ else path.splitext(code_file.get_file_name())[0]
       if mime_type == SubmissionMIMEType.TAR_GZ:
         dir_name = path.splitext(dir_name)[0] # TarGZ will go to _.tar, so we need to get the basename of that as wel.
       mime_to_extraction[mime_type](from_path, path.join(to_path, dir_name))
