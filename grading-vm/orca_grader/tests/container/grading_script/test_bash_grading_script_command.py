@@ -40,3 +40,21 @@ class TestBashGradingScriptCommand(unittest.TestCase):
     self.assertEqual(response.get_stdout_output(), expected_tap)
     self.assertFalse(response.did_time_out())
     self.assertEqual(response.get_status_code(), 0)
+
+  def test_timeout_bash_command(self):
+    command = BashGradingScriptCommand("yes", 0.01)
+
+    output = command.execute([])
+
+    responses = output.get_command_responses()
+    exceptions = output.get_execution_errors()
+    tap_output = output.get_tap_output()
+
+    self.assertEqual(len(exceptions), 0)
+    self.assertIsNone(tap_output)
+
+    self.assertEqual(len(responses), 1)
+    response = responses[0]
+    self.assertEqual(response.get_stderr_output(), "")
+    self.assertNotEqual(response.get_stdout_output(), "")
+    self.assertTrue(response.did_time_out)

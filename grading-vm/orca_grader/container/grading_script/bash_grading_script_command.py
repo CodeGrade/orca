@@ -10,7 +10,8 @@ class BashGradingScriptCommand:
   GradingScriptCommand that executes a bash command in the Linux shell.
   """
 
-  def __init__(self, cmd: str, timeout: int, on_complete: GradingScriptCommand = None, 
+  def __init__(self, cmd: str, timeout: float, 
+    on_complete: GradingScriptCommand = None, 
     on_fail: GradingScriptCommand = None) -> None:
     self.__cmd = cmd
     self.__on_complete = on_complete
@@ -35,14 +36,20 @@ class BashGradingScriptCommand:
       proc_res: CompletedProcess = run(self.__cmd, timeout=self.__timeout, 
         shell=True, check=True, capture_output=True)
       responses.append(GradingScriptCommandResponse(False, self.__cmd, proc_res.returncode, 
-        proc_res.stdout.decode().rstrip(), proc_res.stderr.decode().rstrip()))
+        proc_res.stdout.decode().rstrip(), 
+        proc_res.stderr.decode().rstrip()))
     except CalledProcessError as cpe:
-      responses.append(GradingScriptCommandResponse(True, self.__cmd, 
-        cpe.returncode, cpe.stdout.decode().rstrip(), cpe.stderr.decode().rstrip()))
+      responses.append(GradingScriptCommandResponse(True, self.__cmd, cpe.returncode, 
+        cpe.stdout.decode().rstrip(), 
+        cpe.stderr.decode().rstrip()))
       did_fail = True
     except TimeoutExpired as te:
+      # NOTE: stderr and stdout may not be captured, unlike in CalledProcessError
+      # and CompletedProcess
       responses.append(GradingScriptCommandResponse(True, self.__cmd, None, 
-        te.stdout.decode().rstrip(), te.stderr.decode().rstrip(), True))
+        te.stdout.decode().rstrip() if te.stdout is not None else "", 
+        te.stderr.decode().rstrip() if te.stderr is not None else "", 
+        True))
       did_fail = True
     
     if did_fail and self.__on_fail:

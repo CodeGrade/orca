@@ -13,7 +13,7 @@ class GradingScriptCommandResponse:
   """
 
   def __init__(self, is_error: bool, cmd: str, status_code: int, 
-    stdout_output: str = None, stderr_output: str = None, timed_out: bool = False) -> None:
+    stdout_output: str, stderr_output: str, timed_out: bool = False) -> None:
     self.__is_error = is_error
     self.__stdout_output = stdout_output
     self.__stderr_output = stderr_output
