@@ -14,7 +14,7 @@ class TestGradingScriptPreProcessor(unittest.TestCase):
     self.__code_file_processor = MockCodeFileProcessor(interpolated_dirs)
 
   def test_basic_script(self):
-    commands = []
-    code_files = []
-    preprocessor = GradingScriptPreprocessor("secret", commands, code_files, self.__code_file_processor)
-    raise NotImplementedError()
+    # commands = []
+    # code_files = []
+    # preprocessor = GradingScriptPreprocessor("secret", commands, code_files, self.__code_file_processor)
+    self.skipTest("Not yet written")
