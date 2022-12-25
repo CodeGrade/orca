@@ -1,6 +1,6 @@
 [
   {
-    "cmd": "echo This is the first command",
+    "cmd": ["echo", "This is the first command"],
     "on_complete": 1,
     "on_fail": "abort"
   },
@@ -13,12 +13,12 @@
     "on_false": 3
   },
   {
-    "cmd": "(exit 1)",
+    "cmd": ["(exit 1)"],
     "on_complete": 3,
     "on_fail": "abort"
   },
   {
-    "cmd": "we should not get here",
+    "cmd": ["echo", "we should not get here"],
     "on_complete": "output",
     "on_fail": "abort"
   }
