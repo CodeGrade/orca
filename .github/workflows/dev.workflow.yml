@@ -1,0 +1,30 @@
+name: 'Development - CI Testing for Code Quality'
+
+on: [push]
+
+jobs:
+  grading_vm:
+    name: 'Grading VM Tests'
+    runs-on: ubuntu-20.04
+    defaults:
+      run:
+        working-directory: grading-vm
+    strategy:
+      matrix:
+        python-version: ["3.8.10"]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: set up python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: run tests
+        run: python -m orca_grader.tests.runner
+
+
+

@@ -34,7 +34,6 @@ class CycleDetector:
       if vertex not in visited:
         num_scc += 1
         CycleDetector.visit_command(vertex, rev_adj_list, visited)
-  
     return num_scc != len(json_script)
   
   @staticmethod
@@ -49,25 +48,28 @@ class CycleDetector:
     rev_adj_list = { i: [] for i in range(len(json_script))}
     for i in range(len(json_script)):
       command = json_script[i]
-      CycleDetector.append_to_adjacency_lists(command, i, adj_list, rev_adj_list)
+      CycleDetector.append_edges_to_adjacency_lists(command, i, adj_list, rev_adj_list)
     return adj_list, rev_adj_list
   
   @staticmethod
   def visit_command(vertex: int, adj_list: Dict[int, List[int]], visited: Set[int], 
     stack: List[int] = None) -> None:
+    if vertex in visited:
+      return
     visited.add(vertex)
     for neighbor in adj_list[vertex]:
       if neighbor not in visited:
-        CycleDetector.visit_command(vertex, adj_list, visited, stack)
-    stack is not None and stack.append(vertex)
+        CycleDetector.visit_command(neighbor, adj_list, visited, stack)
+    if stack is not None:
+      stack.append(vertex)
   
   @staticmethod
-  def append_edges_to_adjacency_lists(command: GradingScript, index: int,
+  def append_edges_to_adjacency_lists(command: GradingScriptCommandJSON, index: int,
     adj_list: Dict[int, List[int]], rev_adj_list: Dict[int, List[int]]):
     for k in list(filter(lambda s: s.startswith('on_'), command.keys())):
       if type(command[k]) == int:
-        adj_list[index] = command[k]
-        rev_adj_list[k] = index
+        adj_list[index].append( command[k])
+        rev_adj_list[command[k]].append(index)
 
   @staticmethod
   def cmd_has_self_ref(json_command: GradingScriptCommandJSON, index: int) -> bool:

@@ -28,6 +28,8 @@ def grading_job_handler(retriever: GradingJobRetriever):
     print(result.stderr.decode())
   except Exception as e:
     push_results_with_exception(job_string, e)
+  finally:
+    os.remove(file_name)
 
 def push_results_with_exception(job_json_string: str, e: Exception):
   # job_json = json.loads(job_json_string) # To be added when credentials are added to output
@@ -37,5 +39,5 @@ def push_results_with_exception(job_json_string: str, e: Exception):
 if __name__ == "__main__":
   env_redis_url = os.environ.get("REDIS_URL")
   redis_url = env_redis_url if (env_redis_url is not None) else DEFAULT_REDIS_URL
-  retriever = LocalGradingJobRetriever("orca_grader/tests/fixtures/files/live-URL-student-only.json")
+  retriever = LocalGradingJobRetriever("orca_grader/tests/fixtures/grading_job/live-URL-student-only.json")
   grading_job_handler(retriever)

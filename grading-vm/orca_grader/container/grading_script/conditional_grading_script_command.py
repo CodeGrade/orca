@@ -31,7 +31,6 @@ class ConditionalGradingScriptCommand(GradingScriptCommand):
   command if the evaluation is true/false. Currently supports checking against
   the filesystem.
   """
-  pass
 
   def __init__(self, on_true: GradingScriptCommand, on_false: GradingScriptCommand, 
     file_path: str, predicate: GradingScriptPredicate) -> None:
@@ -40,6 +39,18 @@ class ConditionalGradingScriptCommand(GradingScriptCommand):
     self.__file_path = file_path
     self.__predicate = predicate
   
+  def get_on_true(self) -> GradingScriptCommand:
+    return self.__on_true
+
+  def get_on_false(self) -> GradingScriptCommand:
+    return self.__on_false
+
+  def get_predicate(self) -> GradingScriptPredicate:
+    return self.__predicate
+
+  def get_file_path(self) -> str:
+    return self.__file_path
+
   def execute(self, responses: List[GradingScriptCommandResponse]) -> GradingJobOutput:
     check = predicate_to_func(self.__predicate)
     if check(self.__file_path):
