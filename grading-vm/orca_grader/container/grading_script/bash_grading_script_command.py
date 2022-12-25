@@ -10,7 +10,7 @@ class BashGradingScriptCommand:
   GradingScriptCommand that executes a bash command in the Linux shell.
   """
 
-  def __init__(self, cmd: str, timeout: float, 
+  def __init__(self, cmd: List[str], timeout: float, 
     on_complete: GradingScriptCommand = None, 
     on_fail: GradingScriptCommand = None) -> None:
     self.__cmd = cmd
@@ -24,10 +24,10 @@ class BashGradingScriptCommand:
   def get_on_fail(self) -> GradingScriptCommand:
     return self.__on_fail
 
-  def get_cmd(self) -> str:
+  def get_cmd(self) -> List[str]:
     return self.__cmd
 
-  def get_timeout(self) -> int:
+  def get_timeout(self) -> float:
     return self.__timeout
 
   def execute(self, responses: List[GradingScriptCommandResponse]) -> GradingJobOutput:

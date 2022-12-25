@@ -1,7 +1,13 @@
 {
   "type": "object",
   "properties": {
-    "cmd": { "type": "string" },
+    "cmd": { 
+      "type": "array"
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
     "on_complete": { "type": ["string", "number"] },
     "on_fail": { "type": ["string", "number"] }
   },

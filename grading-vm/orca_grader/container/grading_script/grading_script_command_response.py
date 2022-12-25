@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 
 class GradingScriptCommandResponse:
   """
@@ -12,7 +12,7 @@ class GradingScriptCommandResponse:
     - isError() == false && (next == "output" || next == "<int>")
   """
 
-  def __init__(self, is_error: bool, cmd: str, status_code: int, 
+  def __init__(self, is_error: bool, cmd: List[str], status_code: int, 
     stdout_output: str, stderr_output: str, timed_out: bool = False) -> None:
     self.__is_error = is_error
     self.__stdout_output = stdout_output
@@ -30,7 +30,7 @@ class GradingScriptCommandResponse:
   def get_stderr_output(self) -> str:
     return self.__stderr_output
   
-  def get_original_cmd(self) -> str:
+  def get_original_cmd(self) -> List[str]:
     return self.__cmd
 
   def get_status_code(self) -> int:
