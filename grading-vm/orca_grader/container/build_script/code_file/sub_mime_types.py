@@ -20,6 +20,7 @@ class SubmissionMIMEType(Enum):
   ML = "mllike"
   HASKELL = "text/x-haskell"
   LIT_HASKELL = "text/z-literate-haskell"
+  PLAIN_TEXT = "text/plain"
 
 ARCHIVE_MIMES = [SubmissionMIMEType.ZIP, SubmissionMIMEType.TAR, 
   SubmissionMIMEType.GZ, SubmissionMIMEType.TAR_GZ]

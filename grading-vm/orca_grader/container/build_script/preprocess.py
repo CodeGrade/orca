@@ -17,6 +17,8 @@ class GradingScriptPreprocessor:
   def __init__(self, secret: str, json_cmds: List[GradingScriptCommandJSON], 
     code_files: Dict[str, CodeFileInfo], code_file_processor: CodeFileProcessor, 
     cmd_timeout: int = DEFAULT_COMMAND_TIMEOUT) -> None:
+    if CycleDetector.contains_cycle(json_cmds):
+      raise NotADAGException()
     self.__interpolated_dirs = {
       "$ASSETS": "assets",
       "$DOWNLOADED": f"{secret}/downloaded",
@@ -30,8 +32,6 @@ class GradingScriptPreprocessor:
     self.__cmd_timeout = cmd_timeout
     
   def preprocess_job(self) -> GradingScriptCommand:
-    if CycleDetector.contains_cycle(self.__json_cmds):
-      raise NotADAGException()
     self.__download_and_process_code_files()
     script = self.__generate_grading_script()
     return script

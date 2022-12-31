@@ -1,0 +1,24 @@
+{
+  "key": "{ \"grade_id\": 123 }",
+  "code_files": {
+    "target_code": {
+      "url": "/home/jackson/anonymous/orca/example-homework.tgz",
+      "mime_type": "application/x-gtar",
+      "should_replace_paths": false
+    },
+    "test_code": {
+      "url": "/home/jackson/anonymous/orca/example-tests.zip",
+      "mime_type": "application/zip",
+      "should_replace_paths": false
+    }
+  },
+  "script": [
+    {
+      "cmd": "echo TODO",
+      "on_fail": "abort",
+      "on_complete": "output"
+    }
+  ],
+  "priority": 0,
+  "response_url": ""
+}

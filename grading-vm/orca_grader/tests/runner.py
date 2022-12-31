@@ -5,6 +5,7 @@ import orca_grader.tests.container.build_script.test_cycle_detector as test_cycl
 import orca_grader.tests.container.grading_script.test_bash_grading_script_command as test_bash_grading_script_command
 import orca_grader.tests.container.grading_script.test_conditional_grading_script_command as test_conditional_grading_script_command
 import orca_grader.tests.container.build_script.code_file.test_code_file_info as test_code_file_info
+import orca_grader.tests.container.build_script.code_file.test_code_file_processor as test_code_file_processor
 
 if __name__ == '__main__':
   loader = unittest.TestLoader()
@@ -14,5 +15,6 @@ if __name__ == '__main__':
   suite.addTests(loader.loadTestsFromModule(test_bash_grading_script_command))
   suite.addTests(loader.loadTestsFromModule(test_conditional_grading_script_command))
   suite.addTests(loader.loadTestsFromModule(test_code_file_info))
+  suite.addTests(loader.loadTestsFromModule(test_code_file_processor))
   runner = unittest.TextTestRunner(verbosity=3)
   runner.run(suite)
