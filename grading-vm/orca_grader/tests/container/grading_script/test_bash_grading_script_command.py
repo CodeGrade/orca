@@ -22,7 +22,7 @@ class TestBashGradingScriptCommand(unittest.TestCase):
 
   def test_completable_bash_script_command(self):
     expected_tap = "this should output"
-    command = BashGradingScriptCommand(f"echo {expected_tap}", 10)
+    command = BashGradingScriptCommand(["echo", expected_tap], 10)
     
     output = command.execute([])
 
@@ -61,7 +61,7 @@ class TestBashGradingScriptCommand(unittest.TestCase):
 
   def test_bash_command_traverses_on_fail(self):
     expected_tap = "this should be reached upon first failure"
-    second_cmd = BashGradingScriptCommand(f"echo {expected_tap}", 1)
+    second_cmd = BashGradingScriptCommand(["echo", expected_tap], 1)
     first_cmd = BashGradingScriptCommand("(exit 1)", 1, on_fail=second_cmd)
 
     output = first_cmd.execute([])
@@ -80,7 +80,7 @@ class TestBashGradingScriptCommand(unittest.TestCase):
   def test_bash_command_traverses_on_complete(self):
     expected_tap = "this should be reached from first on complete"
     first_cmd_output = "command one completed"
-    second_cmd = BashGradingScriptCommand(f"echo {expected_tap}", 1)
+    second_cmd = BashGradingScriptCommand(["echo", expected_tap], 1)
     first_cmd = BashGradingScriptCommand(f"echo {first_cmd_output}", 1, on_complete=second_cmd)
 
     output = first_cmd.execute([])

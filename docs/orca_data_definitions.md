@@ -96,13 +96,13 @@ A grading script takes many steps to complete, and the output of these steps nee
 
 ```typescript
 interface BashGradingScriptCommand {
-  cmd: string;
+  cmd: string[] | string;
   on_fail: 'abort' | number;
   on_complete: 'output' | number;
 }
 ```
 
-A `BashGradingScriptCommand` describes a step in the grading script that requires interaction with the shell. This can be compilation, running grader tests, etc. The `cmd` key points to the bash command to run.
+A `BashGradingScriptCommand` describes a step in the grading script that requires interaction with the shell. This can be compilation, running grader tests, etc. The `cmd` key points to the bash command to run with its options and arguments. It is generally recommended to pass in a sequence of program arguments (e.g., `["javac", ...]`), however in the case of needing to use shell utilities (e.g., a subshell with `(<cmd>)`), a `string` would be necessary.
 
 Each command could either succeed or fail. If successful and `on_complete` says to _output_, or if failed and `on_fail` says to _abort_, then the script exits and sends the results back to Bottlenose. Otherwise, the `on_fail` and `on_complete` keys specify the index of the next `GradingScriptCommand` to execute.
 
