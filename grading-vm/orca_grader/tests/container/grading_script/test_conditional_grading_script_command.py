@@ -7,8 +7,8 @@ class TestConditionalGradingScriptCommand(unittest.TestCase):
   def setUp(self) -> None:
     self.__expected_tap = "The correct command was reached."
     self.__unexpected_tap = "The incorrect command was reached."
-    self.__correct_command = BashGradingScriptCommand(f"echo {self.__expected_tap}", 1)
-    self.__incorrect_command = BashGradingScriptCommand(f"echo {self.__unexpected_tap}", 1)
+    self.__correct_command = BashGradingScriptCommand(["echo", self.__expected_tap], 1)
+    self.__incorrect_command = BashGradingScriptCommand(["echo", self.__unexpected_tap], 1)
 
   def test_file_exists_on_true(self):
     command = ConditionalGradingScriptCommand(self.__correct_command, 

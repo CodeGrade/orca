@@ -8,12 +8,12 @@
     "on_false": 2
   },
   {
-    "cmd": "echo File Was Not Found.",
+    "cmd": ["echo", "File Was Not Found."],
     "on_complete": "output",
     "on_fail": "abort"
   },
   {
-    "cmd": "echo The File Was Found",
+    "cmd": ["echo", "The File Was Found"],
     "on_complete": "output",
     "on_fail": "abort"
   }

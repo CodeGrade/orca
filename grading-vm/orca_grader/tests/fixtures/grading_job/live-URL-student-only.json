@@ -8,7 +8,7 @@
   },
   "script": [
     {
-      "cmd": "echo hello",
+      "cmd": ["echo", "hello"],
       "on_complete": "output",
       "on_fail": "abort"
     }
