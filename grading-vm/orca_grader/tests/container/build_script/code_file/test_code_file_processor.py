@@ -11,7 +11,7 @@ from orca_grader.container.build_script.code_file.sub_mime_types import Submissi
 class TestCodeFileProcessor(unittest.TestCase):
 
   @classmethod
-  def setUp(cls) -> None:
+  def setUpClass(cls) -> None:
     code_files_json = {}
     with open("orca_grader/tests/fixtures/code_files/code_files.json", 'r') as code_files_fp:
       code_files_json = json.load(code_files_fp)
@@ -76,15 +76,51 @@ class TestCodeFileProcessor(unittest.TestCase):
     download_path, extract_path = self.__download_extract_paths["tar-gz-replace-paths"]
     self.__processor.process_file(self.__code_files["tar-gz-replace-paths"], download_path, extract_path)
     self.assertTrue(os.path.exists(os.path.join(download_path, code_file.get_file_name())))
-    self.assertTrue(os.path.isdir(os.path.join(extract_path, code_file.get_file_name().replace(".tar.gz", ""))))
-
+    self.assertTrue(os.path.isdir(extract_path))
+    self.assertEqual(len(os.listdir(extract_path)), 2)
+    with open(os.path.join(extract_path, "basic-file.txt"), 'r') as unreplaced_fp:
+      self.assertEqual(unreplaced_fp.read(), self.__expected_basic_content)
+    with open(os.path.join(extract_path, "basic-file-replace.txt"), 'r') as replaced_fp:
+      self.assertEqual(replaced_fp.read(), self.__expected_replaced_changed)
+    
   def test_tar_file_replace(self):
     code_file = self.__code_files["tar-replace-paths"]
     download_path, extract_path = self.__download_extract_paths["tar-replace-paths"]
     self.__processor.process_file(self.__code_files["tar-replace-paths"], download_path, extract_path)
     self.assertTrue(os.path.exists(os.path.join(download_path, code_file.get_file_name())))
-    self.assertTrue(os.path.isdir(os.path.join(extract_path, code_file.get_file_name().replace(".tar", ""))))
+    self.assertTrue(os.path.isdir(extract_path))
+    self.assertEqual(len(os.listdir(extract_path)), 2)
+    with open(os.path.join(extract_path, "basic-file.txt"), 'r') as unreplaced_fp:
+      self.assertEqual(unreplaced_fp.read(), self.__expected_basic_content)
+    with open(os.path.join(extract_path, "basic-file-replace.txt"), 'r') as replaced_fp:
+      self.assertEqual(replaced_fp.read(), self.__expected_replaced_changed)
+
+  def test_zip_file_replace(self):
+    code_file = self.__code_files["zip-replace-paths"]
+    download_path, extract_path = self.__download_extract_paths["zip-replace-paths"]
+    self.__processor.process_file(self.__code_files["zip-replace-paths"], download_path, extract_path)
+    self.assertTrue(os.path.exists(os.path.join(download_path, code_file.get_file_name())))
+    self.assertTrue(os.path.isdir(extract_path))
+    print(os.listdir(extract_path))
+    self.assertEqual(len(os.listdir(extract_path)), 2)
+    with open(os.path.join(extract_path, "basic-file.txt"), 'r') as unreplaced_fp:
+      self.assertEqual(unreplaced_fp.read(), self.__expected_basic_content)
+    with open(os.path.join(extract_path, "basic-file-replace.txt"), 'r') as replaced_fp:
+      self.assertEqual(replaced_fp.read(), self.__expected_replaced_changed)
+    pass
+
+  def test_7zip_file_replace(self):
+    code_file = self.__code_files["7zip-replace-paths"]
+    download_path, extract_path = self.__download_extract_paths["7zip-replace-paths"]
+    self.__processor.process_file(self.__code_files["7zip-replace-paths"], download_path, extract_path)
+    self.assertTrue(os.path.exists(os.path.join(download_path, code_file.get_file_name())))
+    self.assertTrue(os.path.isdir(extract_path))
+    self.assertEqual(len(os.listdir(extract_path)), 2)
+    with open(os.path.join(extract_path, "basic-file.txt"), 'r') as unreplaced_fp:
+      self.assertEqual(unreplaced_fp.read(), self.__expected_basic_content)
+    with open(os.path.join(extract_path, "basic-file-replace.txt"), 'r') as replaced_fp:
+      self.assertEqual(replaced_fp.read(), self.__expected_replaced_changed)
 
   @classmethod
-  def tearDown(cls) -> None:
+  def tearDownClass(cls) -> None:
     shutil.rmtree(cls.__secret)

@@ -30,13 +30,13 @@
     "should_replace_paths": true
   },
   "zip-replace-paths": {
-    "url": "",
-    "mime_type": "application/x-gtar",
+    "url": "orca_grader/tests/fixtures/code_files/text-files.zip",
+    "mime_type": "application/zip",
     "should_replace_paths": true
   },
   "7zip-replace-paths": {
-    "url": "",
-    "mime_type": "application/x-gtar",
+    "url": "orca_grader/tests/fixtures/code_files/text-files.7z",
+    "mime_type": "application/x-7z-compressed",
     "should_replace_paths": true
   }
 }

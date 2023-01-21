@@ -3,21 +3,27 @@ import os
 from os import path
 from shutil import copyfileobj, copyfile
 import gzip
-import tarfile
+import shutil
 from typing import Dict
 from orca_grader.container.build_script.code_file.code_file_info import CodeFileInfo
 from orca_grader.container.build_script.code_file.sub_mime_types import SubmissionMIMEType
-from py7zr import SevenZipFile
-from zipfile import ZipFile
+import subprocess
 import requests
 
+__EXTRACTION_TIMEOUT = 60 * 2.5 # 2 minutes & 30 seconds
 
-def extract_tar_file(from_path: str, to_path: str, mode: str) -> str:
-  # NOTE: tarfile differs from Zipfile extraction in that it copies to the given path PLUS the archive file name.
-  # Thus, we remove the archive name from the file path to ensure only a single level or directories with that name.
-  with tarfile.open(from_path, mode) as f:
-    f.extractall(to_path)
-    f.close()
+def __get_file_name_without_ext(file_name: str) -> str:
+  current_name, current_ext = path.splitext(file_name)
+  while current_ext != '':
+    current_name, current_ext = path.splitext(current_name)
+  return current_name
+
+def extract_tar_file(from_path: str, to_path: str, compression_option: str = "") -> str:
+  subprocess.run(["tar", f"-x{compression_option}f", from_path, "-C", to_path], 
+      stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, timeout=__EXTRACTION_TIMEOUT)
+  temp_extracted_path = path.join(to_path, __get_file_name_without_ext(path.basename(from_path)))
+  shutil.copytree(temp_extracted_path, to_path, dirs_exist_ok=True)
+  shutil.rmtree(temp_extracted_path)
   return to_path
 
 def extract_gz_file(from_path: str, to_path: str) -> str:
@@ -29,17 +35,18 @@ def extract_gz_file(from_path: str, to_path: str) -> str:
   return f_out_path
 
 def extract_zip_file(from_path: str, to_path: str) -> str:
-  with ZipFile(from_path) as f:
-    f.extractall(to_path)
-    f.close()
+  subprocess.run(["unzip", from_path, "-d", to_path], stdout=subprocess.DEVNULL, 
+      stderr=subprocess.STDOUT, timeout=__EXTRACTION_TIMEOUT)
+  temp_extracted_path = path.join(to_path, __get_file_name_without_ext(path.basename(from_path)))
+  shutil.copytree(temp_extracted_path, to_path, dirs_exist_ok=True)
+  shutil.rmtree(temp_extracted_path)
   return to_path
 
 def extract_7zip_file(from_path: str, to_path: str) -> str:
-  with SevenZipFile(from_path, mode='r') as f:
-    f.extractall(path=to_path)
-    f.close()
+  subprocess.run(["7z", "x", from_path, f"-o{to_path}"], stdout=subprocess.DEVNULL, 
+      stderr=subprocess.STDOUT, timeout=__EXTRACTION_TIMEOUT)
   return to_path
-
+  
 class CodeFileProcessor:
 
   def __init__(self, interpolated_dirs: Dict[str, str]) -> None:
@@ -68,8 +75,8 @@ class CodeFileProcessor:
 
   def _extract_code_file(self, code_file: CodeFileInfo, from_path: str, to_path: str) -> str:
     mime_to_extraction = {
-      SubmissionMIMEType.TAR: lambda from_path, to_path: extract_tar_file(from_path, to_path, 'r'),
-      SubmissionMIMEType.TAR_GZ: lambda from_path, to_path: extract_tar_file(from_path, to_path, 'r:gz'),
+      SubmissionMIMEType.TAR: lambda from_path, to_path: extract_tar_file(from_path, to_path),
+      SubmissionMIMEType.TAR_GZ: lambda from_path, to_path: extract_tar_file(from_path, to_path, 'z'),
       SubmissionMIMEType.GZ: extract_gz_file,
       SubmissionMIMEType.ZIP: extract_zip_file,
       SubmissionMIMEType.SEVEN_ZIP: extract_7zip_file
