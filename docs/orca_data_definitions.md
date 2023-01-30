@@ -22,6 +22,7 @@ interface GradingJob {
   priority: integer;
   script: GradingScriptCommand[];
   response_url: string;
+  grader_image_config: GraderImageConfig;
 }
 ```
 
@@ -83,6 +84,26 @@ A given file may contain file paths to be updated for use on the grading VM. For
 <hr>
 
 Grading jobs have a numeric priority determined by Bottlenose, which is interpreted as a _delay_ to be applied to the job when added to the queue.
+
+Jobs are run inside Docker containers to provide a level of isolation from the local machine.
+
+<hr>
+
+### `GraderImageConfig`
+
+```typescript
+interface GraderImageConfig {
+  repository: string;
+  tag?: string;
+  image_url: string;
+}
+```
+
+A configuration is provided so that the local machine may confirm if an image for the grader already exists, and pull one down if it does not.
+
+A repository defines the name of the image, and a tag may optionally be provided in the event there are different versions. The worker will look for an image with the name ``${repository}:${tag || "latest"}``.
+
+<hr>
 
 The script defines the actual grading process, as a state machine specified below.
 
