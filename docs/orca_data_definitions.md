@@ -101,7 +101,7 @@ interface GraderImageConfig {
 
 A configuration is provided so that the local machine may confirm if an image for the grader already exists, and pull one down if it does not.
 
-A repository defines the name of the image, and a tag may optionally be provided in the event there are different versions. The worker will look for an image with the name `\`${repository}:${tag || "latest"}\``.
+A repository defines the name of the image, and a tag may optionally be provided in the event there are different versions. The worker will look for an image with the name `'${repository}:${tag || "latest"}'`.
 
 <hr>
 
