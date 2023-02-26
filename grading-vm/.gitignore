@@ -160,3 +160,7 @@ cython_debug/
 #.idea/
 
 scrap.py
+
+# Simple Server docker image
+test-images/simple-server/files/**/*
+!test-images/simple-server/files/.gitkeep

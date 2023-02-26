@@ -12,8 +12,8 @@ def __get_images_used_in_last_day() -> List[str]:
     "--filter=\"type=container\"", "--filter=\"event=start\"", "--format \"{{.From}}\""],
     capture_output=True)
   output = res.stdout.decode()
-  image_tags = output.split('\n')[:-1]
-  return image_tags
+  image_shas = output.split('\n')[:-1]
+  return image_shas
 
 
   

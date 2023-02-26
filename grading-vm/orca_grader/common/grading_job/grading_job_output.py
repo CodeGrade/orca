@@ -20,11 +20,11 @@ class GradingJobOutput:
     return self.__execution_errors
   
   def to_json(self) -> GradingJobOutputJSON:
-    ans = dict()
+    result = dict()
     json_responses = list(map(lambda c: c.to_json(), self.__command_responses))
-    ans["shell_responses"] = json_responses
+    result["shell_responses"] = json_responses
     if self.__execution_errors is not None:
-      ans["execution_errors"] = list(map(lambda e: f"{e.__class__.__name__}: {e}", self.__execution_errors))
+      result["execution_errors"] = list(map(lambda e: f"{e.__class__.__name__}: {e}", self.__execution_errors))
     if self.__tap_output is not None:
-      ans["tap_output"] = self.__tap_output
-    return ans
+      result["tap_output"] = self.__tap_output
+    return result

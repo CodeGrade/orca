@@ -2,33 +2,33 @@ import argparse
 import os
 import subprocess
 import traceback
+from typing import List
 from orca_grader.common.grading_job.grading_job_output import GradingJobOutput
 from orca_grader.common.services import push_results
 from orca_grader.common.services.push_results import push_results_to_bottlenose
 from orca_grader.common.types.grading_job_json_types import GradingJobJSON
+from orca_grader.config import APP_CONFIG
 from orca_grader.executor.builder.docker_grading_job_executor_builder import DockerGradingJobExecutorBuilder
 from orca_grader.executor.builder.grading_job_executor_builder import GradingJobExecutorBuilder
 from orca_grader.job_retrieval.local.local_grading_job_retriever import LocalGradingJobRetriever
 from orca_grader.job_retrieval.redis.redis_grading_queue import RedisGradingJobRetriever
-# from orca_grader.job_retrieval.redis.redis_grading_queue import RedisGradingJobRetriever
-# from orca_grader.validations.exceptions import InvalidGradingJobJSONException
-# from orca_grader.validations.grading_job import is_valid_grading_job_json
 
 CONTAINER_WORKING_DIR = '/usr/local/grading'
 DEFAULT_REDIS_URL = "redis://localhost:6379"
 
-def handle_single_job(grading_job_json_str: str, no_container: bool):
+def handle_single_job(grading_job_json_str: str, container_sha: str | None = None, 
+    container_cmd: List[str] | None = None):
   file_name = 'grading_job.json'
   with open(file_name, 'w') as fp:
     fp.write(grading_job_json_str)
-  if no_container:
-    builder = GradingJobExecutorBuilder(file_name)
-  else:
-    container_tag = "orca-grader:latest"
+  if container_sha:
     file_abs_path = os.path.abspath(file_name)
-    container_path = f"{CONTAINER_WORKING_DIR}/{file_name}"
-    builder = DockerGradingJobExecutorBuilder(container_path, container_tag)
-    builder.add_docker_volume_mapping(file_abs_path, container_path)
+    container_job_path = f"{CONTAINER_WORKING_DIR}/{file_name}"
+    builder = DockerGradingJobExecutorBuilder(container_job_path, container_sha, container_cmd) if container_cmd \
+        else DockerGradingJobExecutorBuilder(container_job_path, container_sha)
+    builder.add_docker_volume_mapping(file_abs_path, container_job_path)
+  else:
+    builder = GradingJobExecutorBuilder(file_name)
   executor = builder.build()
   try:
     result = executor.execute()
@@ -51,6 +51,7 @@ def process_redis_jobs(redis_url: str, local_code_files: bool, no_container: boo
   retriever = RedisGradingJobRetriever(redis_url)
   while True: 
     job_string = retriever.retrieve_grading_job()
+    # TODO: Need to go ahead and parse container SHA
     handle_single_job(job_string, local_code_files, no_container)
 
 if __name__ == "__main__":
@@ -62,12 +63,14 @@ if __name__ == "__main__":
   arg_parser.add_argument('--no-container',
       action='store_true',
       help='When this option is provided, the grader will run on the local machine and not in an isolated container.')
+  arg_parser.add_argument('--custom-container-cmd', help="Specify the command to run with given Docker container")
   parse_result = arg_parser.parse_args()
+  container_command = parse_result.custom_container_cmd and parse_result.custom_container_cmd.split(' ')
   if parse_result.local_job:
     retriever = LocalGradingJobRetriever(parse_result.local_job)
     job_string = retriever.retrieve_grading_job()
-    handle_single_job(job_string, parse_result.no_container)
+    # TODO: Need to go ahead and parse container SHA
+    pass
   else:
-    env_redis_url = os.environ.get("REDIS_URL")
-    redis_url = env_redis_url if (env_redis_url is not None) else DEFAULT_REDIS_URL
+    redis_url = APP_CONFIG.redis_db_uri
     process_redis_jobs(redis_url, parse_result.no_container)
