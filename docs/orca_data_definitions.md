@@ -22,7 +22,7 @@ interface GradingJob {
   priority: integer;
   script: GradingScriptCommand[];
   response_url: string;
-  grader_image_config: GraderImageConfig;
+  grader_image_sha: string;
 }
 ```
 
@@ -85,25 +85,9 @@ A given file may contain file paths to be updated for use on the grading VM. For
 
 Grading jobs have a numeric priority determined by Bottlenose, which is interpreted as a _delay_ to be applied to the job when added to the queue.
 
-Jobs are run inside Docker containers to provide a level of isolation from the local machine.
+Jobs are run inside Docker containers to provide a level of isolation from the local machine. When an assignment is generated, professors will provide a Dockerfile to build their grader image. Orca's web server will build this image and save it to a .tgz file with the name `<SHA>.tgz`, where `<SHA>` is the SHA sum generated from the image's Dockerfile.
 
-<hr>
-
-### `GraderImageConfig`
-
-```typescript
-interface GraderImageConfig {
-  repository: string;
-  tag?: string;
-  image_url: string;
-}
-```
-
-A configuration is provided so that the local machine may confirm if an image for the grader already exists, and pull one down if it does not.
-
-A repository defines the name of the image, and a tag may optionally be provided in the event there are different versions. The worker will look for an image with the name ``${repository}:${tag || "latest"}``.
-
-<hr>
+The grading VM will use the `container_sha`'s value to determine if the image already exists on its local machine or if it should be downloaded from the URL `https://<orca-server-hostname>/images/<SHA>.tgz`.
 
 The script defines the actual grading process, as a state machine specified below.
 
