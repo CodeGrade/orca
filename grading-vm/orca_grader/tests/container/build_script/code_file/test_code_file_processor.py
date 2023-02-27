@@ -101,7 +101,6 @@ class TestCodeFileProcessor(unittest.TestCase):
     self.__processor.process_file(self.__code_files["zip-replace-paths"], download_path, extract_path)
     self.assertTrue(os.path.exists(os.path.join(download_path, code_file.get_file_name())))
     self.assertTrue(os.path.isdir(extract_path))
-    print(os.listdir(extract_path))
     self.assertEqual(len(os.listdir(extract_path)), 2)
     with open(os.path.join(extract_path, "basic-file.txt"), 'r') as unreplaced_fp:
       self.assertEqual(unreplaced_fp.read(), self.__expected_basic_content)
