@@ -7,7 +7,7 @@ def does_image_exist(container_sha: str) -> bool:
       "image", 
       "ls", 
       "--format",
-      "\"{{.Repository}}\""
+      "{{.Repository}}"
       ]
   proc_res = subprocess.run(program_args, capture_output=True)
   image_names = proc_res.stdout.decode().split('\n')[:-1]

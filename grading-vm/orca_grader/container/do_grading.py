@@ -35,7 +35,7 @@ def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobOutpu
   # *Handled outside in the "if name == '__main__'" section.
   try:
     # TODO: Pull credentials (e.g., submission id, student id, etc.) 
-    code_files = produce_code_files_dictionary(grading_job_json["code_files"])
+    code_files = produce_code_files_dictionary(grading_job_json["files"])
     commands: List[GradingScriptCommandJSON] = grading_job_json["script"]
     interpolated_dirs = {
       "$ASSETS": "assets",
@@ -60,7 +60,6 @@ if __name__ == "__main__":
   secret = GradingJobExecutionSecret.get_secret()
   try:
     _, file_name = sys.argv
-    print(sys.argv)
     with open(file_name, 'r') as job_json_fp:
       grading_job = get_job_from_input_stream(job_json_fp)
       do_grading(secret, grading_job)

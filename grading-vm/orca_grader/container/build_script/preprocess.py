@@ -66,7 +66,7 @@ class GradingScriptPreprocessor:
       raise InvalidGradingScriptCommand()
 
   def __process_bash_command_json(self, json_command: GradingScriptCommandJSON, index: int) -> GradingScriptCommand:
-    bash_cmd: str = self.__add_interpolated_paths(json_command["cmd"])
+    bash_cmd: str | List[str] = self.__add_interpolated_paths(json_command["cmd"])
     if json_command["on_fail"] == "abort" and json_command["on_complete"] == "output":
       cmd = BashGradingScriptCommand(bash_cmd, self.__cmd_timeout)
     elif json_command["on_fail"] == "abort":
@@ -91,10 +91,11 @@ class GradingScriptPreprocessor:
     self.__cmds[index] = cmd
     return cmd
   
-  def __add_interpolated_paths(self, cmd: str):
+  def __add_interpolated_paths(self, cmd: str | List[str]):
     formatted_cmd = cmd
     for var in self.__interpolated_dirs:
-      formatted_cmd = formatted_cmd.replace(var, self.__interpolated_dirs[var])
+      formatted_cmd = formatted_cmd.replace(var, self.__interpolated_dirs[var]) if type(cmd) == str \
+        else list(map(lambda prog_arg: prog_arg.replace(var, self.__interpolated_dirs[var]), formatted_cmd))
     return formatted_cmd
   
   def __create_script_dirs(self) -> None:

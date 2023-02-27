@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import subprocess
 import traceback
@@ -12,11 +13,26 @@ from orca_grader.executor.builder.docker_grading_job_executor_builder import Doc
 from orca_grader.executor.builder.grading_job_executor_builder import GradingJobExecutorBuilder
 from orca_grader.job_retrieval.local.local_grading_job_retriever import LocalGradingJobRetriever
 from orca_grader.job_retrieval.redis.redis_grading_queue import RedisGradingJobRetriever
+from orca_grader.docker_images.utils import does_image_exist
+from orca_grader.docker_images.container_loading import retrieve_image_tgz_from_url, load_image_from_tgz
 
 CONTAINER_WORKING_DIR = '/usr/local/grading'
-DEFAULT_REDIS_URL = "redis://localhost:6379"
 
-def handle_single_job(grading_job_json_str: str, container_sha: str | None = None, 
+
+def run_grading_job(json_job_string: str, no_container: bool):
+  if no_container:
+    handle_grading_job(json_job_string)
+    return
+  container_sha = get_container_sha(json_job_string)
+  if not does_image_exist(container_sha):
+    retrieve_image_tgz_from_url(container_sha)
+    load_image_from_tgz("{0}.tgz".format(container_sha))
+  if container_command:
+    handle_grading_job(json_job_string, container_sha, container_command)
+  else:
+    handle_grading_job(json_job_string, container_sha)
+
+def handle_grading_job(grading_job_json_str: str, container_sha: str | None = None, 
     container_cmd: List[str] | None = None):
   file_name = 'grading_job.json'
   with open(file_name, 'w') as fp:
@@ -32,13 +48,12 @@ def handle_single_job(grading_job_json_str: str, container_sha: str | None = Non
   executor = builder.build()
   try:
     result = executor.execute()
-    print(result.stdout.decode())
-    print(result.stderr.decode())
+    if result and result.stdout:
+      print(result.stdout.decode())
   except subprocess.CalledProcessError as c:
     print(c.stderr.decode())
   except Exception as e:
     traceback.print_exception(e)
-    # TODO: How do we handle this going wrong?
     pass
   os.remove(file_name)
 
@@ -47,12 +62,19 @@ def push_results_with_exception(job_json_string: str, e: Exception):
   output = GradingJobOutput([], [e])
   return push_results_to_bottlenose(output)
 
-def process_redis_jobs(redis_url: str, local_code_files: bool, no_container: bool):
+def run_local_job(no_container: bool):
+  retriever = LocalGradingJobRetriever(parse_result.local_job)
+  job_string = retriever.retrieve_grading_job()
+  run_grading_job(job_string, no_container)
+
+def process_redis_jobs(redis_url: str, no_container: bool, container_command: List[str] | None):
   retriever = RedisGradingJobRetriever(redis_url)
   while True: 
     job_string = retriever.retrieve_grading_job()
-    # TODO: Need to go ahead and parse container SHA
-    handle_single_job(job_string, local_code_files, no_container)
+    run_grading_job(job_string, no_container)
+
+def get_container_sha(json_job_string: str) -> str:
+  return json.loads(json_job_string)["grader_image_sha"]
 
 if __name__ == "__main__":
   arg_parser = argparse.ArgumentParser(
@@ -67,10 +89,7 @@ if __name__ == "__main__":
   parse_result = arg_parser.parse_args()
   container_command = parse_result.custom_container_cmd and parse_result.custom_container_cmd.split(' ')
   if parse_result.local_job:
-    retriever = LocalGradingJobRetriever(parse_result.local_job)
-    job_string = retriever.retrieve_grading_job()
-    # TODO: Need to go ahead and parse container SHA
-    pass
+    run_local_job(parse_result.no_container)
   else:
     redis_url = APP_CONFIG.redis_db_uri
-    process_redis_jobs(redis_url, parse_result.no_container)
+    process_redis_jobs(redis_url, parse_result.no_container, container_command)
