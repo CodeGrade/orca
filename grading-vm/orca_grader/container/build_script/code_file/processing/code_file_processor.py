@@ -3,7 +3,6 @@ import os
 from os import path
 from shutil import copyfileobj, copyfile
 import gzip
-import shutil
 from typing import Dict
 from orca_grader.container.build_script.code_file.code_file_info import CodeFileInfo
 from orca_grader.container.build_script.code_file.sub_mime_types import SubmissionMIMEType
@@ -12,18 +11,9 @@ import requests
 
 __EXTRACTION_TIMEOUT = 60 * 2.5 # 2 minutes & 30 seconds
 
-def __get_file_name_without_ext(file_name: str) -> str:
-  current_name, current_ext = path.splitext(file_name)
-  while current_ext != '':
-    current_name, current_ext = path.splitext(current_name)
-  return current_name
-
 def extract_tar_file(from_path: str, to_path: str, compression_option: str = "") -> str:
   subprocess.run(["tar", f"-x{compression_option}f", from_path, "-C", to_path], 
       stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, timeout=__EXTRACTION_TIMEOUT)
-  temp_extracted_path = path.join(to_path, __get_file_name_without_ext(path.basename(from_path)))
-  shutil.copytree(temp_extracted_path, to_path, dirs_exist_ok=True)
-  shutil.rmtree(temp_extracted_path)
   return to_path
 
 def extract_gz_file(from_path: str, to_path: str) -> str:
@@ -37,9 +27,6 @@ def extract_gz_file(from_path: str, to_path: str) -> str:
 def extract_zip_file(from_path: str, to_path: str) -> str:
   subprocess.run(["unzip", from_path, "-d", to_path], stdout=subprocess.DEVNULL, 
       stderr=subprocess.STDOUT, timeout=__EXTRACTION_TIMEOUT)
-  temp_extracted_path = path.join(to_path, __get_file_name_without_ext(path.basename(from_path)))
-  shutil.copytree(temp_extracted_path, to_path, dirs_exist_ok=True)
-  shutil.rmtree(temp_extracted_path)
   return to_path
 
 def extract_7zip_file(from_path: str, to_path: str) -> str:

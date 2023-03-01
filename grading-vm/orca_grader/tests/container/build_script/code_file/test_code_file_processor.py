@@ -2,7 +2,6 @@ import json
 import os
 import shutil
 import unittest
-
 from orca_grader.container.build_script.code_file.code_file_info import CodeFileInfo
 from orca_grader.container.build_script.code_file.processing.code_file_processor import CodeFileProcessor
 from orca_grader.container.build_script.code_file.sub_mime_types import SubmissionMIMEType
