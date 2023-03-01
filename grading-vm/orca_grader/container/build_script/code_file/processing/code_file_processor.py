@@ -47,17 +47,12 @@ class CodeFileProcessor:
     if code_file.should_replace_paths():
       self.__replace_paths(extracted_file_path)
 
-  # Useful to have this method as protected so that it can be overwritten in testing
-  # (i.e., mock behavior for downloading can just be copying from a test fixture path).
   def _download_code_file(self, code_file: CodeFileInfo, download_path: str) -> str:
     file_name = code_file.get_file_name()
     file_path = path.join(download_path, file_name)
-    if code_file.get_url().startswith('https://'):
-      with open(file_path, "wb") as f:
-        web_reponse = requests.get(code_file.get_url())
-        f.write(web_reponse.content)
-    else:
-      copyfile(code_file.get_url(), file_path)
+    with open(file_path, "wb") as f:
+      web_reponse = requests.get(code_file.get_url())
+      f.write(web_reponse.content)
     return file_path
 
   def _extract_code_file(self, code_file: CodeFileInfo, from_path: str, to_path: str) -> str:

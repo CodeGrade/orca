@@ -1,6 +1,5 @@
 from urllib.parse import urlparse, unquote
 from os.path import basename
-from orca_grader.container.build_script.code_file.code_file_source import CodeFileSource
 from orca_grader.container.build_script.code_file.sub_mime_types import SubmissionMIMEType
 from orca_grader.common.types.grading_job_json_types import CodeFileInfoJSON
 
