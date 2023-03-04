@@ -36,6 +36,8 @@ def extract_7zip_file(from_path: str, to_path: str) -> str:
   
 class CodeFileProcessor:
 
+  __FILE_DOWNLOAD_CHUNK_SIZE = 8192
+
   def __init__(self, interpolated_dirs: Dict[str, str]) -> None:
     self.__interpolated_dirs = interpolated_dirs
 
@@ -50,9 +52,11 @@ class CodeFileProcessor:
   def _download_code_file(self, code_file: CodeFileInfo, download_path: str) -> str:
     file_name = code_file.get_file_name()
     file_path = path.join(download_path, file_name)
-    with open(file_path, "wb") as f:
-      web_reponse = requests.get(code_file.get_url())
-      f.write(web_reponse.content)
+    with requests.get(code_file.get_url(), stream=True) as web_response:
+      web_response.raise_for_status()
+      with open(file_path, "wb") as f:
+        for chunk in web_response.iter_content(chunk_size=self.__FILE_DOWNLOAD_CHUNK_SIZE):
+          f.write(chunk)
     return file_path
 
   def _extract_code_file(self, code_file: CodeFileInfo, from_path: str, to_path: str) -> str:

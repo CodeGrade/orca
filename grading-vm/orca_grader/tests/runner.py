@@ -32,7 +32,7 @@ def __start_up_fixture_file_server():
   subprocess.run(
     [
       "docker", 
-      "run", 
+      "run",
       "-d",
       "-p",
       "9000:9000",
@@ -68,12 +68,13 @@ def __clean_up_fixture_file_server():
   )
   shutil.rmtree("test-images/simple-server/files/code_files")
 
-# TODO: Add logging here for GitHub Actions.
 if __name__ == '__main__':
   try:
+    sys.stdout.write("Spinning up local file server for testing...")
     __start_up_fixture_file_server()
+    sys.stdout.write("Local file server started.")
   except subprocess.CalledProcessError as called_proc_err:
-    sys.stderr.write("\n\nCould not start up local file server for testing.")
+    sys.stderr.write("Could not start up local file server for testing.\n")
     exit(1)
   loader = unittest.TestLoader()
   suite = unittest.TestSuite()
@@ -85,5 +86,9 @@ if __name__ == '__main__':
   suite.addTests(loader.loadTestsFromModule(test_code_file_processor))
   runner = unittest.TextTestRunner(verbosity=3)
   runner.run(suite)
-  __clean_up_fixture_file_server()
+  try:
+    __clean_up_fixture_file_server()
+  except subprocess.CalledProcessError as called_proc_err:
+    sys.stderr.write("Could not successfully clean up testing server.")
+    exit(1)
   
