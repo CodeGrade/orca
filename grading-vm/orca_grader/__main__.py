@@ -16,7 +16,7 @@ from orca_grader.job_retrieval.redis.redis_grading_queue import RedisGradingJobR
 from orca_grader.docker_images.utils import does_image_exist
 from orca_grader.docker_images.container_loading import retrieve_image_tgz_from_url, load_image_from_tgz
 
-CONTAINER_WORKING_DIR = '/usr/local/grading'
+CONTAINER_WORKING_DIR = '/home/orca-grader'
 
 
 def run_grading_job(json_job_string: str, no_container: bool):
@@ -62,8 +62,8 @@ def push_results_with_exception(job_json_string: str, e: Exception):
   output = GradingJobOutput([], [e])
   return push_results_to_bottlenose(output)
 
-def run_local_job(no_container: bool):
-  retriever = LocalGradingJobRetriever(parse_result.local_job)
+def run_local_job(job_path: str, no_container: bool):
+  retriever = LocalGradingJobRetriever(job_path)
   job_string = retriever.retrieve_grading_job()
   run_grading_job(job_string, no_container)
 
@@ -89,7 +89,7 @@ if __name__ == "__main__":
   parse_result = arg_parser.parse_args()
   container_command = parse_result.custom_container_cmd and parse_result.custom_container_cmd.split(' ')
   if parse_result.local_job:
-    run_local_job(parse_result.no_container)
+    run_local_job(parse_result.local_job, parse_result.no_container)
   else:
     redis_url = APP_CONFIG.redis_db_uri
     process_redis_jobs(redis_url, parse_result.no_container, container_command)
