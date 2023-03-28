@@ -1,9 +1,61 @@
 {
   "key": "{ \"grade_id\": 123 }",
-  "files": {},
+  "files": {
+    "tar-gz-replace-paths": {
+      "url": "http://localhost:9000/java-example/example-homework.tgz",
+      "mime_type": "application/x-gtar",
+      "should_replace_paths": false
+    },
+    "starter": {
+      "url": "http://localhost:9000/java-example/example-starter.zip",
+      "mime_type": "application/zip",
+      "should_replace_paths": false
+    },
+    "testing": {
+      "url": "http://localhost:9000/java-example/example-testing.zip",
+      "mime_type": "application/zip",
+      "should_replace_paths": false
+    }
+  },
   "script": [
     {
-      "cmd": ["echo", "hello"],
+      "cmd": ["echo", "This is a sanity test."],
+      "on_complete": 1,
+      "on_fail": "abort"
+    },
+    {
+      "condition": {
+        "predicate": "dir",
+        "path": "$EXTRACTED/starter/"
+      },
+      "on_true": 2,
+      "on_false": 3
+    },
+    {
+      "cmd": "cp -r $EXTRACTED/starter/* $BUILD/",
+      "on_complete": 3,
+      "on_fail": "abort"
+    },
+    {
+      "cmd": "cp -r $EXTRACTED/starter/* $BUILD/",
+      "on_complete": 4,
+      "on_fail": "abort"
+    },
+    {
+      "condition": {
+        "predicate": "dir",
+        "path": "$EXTRACTED/testing/"
+      },
+      "on_true": 5,
+      "on_false": 6
+    },
+    {
+      "cmd": "cp -r $EXTRACTED/starter/* $BUILD/",
+      "on_complete": 6,
+      "on_fail": "abort"
+    },
+    {
+      "cmd": ["find", "$BUILD", "-type", "f", "-name", "*.java"],
       "on_complete": "output",
       "on_fail": "abort"
     }
