@@ -33,6 +33,7 @@ def __start_up_fixture_file_server():
     [
       "docker", 
       "run",
+      "--rm",
       "-d",
       "-p",
       "9000:9000",
@@ -50,21 +51,14 @@ def __clean_up_fixture_file_server():
   subprocess.run(
     [
       "docker", 
-      "kill",
+      "stop",
+      "-t",
+      "0",
       "simple-server"  
     ],
     stdout=subprocess.DEVNULL,
     stderr=subprocess.STDOUT,
     check=True
-  )
-  # NOTE: Container will still be considered to be "hanging" unless
-  # running the command below.
-  subprocess.run(
-    "echo y | docker container prune",
-    stdout=subprocess.DEVNULL,
-    stderr=subprocess.STDOUT,
-    check=True,
-    shell=True
   )
   shutil.rmtree("test-images/simple-server/files/code_files")
 
