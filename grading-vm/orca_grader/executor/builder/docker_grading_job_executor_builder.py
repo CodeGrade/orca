@@ -20,6 +20,7 @@ class DockerGradingJobExecutorBuilder(GradingJobExecutorBuilder):
 
   def build(self) -> GradingJobExecutor:
     program_sequence = ["docker", "run", "--rm", "--name", self.__container_sha]
+    program_sequence.extend(["--network", "orca-testing"])
     for local_path, container_path in self.__file_mappings.items():
       program_sequence.append("-v")
       program_sequence.append(f"{local_path}:{container_path}")

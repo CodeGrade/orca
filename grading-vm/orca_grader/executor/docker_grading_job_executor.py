@@ -14,10 +14,8 @@ class DockerGradingJobExecutor(GradingJobExecutor):
 
   def _handle_timeout(self, time_err: TimeoutExpired):
     try:
-      print("Attempting to stop container.")
       subprocess.run(["docker", "stop", "-t", f"{self.__DOCKER_CONTAINER_STOPPAGE_TIMEOUT}", self.__container_sha],
         stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, timeout=self.__DOCKER_CONTAINER_STOPPAGE_TIMEOUT+self.__STOP_BUFFER)
-      print("Container stopped successfully.")
     except TimeoutExpired as stop_time_err:
       print("Failed to stop container.")
       pass

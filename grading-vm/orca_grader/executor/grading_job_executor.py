@@ -8,7 +8,6 @@ class GradingJobExecutor():
 
   def execute(self) -> CompletedProcess:
     try:
-      print("Running job.")
       result = self._grading_subprocess()
       return result
     except TimeoutExpired as time_err:

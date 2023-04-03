@@ -2,6 +2,7 @@ FROM ubuntu:20.04
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN ["useradd", "-ms", "/bin/bash", "orca-grader"]
+RUN ["chmod", "755", "/home/orca-grader"]
 WORKDIR /home/orca-grader
 RUN ["apt", "update", "-y"]
 RUN ["apt", "upgrade", "-y"]
