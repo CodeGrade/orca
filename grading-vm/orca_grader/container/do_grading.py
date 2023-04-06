@@ -38,7 +38,6 @@ def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobOutpu
     code_files = produce_code_files_dictionary(grading_job_json["files"])
     commands: List[GradingScriptCommandJSON] = grading_job_json["script"]
     interpolated_dirs = {
-      "$ASSETS": "assets",
       "$DOWNLOADED": f"{secret}/downloaded",
       "$EXTRACTED": f"{secret}/extracted",
       "$BUILD": f"{secret}/build"
