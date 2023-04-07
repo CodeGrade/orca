@@ -102,31 +102,36 @@ A grading script takes many steps to complete, and the output of these steps nee
 ```typescript
 interface BashGradingScriptCommand {
   cmd: string[] | string;
-  on_fail: 'abort' | number;
-  on_complete: 'output' | number;
+  on_fail?: string | number;
+  on_complete?: string | number;
+  label?: string;
+  working_dir?: string;
 }
 ```
 
 A `BashGradingScriptCommand` describes a step in the grading script that requires interaction with the shell. This can be compilation, running grader tests, etc. The `cmd` key points to the bash command to run with its options and arguments. It is generally recommended to pass in a sequence of program arguments (e.g., `["javac", ...]`), however in the case of needing to use shell utilities (e.g., a subshell with `(<cmd>)`), a `string` would be necessary.
 
-Each command could either succeed or fail. If successful and `on_complete` says to _output_, or if failed and `on_fail` says to _abort_, then the script exits and sends the results back to Bottlenose. Otherwise, the `on_fail` and `on_complete` keys specify the index of the next `GradingScriptCommand` to execute.
+Each command could either succeed or fail. If successful and `on_complete` says to _output_, or if failed and `on_fail` says to _abort_, then the script exits and sends the results back to Bottlenose. If `on_complete` is not specified, then the state machine goes to the next command in the list. If `on_fail` is not specified, then it will automatically abort the script. If either key points to the reserved keyword `"next"`, then the state machine will go to the next command. Otherwise, the keys should point to the index of the desired state to travel to or that command's `label` property, used to make creating scripts more ergonomic by specifying a name.
 
 ```typescript
 interface ConditionalGradingScriptCommand {
   condition: GradingScriptCondition;
-  on_true: number;
-  on_false: number;
+  on_true?: number;
+  on_false?: number;
+  label?: string;
 }
 
 interface GradingScriptCondition {
-  predicate: 'exists' | 'file' | 'dir';
+  predicate: "exists" | "file" | "dir";
   path: string;
 }
 ```
 
 A `ConditionalGradingScriptCommand` allows the control flow of a script to branch. Currently, the only predicates we support test for various file system contents.
 
-The `GradingScriptCondition` defines how to check for the existence of an object in the file path: either as a file (`'file'`), a directory (`'dir'`), or as either one (`'exists'`). The `on_true` and `on_false` keys specify which command to run next, accordingly.
+The `GradingScriptCondition` defines how to check for the existence of an object in the file path: either as a file (`'file'`), a directory (`'dir'`), or as either one (`'exists'`).
+
+Simlar to the `BashGradingScriptCommand`, the optional `on_true` and `on_false` keys specify which command to run next. In both instances, if there is no value for the property or the string is the keyword `"next"`, they will point to the next command in the state machine. Otherwise, the property should specify the index or the label of the command to go to. `ConditionalGradingScriptCommand`s also allow for a label for easier script creation.
 
 <hr>
 

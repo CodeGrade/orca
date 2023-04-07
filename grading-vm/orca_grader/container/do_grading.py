@@ -66,5 +66,5 @@ if __name__ == "__main__":
     traceback.print_tb(e.__traceback__)
     output = GradingJobOutput([], [e.with_traceback(None)])
     push_results_to_bottlenose(output)
-  # cleanup(secret)
+  # cleanup(secret) # useful for execution with no container, but generally optional
 
