@@ -74,21 +74,21 @@ class GradingScriptPreprocessor:
       raise InvalidGradingScriptCommand()
 
   def __process_bash_command_json(self, json_command: GradingScriptCommandJSON, index: int) -> GradingScriptCommand:
-    bash_cmd: str | List[str] = self.__add_interpolated_paths(json_command["cmd"])
-    on_fail, on_complete = self.__handle_bash_cmd_edges(bash_cmd, index)
-    working_dir = json_command["working_dir"] if "working_dir" in json_command else None
+    shell_cmd: str | List[str] = self.__add_interpolated_paths(json_command["cmd"])
+    on_fail, on_complete = self.__handle_bash_cmd_edges(json_command, index)
+    working_dir = self.__add_interpolated_paths(json_command["working_dir"]) if "working_dir" in json_command else None
     if on_fail == "abort" and on_complete == "output":
-      cmd = BashGradingScriptCommand(bash_cmd, self.__cmd_timeout, working_dir=working_dir)
+      cmd = BashGradingScriptCommand(shell_cmd, self.__cmd_timeout, working_dir=working_dir)
     elif on_fail == "abort":
-      cmd = BashGradingScriptCommand(bash_cmd, self.__cmd_timeout,
+      cmd = BashGradingScriptCommand(shell_cmd, self.__cmd_timeout,
         on_complete=self.__get_grading_command_by_index(on_complete),
         working_dir=working_dir)
     elif on_complete == "output": 
-      cmd = BashGradingScriptCommand(bash_cmd, self.__cmd_timeout, 
+      cmd = BashGradingScriptCommand(shell_cmd, self.__cmd_timeout, 
         on_fail=self.__get_grading_command_by_index(on_fail),
         working_dir=working_dir)
     else:
-      cmd = BashGradingScriptCommand(bash_cmd, self.__cmd_timeout, 
+      cmd = BashGradingScriptCommand(shell_cmd, self.__cmd_timeout, 
         self.__get_grading_command_by_index(on_complete), 
         self.__get_grading_command_by_index(on_fail),
         working_dir=working_dir)
@@ -101,7 +101,7 @@ class GradingScriptPreprocessor:
     Returns a Tuple in the order of (on_fail edge, on_complete edge).
     """
     # Handle on_fail
-    if "on_fail" in bash_cmd or bash_cmd["on_fail"] == "abort":
+    if "on_fail" not in bash_cmd or bash_cmd["on_fail"] == "abort":
       on_fail = "abort"
     elif bash_cmd["on_fail"] == "next":
       on_fail = current_index + 1
@@ -111,7 +111,7 @@ class GradingScriptPreprocessor:
     if "on_complete" not in bash_cmd or bash_cmd["on_complete"] == "next":
       on_complete = current_index + 1
     elif bash_cmd["on_complete"] != "output":
-      on_complete = self.__handle_bash_cmd_edges(bash_cmd["on_complete"])
+      on_complete = self.__edge_to_index(bash_cmd["on_complete"])
     else:
       on_complete = bash_cmd["on_complete"]
     return on_fail, on_complete
@@ -144,7 +144,7 @@ class GradingScriptPreprocessor:
     except IndexError as ie:
       raise InvalidGradingScriptCommand("The provided edge for one of the commands points to an out-of-bounds index.")
   
-  def __add_interpolated_paths(self, cmd: str | List[str]):
+  def __add_interpolated_paths(self, cmd: str | List[str]) -> str | List[str]:
     formatted_cmd = cmd
     for var in self.__interpolated_dirs:
       formatted_cmd = formatted_cmd.replace(var, self.__interpolated_dirs[var]) if type(cmd) == str \

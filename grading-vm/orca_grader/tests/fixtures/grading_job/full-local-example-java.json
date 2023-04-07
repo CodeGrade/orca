@@ -2,37 +2,37 @@
   "key": "{ \"grade_id\": 123 }",
   "files": {
     "submission": {
-      "url": "http://simple-server:9000/java-example/example-homework.tgz",
+      "url": "http://localhost:9000/java-example/example-homework.tgz",
       "mime_type": "application/x-gtar",
       "should_replace_paths": false
     },
     "starter": {
-      "url": "http://simple-server:9000/java-example/example-starter.zip",
+      "url": "http://localhost:9000/java-example/example-starter.zip",
       "mime_type": "application/zip",
       "should_replace_paths": false
     },
     "testing": {
-      "url": "http://simple-server:9000/java-example/example-tests.zip",
+      "url": "http://localhost:9000/java-example/example-tests.zip",
       "mime_type": "application/zip",
       "should_replace_paths": false
     },
     "junit-jar": {
-      "url": "http://simple-server:9000/java-example/junit-4.13.2.jar",
+      "url": "http://localhost:9000/java-example/junit-4.13.2.jar",
       "mime_type": "application/zip",
       "should_replace_paths": false
     },
     "hamcrest-jar": {
-      "url": "http://simple-server:9000/java-example/hamcrest-core-1.3.jar",
+      "url": "http://localhost:9000/java-example/hamcrest-core-1.3.jar",
       "mime_type": "application/zip",
       "should_replace_paths": false
     },
     "junit-tap-jar": {
-      "url": "http://simple-server:9000/java-example/junit-tap.jar",
+      "url": "http://localhost:9000/java-example/junit-tap.jar",
       "mime_type": "application/zip",
       "should_replace_paths": false
     },
     "annotations-jar": {
-      "url": "http://simple-server:9000/java-example/annotations.jar",
+      "url": "http://localhost:9000/java-example/annotations.jar",
       "mime_type": "application/zip",
       "should_replace_paths": false
     }
@@ -95,46 +95,46 @@
       "on_fail": "abort"
     },
     {
-      "cmd": "find $BUILD -type f -name *.java > compile-list.txt",
+      "cmd": "find . -type f -name *.java > compile-list.txt",
       "on_complete": 11,
-      "on_fail": "abort"
+      "on_fail": "abort",
+      "working_dir": "$BUILD/src"
     },
     {
       "cmd": ["cat", "compile-list.txt"],
-      "on_complete": 12,
-      "on_fail": "abort"
+      "working_dir": "$BUILD/src"
     },
     {
-      "cmd": "find $BUILD -type f -name *.class",
-      "on_complete": 13,
-      "on_fail": "abort"
+      "cmd": "find . -type f -name *.java",
+      "working_dir": "$BUILD/test"
     },
     {
-      "cmd": [
-        "javac",
-        "-verbose",
-        "-cp",
-        "$BUILD/junit-4.13.2.jar:$BUILD/junit-tap/junit-tap.jar:$BUILD/hamcrest-core-1.3.jar:$BUILD/annotations.jar:$BUILD:$BUILD/*",
-        "@compile-list.txt"
-      ],
-      "on_complete": 14,
-      "on_fail": "abort"
+      "cmd": ["cat", "compile-list.txt"],
+      "working_dir": "$BUILD/test"
     },
     {
       "cmd": [
         "javac",
         "-verbose",
         "-cp",
-        "$BUILD/junit-4.13.2.jar:$BUILD/junit-tap/junit-tap.jar:$BUILD/hamcrest-core-1.3.jar:$BUILD/annotations.jar:$BUILD:$BUILD/*",
+        "../junit-4.13.2.jar:../junit-tap/junit-tap.jar:../hamcrest-core-1.3.jar:../annotations.jar:.:./*",
+        "-d",
+        "../target/src",
         "@compile-list.txt"
       ],
-      "on_complete": 15,
-      "on_fail": "abort"
+      "working_dir": "$BUILD/src"
     },
     {
-      "cmd": "find $BUILD -type f -name *.class",
-      "on_complete": 16,
-      "on_fail": "abort"
+      "cmd": [
+        "javac",
+        "-verbose",
+        "-cp",
+        "../junit-4.13.2.jar:../junit-tap/junit-tap.jar:../hamcrest-core-1.3.jar:../annotations.jar:.:./*",
+        "-d",
+        "../target/test",
+        "@compile-list.txt"
+      ],
+      "working_dir": "$BUILD/test"
     },
     {
       "cmd": [
@@ -164,7 +164,7 @@
         "10000"
       ],
       "on_complete": "output",
-      "on_fail": "abort"
+      "working_dir": "$BUILD/target"
     }
   ],
   "grader_image_sha": "orca-java-grader",
