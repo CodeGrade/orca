@@ -14,14 +14,14 @@ import orca_grader.tests.container.build_script.code_file.test_code_file_process
 __TIME_FOR_FILE_SERVER_STARTUP = 2 # seconds
 
 def __start_up_fixture_file_server():
-  shutil.copytree("orca_grader/tests/fixtures/code_files", "test-images/simple-server/files/code_files")
+  shutil.copytree("orca_grader/tests/fixtures/code_files", "images/testing/simple-server/files/code_files")
   subprocess.run(
     [
       "docker", 
       "build", 
-      "test-images/simple-server",
+      "images/testing/simple-server",
       "-f",
-      "test-images/simple-server/Dockerfile",
+      "images/testing/simple-server/Dockerfile",
       "-t",
       "simple-server"
     ],
@@ -60,15 +60,15 @@ def __clean_up_fixture_file_server():
     stderr=subprocess.STDOUT,
     check=True
   )
-  shutil.rmtree("test-images/simple-server/files/code_files")
+  shutil.rmtree("images/testing/simple-server/files/code_files")
 
 if __name__ == '__main__':
   try:
-    sys.stdout.write("Spinning up local file server for testing...")
+    print("Spinning up local file server for testing...")
     __start_up_fixture_file_server()
-    sys.stdout.write("Local file server started.")
+    print("Local file server started.")
   except subprocess.CalledProcessError as called_proc_err:
-    sys.stderr.write("Could not start up local file server for testing.\n")
+    print("Could not start up local file server for testing.\n")
     exit(1)
   loader = unittest.TestLoader()
   suite = unittest.TestSuite()
@@ -81,8 +81,10 @@ if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=3)
   runner.run(suite)
   try:
+    print("Cleaning up test server...")
     __clean_up_fixture_file_server()
+    print("Clean up complete.")
   except subprocess.CalledProcessError as called_proc_err:
-    sys.stderr.write("Could not successfully clean up testing server.")
+    print("Could not successfully clean up testing server.")
     exit(1)
   
