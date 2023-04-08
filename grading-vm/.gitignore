@@ -162,5 +162,6 @@ cython_debug/
 scrap.py
 
 # Simple Server docker image
-test-images/simple-server/files/**/*
-!test-images/simple-server/files/.gitkeep
+images/testing/simple-server/files/**/*
+!images/testing/simple-server/files/.gitkeep
+!images/testing/simple-server/files/Dockerfile

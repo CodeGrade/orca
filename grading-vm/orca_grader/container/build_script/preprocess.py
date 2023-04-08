@@ -77,20 +77,10 @@ class GradingScriptPreprocessor:
     shell_cmd: str | List[str] = self.__add_interpolated_paths(json_command["cmd"])
     on_fail, on_complete = self.__handle_bash_cmd_edges(json_command, index)
     working_dir = self.__add_interpolated_paths(json_command["working_dir"]) if "working_dir" in json_command else None
-    if on_fail == "abort" and on_complete == "output":
-      cmd = BashGradingScriptCommand(shell_cmd, self.__cmd_timeout, working_dir=working_dir)
-    elif on_fail == "abort":
-      cmd = BashGradingScriptCommand(shell_cmd, self.__cmd_timeout,
-        on_complete=self.__get_grading_command_by_index(on_complete),
-        working_dir=working_dir)
-    elif on_complete == "output": 
-      cmd = BashGradingScriptCommand(shell_cmd, self.__cmd_timeout, 
-        on_fail=self.__get_grading_command_by_index(on_fail),
-        working_dir=working_dir)
-    else:
-      cmd = BashGradingScriptCommand(shell_cmd, self.__cmd_timeout, 
-        self.__get_grading_command_by_index(on_complete), 
-        self.__get_grading_command_by_index(on_fail),
+    timeout = json_command["timeout"] if "timeout" in json_command else DEFAULT_COMMAND_TIMEOUT
+    cmd = BashGradingScriptCommand(shell_cmd, timeout, 
+        on_complete=self.__get_grading_command_by_index(on_complete) if on_complete != "output" else None,
+        on_fail=self.__get_grading_command_by_index(on_fail) if on_fail != "abort" else None,
         working_dir=working_dir)
     self.__cmds[index] = cmd
     return cmd
