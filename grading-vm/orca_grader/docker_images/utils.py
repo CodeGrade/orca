@@ -15,7 +15,7 @@ def does_image_exist(container_sha: str) -> bool:
 
 
 def get_all_docker_images() -> List[str]:
-  res = subprocess.run(["docker", "image", "ls", "--format", "\"{{.Repository}}\""],
+  res = subprocess.run(["docker", "image", "ls", "--format", "{{.Repository}}"],
       capture_output=True)
   output = res.stdout.decode()
   image_names = output.split('\n')[:-1]

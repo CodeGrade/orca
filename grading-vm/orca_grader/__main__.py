@@ -9,6 +9,7 @@ from orca_grader.common.services import push_results
 from orca_grader.common.services.push_results import push_results_to_bottlenose
 from orca_grader.common.types.grading_job_json_types import GradingJobJSON
 from orca_grader.config import APP_CONFIG
+from orca_grader.docker_images.clean_up import clean_up_unused_images
 from orca_grader.executor.builder.docker_grading_job_executor_builder import DockerGradingJobExecutorBuilder
 from orca_grader.executor.builder.grading_job_executor_builder import GradingJobExecutorBuilder
 from orca_grader.job_retrieval.local.local_grading_job_retriever import LocalGradingJobRetriever
@@ -66,12 +67,14 @@ def run_local_job(job_path: str, no_container: bool):
   retriever = LocalGradingJobRetriever(job_path)
   job_string = retriever.retrieve_grading_job()
   run_grading_job(job_string, no_container)
+  clean_up_unused_images()
 
 def process_redis_jobs(redis_url: str, no_container: bool, container_command: List[str] | None):
   retriever = RedisGradingJobRetriever(redis_url)
   while True: 
     job_string = retriever.retrieve_grading_job()
     run_grading_job(job_string, no_container)
+    clean_up_unused_images()
 
 def get_container_sha(json_job_string: str) -> str:
   return json.loads(json_job_string)["grader_image_sha"]
