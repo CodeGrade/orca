@@ -1,5 +1,4 @@
 import subprocess
-import sys
 import time
 import unittest
 import shutil
@@ -79,11 +78,12 @@ if __name__ == '__main__':
   suite.addTests(loader.loadTestsFromModule(test_code_file_info))
   suite.addTests(loader.loadTestsFromModule(test_code_file_processor))
   runner = unittest.TextTestRunner(verbosity=3)
-  runner.run(suite)
+  result = runner.run(suite)
   try:
     print("Cleaning up test server...")
     __clean_up_fixture_file_server()
     print("Clean up complete.")
+    exit(0 if result.wasSuccessful() else 1)
   except subprocess.CalledProcessError as called_proc_err:
     print("Could not successfully clean up testing server.")
     exit(1)

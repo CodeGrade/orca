@@ -43,7 +43,7 @@ class TestBashGradingScriptCommand(unittest.TestCase):
     self.assertEqual(response.get_status_code(), 0)
 
   def test_timeout_bash_command(self):
-    command = BashGradingScriptCommand("yes", 0.01)
+    command = BashGradingScriptCommand("yes", 0.5)
 
     output = command.execute([])
 
