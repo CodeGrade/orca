@@ -7,7 +7,7 @@ from typing import Dict
 from orca_grader.container.build_script.code_file.code_file_info import CodeFileInfo
 from orca_grader.container.build_script.code_file.sub_mime_types import SubmissionMIMEType
 import subprocess
-import requests
+from orca_grader.common.services.download_file import download_file
 
 __EXTRACTION_TIMEOUT = 60 * 2.5 # 2 minutes & 30 seconds
 
@@ -36,8 +36,6 @@ def extract_7zip_file(from_path: str, to_path: str) -> str:
   
 class CodeFileProcessor:
 
-  __FILE_DOWNLOAD_CHUNK_SIZE = 8192
-
   def __init__(self, interpolated_dirs: Dict[str, str]) -> None:
     self.__interpolated_dirs = interpolated_dirs
 
@@ -52,12 +50,7 @@ class CodeFileProcessor:
   def _download_code_file(self, code_file: CodeFileInfo, download_path: str) -> str:
     file_name = code_file.get_file_name()
     file_path = path.join(download_path, file_name)
-    with requests.get(code_file.get_url(), stream=True) as web_response:
-      web_response.raise_for_status()
-      with open(file_path, "wb") as f:
-        for chunk in web_response.iter_content(chunk_size=self.__FILE_DOWNLOAD_CHUNK_SIZE):
-          f.write(chunk)
-    return file_path
+    return download_file(code_file.get_url(), file_path)
 
   def _extract_code_file(self, code_file: CodeFileInfo, from_path: str, to_path: str) -> str:
     mime_to_extraction = {

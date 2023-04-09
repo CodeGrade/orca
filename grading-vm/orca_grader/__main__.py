@@ -14,7 +14,7 @@ from orca_grader.executor.builder.grading_job_executor_builder import GradingJob
 from orca_grader.job_retrieval.local.local_grading_job_retriever import LocalGradingJobRetriever
 from orca_grader.job_retrieval.redis.redis_grading_queue import RedisGradingJobRetriever
 from orca_grader.docker_images.utils import does_image_exist
-from orca_grader.docker_images.container_loading import retrieve_image_tgz_from_url, load_image_from_tgz
+from orca_grader.docker_images.image_loading import retrieve_image_tgz_from_url, load_image_from_tgz
 
 CONTAINER_WORKING_DIR = '/home/orca-grader'
 

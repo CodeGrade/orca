@@ -1,5 +1,7 @@
+from os import path
 import subprocess
 import time
+from typing import List
 import unittest
 import shutil
 
@@ -9,11 +11,22 @@ import orca_grader.tests.container.grading_script.test_bash_grading_script_comma
 import orca_grader.tests.container.grading_script.test_conditional_grading_script_command as test_conditional_grading_script_command
 import orca_grader.tests.container.build_script.code_file.test_code_file_info as test_code_file_info
 import orca_grader.tests.container.build_script.code_file.test_code_file_processor as test_code_file_processor
+import orca_grader.tests.docker_images.test_docker_image_loading as test_docker_image_loading
 
 __TIME_FOR_FILE_SERVER_STARTUP = 2 # seconds
+__FIXTURE_DIRS_TO_COPY = ["code_files", "images"]
+
+def __copy_fixtures_to_test_server() -> None:
+  for dir in __FIXTURE_DIRS_TO_COPY:
+    shutil.copytree(path.join("orca_grader/tests/fixtures", dir),
+      path.join("images/testing/simple-server/files", dir))
+    
+def __rm_fixtures_from_test_server() -> None:
+  for dir in __FIXTURE_DIRS_TO_COPY:
+    shutil.rmtree(path.join("images/testing/simple-server/files", dir))
 
 def __start_up_fixture_file_server():
-  shutil.copytree("orca_grader/tests/fixtures/code_files", "images/testing/simple-server/files/code_files")
+  __copy_fixtures_to_test_server()
   subprocess.run(
     [
       "docker", 
@@ -59,7 +72,7 @@ def __clean_up_fixture_file_server():
     stderr=subprocess.STDOUT,
     check=True
   )
-  shutil.rmtree("images/testing/simple-server/files/code_files")
+  __rm_fixtures_from_test_server()
 
 if __name__ == '__main__':
   try:
@@ -77,6 +90,7 @@ if __name__ == '__main__':
   suite.addTests(loader.loadTestsFromModule(test_conditional_grading_script_command))
   suite.addTests(loader.loadTestsFromModule(test_code_file_info))
   suite.addTests(loader.loadTestsFromModule(test_code_file_processor))
+  suite.addTests(loader.loadTestsFromModule(test_docker_image_loading))
   runner = unittest.TextTestRunner(verbosity=3)
   result = runner.run(suite)
   try:
