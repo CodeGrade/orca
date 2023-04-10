@@ -8,7 +8,7 @@ Post-execution, it will send off the results to Bottlenose for the grade to be p
 
 ## Set Up
 
-This section is set up through the use of Python's virtual environment (`venv`) module.
+This software component is set up through the use of Python's virtual environment (`venv`) module.
 
 1. Begin by running `python -m venv .venv`.
 2. To activate the virtual environment, run `source .venv/bin/activate`
@@ -53,7 +53,7 @@ This is useful for running sanity checks, such as ensuring containers are being 
 
 ### Without Containers
 
-Users may optionally run the grader without spinning up a container by adding the --no-container flag to the python startup command. This will run the grading job on the local machine instead.
+Users may optionally run the grader without spinning up a container by adding the `--no-container` flag to the python startup command. This will run the grading job on the local machine instead.
 
 ### Running a Single, Local Job
 
