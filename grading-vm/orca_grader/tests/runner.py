@@ -12,6 +12,7 @@ import orca_grader.tests.container.grading_script.test_conditional_grading_scrip
 import orca_grader.tests.container.build_script.code_file.test_code_file_info as test_code_file_info
 import orca_grader.tests.container.build_script.code_file.test_code_file_processor as test_code_file_processor
 import orca_grader.tests.docker_images.test_docker_image_loading as test_docker_image_loading
+import orca_grader.tests.container.build_script.preprocess.test_utils as test_preprocess_utils
 
 __TIME_FOR_FILE_SERVER_STARTUP = 2 # seconds
 __FIXTURE_DIRS_TO_COPY = ["code_files", "images"]
@@ -91,6 +92,7 @@ if __name__ == '__main__':
   suite.addTests(loader.loadTestsFromModule(test_code_file_info))
   suite.addTests(loader.loadTestsFromModule(test_code_file_processor))
   suite.addTests(loader.loadTestsFromModule(test_docker_image_loading))
+  suite.addTests(loader.loadTestsFromModule(test_preprocess_utils))
   runner = unittest.TextTestRunner(verbosity=3)
   result = runner.run(suite)
   try:

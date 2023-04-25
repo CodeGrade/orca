@@ -1,24 +1,17 @@
-from typing import Dict, List, Literal, Tuple
+from typing import Dict, List, Literal, Optional, Tuple
 import os
 from orca_grader.container.build_script.code_file.code_file_info import CodeFileInfo
 from orca_grader.container.build_script.code_file.processing.code_file_processor import CodeFileProcessor
 from orca_grader.container.build_script.cycle_detector import CycleDetector
 from orca_grader.container.build_script.exceptions import InvalidGradingScriptCommand, NotADAGException
+from orca_grader.container.build_script.preprocess.utils import flatten_grading_script
 from orca_grader.container.grading_script.bash_grading_script_command import BashGradingScriptCommand
 from orca_grader.container.grading_script.conditional_grading_script_command import ConditionalGradingScriptCommand, GradingScriptPredicate
 from orca_grader.container.grading_script.grading_script_command import GradingScriptCommand
-from orca_grader.container.build_script.json_helpers.grading_script_command import is_bash_command, is_conditional_command
+from orca_grader.container.build_script.json_helpers.grading_script_command import RESERVED_KEYWORDS, is_bash_command, is_conditional_command
 from orca_grader.common.types.grading_job_json_types import GradingScriptCommandJSON
 
 DEFAULT_COMMAND_TIMEOUT = 60 # 1 minute
-
-def _generate_label_to_index_hash(commands: List[GradingScriptCommandJSON]) -> Dict[str, int]:
-  label_to_index = dict()
-  for i in range(len(commands)):
-    cmd = commands[i]
-    if "label" in cmd:
-      label_to_index[cmd["label"]] = i
-  return label_to_index
 
 class GradingScriptPreprocessor:
 
@@ -34,7 +27,6 @@ class GradingScriptPreprocessor:
     }
     self.__code_file_processor = code_file_processor
     self.__json_cmds = json_cmds
-    self.__cmd_label_to_index = _generate_label_to_index_hash(json_cmds)
     self.__code_files = code_files
     self.__cmds = [None for _ in range(len(json_cmds))]
     self.__cmd_timeout = cmd_timeout
@@ -75,65 +67,27 @@ class GradingScriptPreprocessor:
 
   def __process_bash_command_json(self, json_command: GradingScriptCommandJSON, index: int) -> GradingScriptCommand:
     shell_cmd: str | List[str] = self.__add_interpolated_paths(json_command["cmd"])
-    on_fail, on_complete = self.__handle_bash_cmd_edges(json_command, index)
+    on_fail, on_complete = json_command["on_fail"], json_command["on_complete"]
     working_dir = self.__add_interpolated_paths(json_command["working_dir"]) if "working_dir" in json_command else None
     timeout = json_command["timeout"] if "timeout" in json_command else DEFAULT_COMMAND_TIMEOUT
     cmd = BashGradingScriptCommand(shell_cmd, timeout, 
         on_complete=self.__get_grading_command_by_index(on_complete) if on_complete != "output" else None,
         on_fail=self.__get_grading_command_by_index(on_fail) if on_fail != "abort" else None,
+        timeout=cmd["timeout"] if "timeout" in cmd else self.__cmd_timeout,
         working_dir=working_dir)
     self.__cmds[index] = cmd
     return cmd
-  
-  def __handle_bash_cmd_edges(self, bash_cmd: GradingScriptCommandJSON, current_index: int) \
-    -> Tuple[int | Literal["abort"], int | Literal["output"]]:
-    """
-    Returns a Tuple in the order of (on_fail edge, on_complete edge).
-    """
-    # Handle on_fail
-    if "on_fail" not in bash_cmd or bash_cmd["on_fail"] == "abort":
-      on_fail = "abort"
-    elif bash_cmd["on_fail"] == "next":
-      on_fail = current_index + 1
-    else:
-      on_fail = self.__edge_to_index(bash_cmd["on_fail"])
-    # Handle on_complete
-    if "on_complete" not in bash_cmd or bash_cmd["on_complete"] == "next":
-      on_complete = current_index + 1
-    elif bash_cmd["on_complete"] != "output":
-      on_complete = self.__edge_to_index(bash_cmd["on_complete"])
-    else:
-      on_complete = bash_cmd["on_complete"]
-    return on_fail, on_complete
   
   def __process_conditional_command_json(self, json_command: GradingScriptCommandJSON, index: int):
     conditional: Dict[str, str] = json_command["condition"]
     predicate: GradingScriptPredicate = GradingScriptPredicate(conditional["predicate"])
     fs_path: str = self.__add_interpolated_paths(conditional["path"])
-    on_false, on_true = self.__handle_conditional_command_edges(json_command, index)
+    on_false, on_true = json_command["on_false"], json_command["on_true"]
     cmd: ConditionalGradingScriptCommand = ConditionalGradingScriptCommand(self.__get_grading_command_by_index(on_true), 
       self.__get_grading_command_by_index(on_false), fs_path, predicate)
     self.__cmds[index] = cmd
     return cmd
 
-  def __handle_conditional_command_edges(self, cond_cmd: GradingScriptCommandJSON, current_index: int) \
-    -> Tuple[int, int]:
-    """
-    Returns a Tuple in the order of (on_false edge, on_true edge).
-    """
-    go_to_next = lambda edge_key: edge_key not in cond_cmd or cond_cmd[edge_key] == "next"
-    handle_cond_edge = lambda edge_key: current_index + 1 if go_to_next(edge_key) \
-      else self.__edge_to_index(cond_cmd[edge_key])
-    return handle_cond_edge("on_false"), handle_cond_edge("on_true")
-
-  def __edge_to_index(self, edge: str | int) -> int:
-    try:
-      return edge if type(edge) == int else self.__cmd_label_to_index[edge]
-    except KeyError as ke:
-      raise InvalidGradingScriptCommand("The provided edge for one of the commands is a non-existing label.")
-    except IndexError as ie:
-      raise InvalidGradingScriptCommand("The provided edge for one of the commands points to an out-of-bounds index.")
-  
   def __add_interpolated_paths(self, cmd: str | List[str]) -> str | List[str]:
     formatted_cmd = cmd
     for var in self.__interpolated_dirs:
