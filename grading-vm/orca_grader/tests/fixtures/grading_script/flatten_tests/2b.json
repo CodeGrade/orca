@@ -5,7 +5,7 @@
       "predicate": "file"
     },
     "on_true": 1,
-    "on_false": 3
+    "on_false": 4
   },
   {
     "cmd": ["echo", "This Is An OK Command."],
@@ -13,12 +13,16 @@
   },
   {
     "cmd": ["echo", "This Is An OK Command."],
-    "on_complete": 4,
+    "on_complete": 3
+  },
+  {
+    "cmd": ["echo", "This Is An OK Command."],
+    "on_complete": 5,
     "label": "first"
   },
   {
     "cmd": ["echo", "This Is An OK Command."],
-    "on_complete": 4,
+    "on_complete": 5,
     "label": "second"
   },
   {

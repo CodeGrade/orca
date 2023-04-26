@@ -3,9 +3,15 @@ from orca_grader.common.types.grading_job_json_types import GradingScriptCommand
 from orca_grader.container.build_script.exceptions import InvalidGradingScriptCommand
 from orca_grader.container.build_script.json_helpers.grading_script_command import RESERVED_KEYWORDS
 
+def _render_next_labels_as_numeric_indices(commands: List[GradingScriptCommandJSON]) -> None:
+  for i in range(len(commands)):
+    command = commands[i]
+    for key in list(filter(lambda k: k.startswith('on_'), list(command.keys()))):
+      if type(command[key]) == str and command[key] == 'next':
+        command[key] = i + 1
+
 def _is_replaceable_str_edge(command: GradingScriptCommandJSON, edge_key: str) -> bool:
-  return type(command[edge_key]) == str and (command[edge_key] == 'next' or \
-                                             command[edge_key] not in RESERVED_KEYWORDS)
+  return type(command[edge_key]) == str and command[edge_key] not in RESERVED_KEYWORDS
 
 def _generate_label_to_index_hash(commands: List[GradingScriptCommandJSON]) -> Dict[str, int]:
   label_to_index = dict()
@@ -23,12 +29,12 @@ def _convert_labels_into_indices(commands: List[GradingScriptCommandJSON]) -> No
     command = commands[i]
     for key in command:
       if key.startswith('on_') and _is_replaceable_str_edge(command, key):
-        command[key] = i + 1 if command[key] == next else label_to_index[command[key]]
+        command[key] = label_to_index[command[key]]
 
 def flatten_grading_script(commands: List[GradingScriptCommandJSON], 
                            parent_offset: Optional[int] = None) -> List[GradingScriptCommandJSON]:
-  flattened_script = list()
-  offset = 0
+  flattened_script, offset = list(), 0
+  _render_next_labels_as_numeric_indices(commands)
   for i in range(len(commands)):
     current = commands[i]
     flattened_subscript = []
