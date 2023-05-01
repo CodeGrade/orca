@@ -3,8 +3,8 @@
   "properties": {
     "cmd": {
       "oneOf": [
-        { 
-          "type": "array"
+        {
+          "type": "array",
           "items": {
             "type": "string"
           },
@@ -14,9 +14,25 @@
           "type": "string"
         }
       ]
-    }
-    "on_complete": { "type": ["string", "number"] },
-    "on_fail": { "type": ["string", "number"] }
+    },
+    "on_complete": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "$ref": "bash_grading_script_command_schema.json" },
+        { "$ref": "conditional_grading_script_comamnd_schema.json" }
+      ]
+    },
+    "on_fail": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "$ref": "bash_grading_script_command_schema.json" },
+        { "$ref": "conditional_grading_script_comamnd_schema.json" }
+      ]
+    },
+    "timeout": { "type": "number" },
+    "label": { "type": "string" }
   },
-  "required": ["cmd", "on_complete", "on_fail"]
+  "required": ["cmd"]
 }

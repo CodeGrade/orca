@@ -16,6 +16,7 @@ def is_valid_grading_job_json(grading_job: GradingJobJSON) -> bool:
       schema = { "$ref": "schemas/grading_job_schema.json" },
       resolver = resolver
     )
-  except ValidationError:
+  except ValidationError as e:
+    print(e)
     return False
   return True

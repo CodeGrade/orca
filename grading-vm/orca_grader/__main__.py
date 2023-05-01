@@ -16,9 +16,16 @@ from orca_grader.job_retrieval.local.local_grading_job_retriever import LocalGra
 from orca_grader.job_retrieval.redis.redis_grading_queue import RedisGradingJobRetriever
 from orca_grader.docker_images.utils import does_image_exist
 from orca_grader.docker_images.image_loading import retrieve_image_tgz_from_url, load_image_from_tgz
+from orca_grader.validations.exceptions import InvalidGradingJobJSONException
+from orca_grader.validations.grading_job import is_valid_grading_job_json
 
 CONTAINER_WORKING_DIR = '/home/orca-grader'
 
+def can_execute_job(job_json_string: str) -> bool:
+  try:
+    return is_valid_grading_job_json(json.loads(job_json_string))
+  except json.JSONDecodeError:
+    return False
 
 def run_grading_job(json_job_string: str, no_container: bool):
   if no_container:
@@ -66,6 +73,9 @@ def push_results_with_exception(job_json_string: str, e: Exception):
 def run_local_job(job_path: str, no_container: bool):
   retriever = LocalGradingJobRetriever(job_path)
   job_string = retriever.retrieve_grading_job()
+  if not can_execute_job(job_string):
+    push_results_with_exception(job_string, InvalidGradingJobJSONException())
+    return
   run_grading_job(job_string, no_container)
   clean_up_unused_images()
 
@@ -73,6 +83,9 @@ def process_redis_jobs(redis_url: str, no_container: bool, container_command: Li
   retriever = RedisGradingJobRetriever(redis_url)
   while True: 
     job_string = retriever.retrieve_grading_job()
+    if not can_execute_job(job_string):
+      push_results_with_exception(job_string, InvalidGradingJobJSONException())
+      continue
     run_grading_job(job_string, no_container)
     clean_up_unused_images()
 
