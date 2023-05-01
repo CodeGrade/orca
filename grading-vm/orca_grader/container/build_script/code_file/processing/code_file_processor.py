@@ -3,42 +3,37 @@ import os
 from os import path
 from shutil import copyfileobj, copyfile
 import gzip
-import tarfile
 from typing import Dict
 from orca_grader.container.build_script.code_file.code_file_info import CodeFileInfo
 from orca_grader.container.build_script.code_file.sub_mime_types import SubmissionMIMEType
-from py7zr import SevenZipFile
-from zipfile import ZipFile
-import requests
+import subprocess
+from orca_grader.common.services.download_file import download_file
 
-def extract_tar_file(from_path: str, to_path: str) -> None:
-  with tarfile.open(from_path, "r:") as f:
-    f.extractall(to_path)
-    f.close()
+__EXTRACTION_TIMEOUT = 60 * 2.5 # 2 minutes & 30 seconds
 
-def extract_tar_gz_file(from_path: str, to_path: str) -> None:
-  with tarfile.open(from_path, "r:gz") as f:
-    f.extractall(to_path)
-    f.close()
+def extract_tar_file(from_path: str, to_path: str, compression_option: str = "") -> str:
+  subprocess.run(["tar", f"-x{compression_option}f", from_path, "-C", to_path], 
+      stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, timeout=__EXTRACTION_TIMEOUT)
+  return to_path
 
-def extract_gz_file(from_path: str, to_path: str) -> None:
+def extract_gz_file(from_path: str, to_path: str) -> str:
   from_f_name = path.splitext(path.basename(from_path))[0] # Remove .gz from file name.
+  f_out_path = path.join(to_path, from_f_name)
   with gzip.open(from_path, "rb") as f_in:
-    with gzip.open(path.join(to_path, from_f_name)) as f_out:
+    with open(f_out_path, 'wb') as f_out:
       copyfileobj(f_in, f_out)
-      f_in.close()
-      f_out.close()
+  return f_out_path
 
-def extract_zip_file(from_path: str, to_path: str) -> None:
-  with ZipFile(from_path) as f:
-    f.extractall(to_path)
-    f.close()
+def extract_zip_file(from_path: str, to_path: str) -> str:
+  subprocess.run(["unzip", from_path, "-d", to_path], stdout=subprocess.DEVNULL, 
+      stderr=subprocess.STDOUT, timeout=__EXTRACTION_TIMEOUT)
+  return to_path
 
-def extract_7zip_file(from_path: str, to_path: str) -> None:
-  with SevenZipFile(from_path, mode='r') as f:
-    f.extractall(path=to_path)
-    f.close()
-
+def extract_7zip_file(from_path: str, to_path: str) -> str:
+  subprocess.run(["7z", "x", from_path, f"-o{to_path}"], stdout=subprocess.DEVNULL, 
+      stderr=subprocess.STDOUT, timeout=__EXTRACTION_TIMEOUT)
+  return to_path
+  
 class CodeFileProcessor:
 
   def __init__(self, interpolated_dirs: Dict[str, str]) -> None:
@@ -52,45 +47,39 @@ class CodeFileProcessor:
     if code_file.should_replace_paths():
       self.__replace_paths(extracted_file_path)
 
-  # Useful to have this method as protected so that it can be overwritten in testing
-  # (i.e., mock behavior for downloading can just be copying from a test fixture path).
   def _download_code_file(self, code_file: CodeFileInfo, download_path: str) -> str:
     file_name = code_file.get_file_name()
     file_path = path.join(download_path, file_name)
-    with open(file_path, "wb") as f:
-      web_reponse = requests.get(code_file.get_url())
-      f.write(web_reponse.content)
-      f.close()
-    return file_path
+    return download_file(code_file.get_url(), file_path)
 
   def _extract_code_file(self, code_file: CodeFileInfo, from_path: str, to_path: str) -> str:
     mime_to_extraction = {
-      SubmissionMIMEType.TAR: extract_tar_file,
-      SubmissionMIMEType.TAR_GZ: extract_gz_file,
+      SubmissionMIMEType.TAR: lambda from_path, to_path: extract_tar_file(from_path, to_path),
+      SubmissionMIMEType.TAR_GZ: lambda from_path, to_path: extract_tar_file(from_path, to_path, 'z'),
       SubmissionMIMEType.GZ: extract_gz_file,
       SubmissionMIMEType.ZIP: extract_zip_file,
       SubmissionMIMEType.SEVEN_ZIP: extract_7zip_file
     }
     mime_type = code_file.get_mime_type()
     if mime_type in mime_to_extraction:
-      dir_name = "" if mime_type == SubmissionMIMEType.GZ else path.splitext(code_file.get_file_name())[0]
-      if mime_type == SubmissionMIMEType.TAR_GZ:
-        dir_name = path.splitext(dir_name)[0] # TarGZ will go to _.tar, so we need to get the basename of that as wel.
-      mime_to_extraction[mime_type](from_path, path.join(to_path, dir_name))
+      extracted_path = mime_to_extraction[mime_type](from_path, to_path)
     else:
-      copyfile(from_path, to_path)
-    return path.join(to_path, code_file.get_file_name())
+      extracted_path = path.join(to_path, code_file.get_file_name())
+      copyfile(from_path, extracted_path)
+    return extracted_path
   
   def __replace_paths(self, file_path: str):
     if path.isdir(file_path):
-      for file_name in os.scandir(file_path):
+      for file_name in os.listdir(file_path):
         self.__replace_paths(path.join(file_path, file_name))
     else:
       file_name = path.basename(file_path)
       dir_name = path.dirname(file_path)
-      edited_file_name = file_name + '_edited'
+      name, ext = path.splitext(file_name)
+      edited_file_name = f"{name}_edited{ext}"
+      edited_file_path = path.join(dir_name, edited_file_name)
       with open(file_path, 'r') as original_file:
-        with open(edited_file_name, 'w') as edited_file:
+        with open(edited_file_path, 'w') as edited_file:
           for line in original_file.readlines():
             edited_file.write(
               reduce(

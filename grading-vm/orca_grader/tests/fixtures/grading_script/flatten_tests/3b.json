@@ -1,0 +1,38 @@
+[
+  {
+    "condition": {
+      "path": "example.py",
+      "predicate": "file"
+    },
+    "on_true": 1,
+    "on_false": 4
+  },
+  {
+    "cmd": ["echo", "This Is An OK Command."],
+    "on_complete": 2,
+    "on_fail": "abort"
+  },
+  {
+    "cmd": ["echo", "This Is An OK Command."],
+    "on_complete": 5,
+    "on_fail": "abort"
+  },
+  {
+    "cmd": ["echo", "This Is An OK Command."],
+    "on_complete": 5,
+    "label": "first",
+    "on_fail": "abort"
+  },
+  {
+    "cmd": ["echo", "This Is An OK Command."],
+    "on_complete": 5,
+    "label": "second",
+    "on_fail": "abort"
+  },
+  {
+    "cmd": ["echo", "This Is An OK Command."],
+    "label": "final",
+    "on_complete": "output",
+    "on_fail": "abort"
+  }
+]

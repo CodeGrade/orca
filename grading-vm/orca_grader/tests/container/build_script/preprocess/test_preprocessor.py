@@ -1,6 +1,4 @@
 import unittest
-from orca_grader.container.build_script.preprocess import GradingScriptPreprocessor
-from orca_grader.tests.mocks.container.build_script.code_file.processing.code_file_processor import MockCodeFileProcessor
 
 class TestGradingScriptPreProcessor(unittest.TestCase):
 
@@ -11,7 +9,6 @@ class TestGradingScriptPreProcessor(unittest.TestCase):
         "$ASSETS": "assets",
         "$BUILD": "secret/build"
     }
-    self.__code_file_processor = MockCodeFileProcessor(interpolated_dirs)
 
   def test_basic_script(self):
     # commands = []

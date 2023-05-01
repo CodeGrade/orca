@@ -1,3 +1,4 @@
+import os
 import unittest
 from orca_grader.container.grading_script.bash_grading_script_command import BashGradingScriptCommand
 
@@ -42,7 +43,7 @@ class TestBashGradingScriptCommand(unittest.TestCase):
     self.assertEqual(response.get_status_code(), 0)
 
   def test_timeout_bash_command(self):
-    command = BashGradingScriptCommand("yes", 0.01)
+    command = BashGradingScriptCommand("yes", 0.5)
 
     output = command.execute([])
 
@@ -94,3 +95,10 @@ class TestBashGradingScriptCommand(unittest.TestCase):
       self.assertEqual(response.get_stderr_output(), "")
     self.assertEqual(responses[0].get_stdout_output(), first_cmd_output)
     self.assertEqual(responses[1].get_stdout_output(), expected_tap)
+  
+  def test_bash_command_working_dir(self):
+    expected_tap = os.path.abspath('../')
+    cmd = BashGradingScriptCommand(["pwd"], 1, working_dir="../")
+    output = cmd.execute([])
+    tap_output = output.get_tap_output()
+    self.assertEqual(tap_output, expected_tap)

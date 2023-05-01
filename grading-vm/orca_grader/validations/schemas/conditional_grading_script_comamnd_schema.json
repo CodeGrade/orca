@@ -4,8 +4,25 @@
     "condition": {
       "$ref": "grading_script_condition_schema.json"
     },
-    "on_true": { "type": ["string", "number"] },
-    "on_false": { "type": ["string", "number"] }
+    "on_true": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "$ref": "bash_grading_script_command_schema.json" },
+        { "$ref": "conditional_grading_script_comamnd_schema.json" }
+      ]
+    },
+    "on_false": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "$ref": "bash_grading_script_command_schema.json" },
+        { "$ref": "conditional_grading_script_comamnd_schema.json" }
+      ]
+    },
+    "label": {
+      "type": "string"
+    }
   },
-  "required": ["cmd", "on_complete", "on_fail"]
+  "required": ["condition"]
 }

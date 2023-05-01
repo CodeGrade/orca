@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "properties": {
+    "type": {
+      "enum": ["user", "team"]
+    },
+    "id": {
+      "type": "string"
+    }
+  }
+}

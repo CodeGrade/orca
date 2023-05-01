@@ -1,8 +1,5 @@
 {
-  "target": {
-    "url": "/path/to/student/code",
-    "mime_type": "text"
-  },
+  "files": {},
   "script": [
     {
       "cmd": ["echo", "hello"],
@@ -10,7 +7,6 @@
       "on_fail": "abort"
     }
   ],
-  "submission_id": 123,
-  "grade_id": 234,
-  "priority": 0
+  "priority": 0,
+  "grader_image_sha": "orca-grader-base"
 }
