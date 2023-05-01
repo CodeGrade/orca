@@ -39,7 +39,6 @@ class RedisGradingJobRetriever(GradingJobRetriever):
       job_key = self.__redis_client.lpop(f"SubmitterInfo.{collation_type}.{collation_id}")
     return job_key
 
-
   def __get_next_job_with_key(self, job_key: str) -> str:
     grading_job_raw: bytes = self.__redis_client.getdel({job_key})
     stringified_grading_job = grading_job_raw.decode()

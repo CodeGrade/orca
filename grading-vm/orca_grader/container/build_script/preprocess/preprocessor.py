@@ -2,7 +2,7 @@ from typing import Dict, List, Literal, Optional, Tuple
 import os
 from orca_grader.container.build_script.code_file.code_file_info import CodeFileInfo
 from orca_grader.container.build_script.code_file.processing.code_file_processor import CodeFileProcessor
-from orca_grader.container.build_script.cycle_detector import CycleDetector
+from orca_grader.container.build_script.preprocess.cycle_detector import CycleDetector
 from orca_grader.container.build_script.exceptions import InvalidGradingScriptCommand, NotADAGException
 from orca_grader.container.build_script.preprocess.utils import flatten_grading_script
 from orca_grader.container.grading_script.bash_grading_script_command import BashGradingScriptCommand
@@ -18,7 +18,8 @@ class GradingScriptPreprocessor:
   def __init__(self, secret: str, json_cmds: List[GradingScriptCommandJSON], 
     code_files: Dict[str, CodeFileInfo], code_file_processor: CodeFileProcessor, 
     cmd_timeout: int = DEFAULT_COMMAND_TIMEOUT) -> None:
-    if CycleDetector.contains_cycle(json_cmds):
+    flattened_cmds = flatten_grading_script(json_cmds)
+    if CycleDetector.contains_cycle(flattened_cmds):
       raise NotADAGException()
     self.__interpolated_dirs = {
       "$DOWNLOADED": f"{secret}/downloaded",
@@ -26,9 +27,9 @@ class GradingScriptPreprocessor:
       "$BUILD": f"{secret}/build"
     }
     self.__code_file_processor = code_file_processor
-    self.__json_cmds = json_cmds
+    self.__json_cmds = flattened_cmds
     self.__code_files = code_files
-    self.__cmds = [None for _ in range(len(json_cmds))]
+    self.__cmds = [None for _ in range(len(flattened_cmds))]
     self.__cmd_timeout = cmd_timeout
     
   def preprocess_job(self) -> GradingScriptCommand:
@@ -69,11 +70,10 @@ class GradingScriptPreprocessor:
     shell_cmd: str | List[str] = self.__add_interpolated_paths(json_command["cmd"])
     on_fail, on_complete = json_command["on_fail"], json_command["on_complete"]
     working_dir = self.__add_interpolated_paths(json_command["working_dir"]) if "working_dir" in json_command else None
-    timeout = json_command["timeout"] if "timeout" in json_command else DEFAULT_COMMAND_TIMEOUT
-    cmd = BashGradingScriptCommand(shell_cmd, timeout, 
+    cmd = BashGradingScriptCommand(shell_cmd, 
         on_complete=self.__get_grading_command_by_index(on_complete) if on_complete != "output" else None,
         on_fail=self.__get_grading_command_by_index(on_fail) if on_fail != "abort" else None,
-        timeout=cmd["timeout"] if "timeout" in cmd else self.__cmd_timeout,
+        timeout=json_command["timeout"] if "timeout" in json_command else self.__cmd_timeout,
         working_dir=working_dir)
     self.__cmds[index] = cmd
     return cmd
@@ -83,7 +83,7 @@ class GradingScriptPreprocessor:
     predicate: GradingScriptPredicate = GradingScriptPredicate(conditional["predicate"])
     fs_path: str = self.__add_interpolated_paths(conditional["path"])
     on_false, on_true = json_command["on_false"], json_command["on_true"]
-    cmd: ConditionalGradingScriptCommand = ConditionalGradingScriptCommand(self.__get_grading_command_by_index(on_true), 
+    cmd = ConditionalGradingScriptCommand(self.__get_grading_command_by_index(on_true), 
       self.__get_grading_command_by_index(on_false), fs_path, predicate)
     self.__cmds[index] = cmd
     return cmd

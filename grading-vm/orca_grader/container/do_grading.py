@@ -4,11 +4,11 @@ import sys
 import traceback
 from typing import Dict, List, TextIO
 from orca_grader.common.services.push_results import push_results_to_bottlenose
+from orca_grader.container.build_script.preprocess.preprocessor import GradingScriptPreprocessor
 from orca_grader.container.exec_secret import GradingJobExecutionSecret
 from orca_grader.common.grading_job.grading_job_output import GradingJobOutput
 from orca_grader.container.grading_script.grading_script_command import GradingScriptCommand
 from orca_grader.container.grading_script.grading_script_command_response import GradingScriptCommandResponse
-from orca_grader.container.build_script.preprocess import GradingScriptPreprocessor
 from orca_grader.container.build_script.code_file.processing.code_file_processor import CodeFileProcessor
 from orca_grader.container.build_script.exceptions import PreprocessingException
 from orca_grader.container.build_script.code_file.code_file_info import CodeFileInfo, json_to_code_file_info

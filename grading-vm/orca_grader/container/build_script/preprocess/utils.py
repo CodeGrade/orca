@@ -1,7 +1,20 @@
 from typing import Dict, List, Optional
 from orca_grader.common.types.grading_job_json_types import GradingScriptCommandJSON
 from orca_grader.container.build_script.exceptions import InvalidGradingScriptCommand
-from orca_grader.container.build_script.json_helpers.grading_script_command import RESERVED_KEYWORDS
+from orca_grader.container.build_script.json_helpers.grading_script_command import RESERVED_KEYWORDS, is_conditional_command
+
+def _replace_null_edges(commands: List[GradingScriptCommandJSON]) -> None:
+  def __replace_null_edges_bash_command(command: GradingScriptCommandJSON) -> None:
+    command["on_fail"] = "abort" if "on_fail" not in command else command["on_fail"]
+    command["on_complete"] = "next" if "on_complete" not in command else command["on_complete"]
+  def __replace_null_edges_conditional_command(command: GradingScriptCommandJSON) -> None:
+    command["on_false"] = "next" if "on_false" not in command else command["on_false"]
+    command["on_true"] = "next" if "on_true" not in command else command["on_true"]
+  for command in commands:
+    if is_conditional_command(command):
+      __replace_null_edges_conditional_command(command)
+    else:
+      __replace_null_edges_bash_command(command)
 
 def _render_next_labels_as_numeric_indices(commands: List[GradingScriptCommandJSON]) -> None:
   for i in range(len(commands)):
@@ -34,6 +47,7 @@ def _convert_labels_into_indices(commands: List[GradingScriptCommandJSON]) -> No
 def flatten_grading_script(commands: List[GradingScriptCommandJSON], 
                            parent_offset: Optional[int] = None) -> List[GradingScriptCommandJSON]:
   flattened_script, offset = list(), 0
+  _replace_null_edges(commands)
   _render_next_labels_as_numeric_indices(commands)
   for i in range(len(commands)):
     current = commands[i]

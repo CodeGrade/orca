@@ -1,9 +1,14 @@
 {
   "key": "{ \"grade_id\": 123 }",
+  "collation": {
+    "type": "user",
+    "id": "2023"
+  },
+  "metadata_table": {},
   "files": {
     "submission": {
-      "url": "http://simple-server:9000/java-example/example-homework.tgz",
-      "mime_type": "application/x-gtar",
+      "url": "http://simple-server:9000/java-example/example-homework-0.zip",
+      "mime_type": "application/zip",
       "should_replace_paths": false
     },
     "starter": {
@@ -131,7 +136,8 @@
         "10000"
       ],
       "on_complete": "output",
-      "working_dir": "$BUILD"
+      "working_dir": "$BUILD",
+      "timeout": 360
     }
   ],
   "grader_image_sha": "orca-java-grader",

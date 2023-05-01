@@ -6,7 +6,7 @@ import unittest
 import shutil
 
 # Import test case modules
-import orca_grader.tests.container.build_script.test_cycle_detector as test_cycle_detector
+import orca_grader.tests.container.build_script.preprocess.test_cycle_detector as test_cycle_detector
 import orca_grader.tests.container.grading_script.test_bash_grading_script_command as test_bash_grading_script_command
 import orca_grader.tests.container.grading_script.test_conditional_grading_script_command as test_conditional_grading_script_command
 import orca_grader.tests.container.build_script.code_file.test_code_file_info as test_code_file_info
