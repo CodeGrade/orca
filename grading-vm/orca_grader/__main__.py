@@ -3,7 +3,7 @@ import json
 import os
 import subprocess
 import traceback
-from typing import List
+from typing import List, Optional
 from orca_grader.common.grading_job.grading_job_output import GradingJobOutput
 from orca_grader.common.services import push_results
 from orca_grader.common.services.push_results import push_results_to_bottlenose
@@ -27,7 +27,7 @@ def can_execute_job(job_json_string: str) -> bool:
   except json.JSONDecodeError:
     return False
 
-def run_grading_job(json_job_string: str, no_container: bool):
+def run_grading_job(json_job_string: str, no_container: bool, container_command: Optional[List[str]]):
   if no_container:
     handle_grading_job(json_job_string)
     return
@@ -70,13 +70,13 @@ def push_results_with_exception(job_json_string: str, e: Exception):
   output = GradingJobOutput([], [e])
   return push_results_to_bottlenose(output)
 
-def run_local_job(job_path: str, no_container: bool):
+def run_local_job(job_path: str, no_container: bool, container_command: Optional[List[str]]):
   retriever = LocalGradingJobRetriever(job_path)
   job_string = retriever.retrieve_grading_job()
   if not can_execute_job(job_string):
     push_results_with_exception(job_string, InvalidGradingJobJSONException())
     return
-  run_grading_job(job_string, no_container)
+  run_grading_job(job_string, no_container, container_command)
   clean_up_unused_images()
 
 def process_redis_jobs(redis_url: str, no_container: bool, container_command: List[str] | None):
@@ -86,7 +86,7 @@ def process_redis_jobs(redis_url: str, no_container: bool, container_command: Li
     if not can_execute_job(job_string):
       push_results_with_exception(job_string, InvalidGradingJobJSONException())
       continue
-    run_grading_job(job_string, no_container)
+    run_grading_job(job_string, no_container, container_command)
     clean_up_unused_images()
 
 def get_container_sha(json_job_string: str) -> str:
@@ -107,5 +107,5 @@ if __name__ == "__main__":
   if parse_result.local_job:
     run_local_job(parse_result.local_job, parse_result.no_container)
   else:
-    redis_url = APP_CONFIG.redis_db_uri
+    redis_url = APP_CONFIG.redis_db_url
     process_redis_jobs(redis_url, parse_result.no_container, container_command)

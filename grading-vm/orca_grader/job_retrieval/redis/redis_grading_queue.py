@@ -29,21 +29,23 @@ class RedisGradingJobRetriever(GradingJobRetriever):
     return grading_job
 
   def __get_next_job_key(self) -> str:
-    reservation_str = self.__redis_client.bzpopmin('Reservations')
-    reservation_info = reservation_str.decode().split('.')
+    reservation_str, _ = self.__redis_client.zpopmin('Reservations')[0]
+    reservation_info = reservation_str.split('.')
+    print(reservation_info)
     if (reservation_info[0] == 'immediate'): 
       _, job_key = reservation_info
     else:
       collation_type, collation_id, nonce = reservation_info
-      self.__redis_client.srem(f"Nonces.{collation_type}.{collation_id}")
+      self.__redis_client.srem(f"Nonces.{collation_type}.{collation_id}", nonce)
       job_key = self.__redis_client.lpop(f"SubmitterInfo.{collation_type}.{collation_id}")
     return job_key
 
   def __get_next_job_with_key(self, job_key: str) -> str:
-    grading_job_raw: bytes = self.__redis_client.getdel({job_key})
-    stringified_grading_job = grading_job_raw.decode()
-    return stringified_grading_job
+    grading_job = self.__redis_client.getdel(job_key)
+    print(job_key)
+    print(grading_job)
+    return grading_job
 
   def __get_redis_client(self, redis_db_url: str) -> Redis:
-    connection = Redis.from_url(redis_db_url)
+    connection = Redis.from_url(redis_db_url, decode_responses=True)
     return connection

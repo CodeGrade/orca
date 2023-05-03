@@ -1,32 +1,34 @@
-from redis import Redis
 import json
-import time
 import sys
-import os
+from orca_grader.common.types.grading_job_json_types import GradingJobJSON
+from redis import Redis
+import redis.lock as redlock
+import time
+
+from orca_grader.config import APP_CONFIG
 
 ONE_DAY = 60 * 60 * 24 # secs * mins * hours
 
-def add_job_to_queue(client: Redis, job_json) -> None:
-  adjusted_priority = time.time() + job_json["priority"]
-  submission_id: str = job_json["submission_id"]
-  lifetime: int = max(int(adjusted_priority + ONE_DAY), client.ttl(f"QueuedGradingInfo.{submission_id}"))
-  client.set(f"QueuedGradingInfo.{submission_id}", json.dumps(job_json), ex=lifetime)
-  client.zadd(f"GradingQueue", {f"sub.{submission_id}": adjusted_priority})
-
-def populate_db_with_job(client: Redis, job_json_path: str) -> None:
-  with open(job_json_path, 'r') as fp:
-    job_json = json.load(fp)
-    add_job_to_queue(client, job_json)
+def add_job_to_queue(client: Redis, job_json: GradingJobJSON, mock_key: str) -> None:
+  key, collation, priority = mock_key, job_json["collation"], job_json["priority"]
+  nextTask = f'{collation["type"]}.{collation["id"]}'
+  arrival_time = int(time.time() * 1000) # convert time from secs -> ms
+  nonce = priority + arrival_time
+  print(arrival_time)
+  print(nonce)
+  queue_lock = redlock.Lock(client, 'GradingQueueLock')
+  lock_acquired = False
+  while not lock_acquired:
+    lock_acquired = queue_lock.acquire()
+  client.rpush(f'SubmitterInfo.{nextTask}', key)
+  client.zadd('Reservations', {f'{nextTask}.{arrival_time}': nonce})
+  client.sadd(f'Nonces.{collation["type"]}.{collation["id"]}', nonce)
+  client.set(mock_key, json.dumps(job_json))
+  queue_lock.release()
 
 if __name__ == "__main__":
-  if len(sys.argv) != 2:
-    sys.stderr.write("ERROR: User must provide a file path to a grading job "\
-      "JSON example and nothing more.")
-  job_path = sys.argv[1] # First argument is the module name
-  redis_url_from_env = os.environ.get("REDIS_URL")
-  print(redis_url_from_env)
-  redis_instance_url = redis_url_from_env if redis_url_from_env is not None else "redis://localhost:6379"
-  client = Redis.from_url(redis_instance_url)
-  populate_db_with_job(client, job_path)
-
-
+  _, json_path = sys.argv
+  with open(json_path, 'r') as json_fp:
+    job_json = json.load(json_fp)
+  client = Redis.from_url(APP_CONFIG.redis_db_url)
+  add_job_to_queue(client, job_json, '1')
