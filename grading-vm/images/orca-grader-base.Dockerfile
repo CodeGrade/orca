@@ -16,6 +16,7 @@ RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
 RUN ["apt", "remove", "curl", "-y"]
 RUN ["python3.10", "-m", "pip", "install", "pip"]
 
-COPY ../ .
+COPY ../requirements.txt .
+COPY ../orca_grader ./orca_grader
 
 RUN ["python3.10", "-m", "pip", "install", "-r", "requirements.txt"]

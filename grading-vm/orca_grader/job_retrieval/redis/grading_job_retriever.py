@@ -1,3 +1,4 @@
+import time
 from redis import Redis
 from redis.lock import Lock
 from orca_grader.job_retrieval.grading_job_retriever import GradingJobRetriever
@@ -5,8 +6,8 @@ from orca_grader.job_retrieval.redis.exceptions import FailedToConnectToRedisExc
 
 class RedisGradingJobRetriever(GradingJobRetriever):
 
-  LOCK_TIMEOUT = 2
   GET_OR_POP_TIMEOUT = 10
+  JOB_WAIT_TIME = 2
 
   def __init__(self, redis_db_url: str) -> None:
     try:
@@ -17,21 +18,25 @@ class RedisGradingJobRetriever(GradingJobRetriever):
   def retrieve_grading_job(self) -> str:
     return self.__get_next_job_from_queue()
 
+  def __waiting_on_jobs(self) -> bool:
+    return self.__redis_client.zcard('Reservations') == 0
+
   def __get_next_job_from_queue(self) -> str:
-    queue_lock = Lock(self.__redis_client, 'GradingQueueLock', timeout=self.LOCK_TIMEOUT)
-    lock_acquired = False
-    while not lock_acquired:
-      lock_acquired = queue_lock.acquire()
-      print(("Lock acquired" if lock_acquired else "Lock not acquired."))
-    next_job_key = self.__get_next_job_key()
-    grading_job = self.__get_next_job_with_key(next_job_key)
-    queue_lock.release()
-    return grading_job
+    wait_initialized = False
+    while True:
+      with self.__redis_client.lock('GradingQueueLock'):
+        if self.__waiting_on_jobs():
+          if not wait_initialized:
+            print("Waiting on jobs...")
+            wait_initialized = True
+          continue
+        next_job_key = self.__get_next_job_key()
+        grading_job = self.__get_next_job_with_key(next_job_key)
+        return grading_job
 
   def __get_next_job_key(self) -> str:
     reservation_str, _ = self.__redis_client.zpopmin('Reservations')[0]
     reservation_info = reservation_str.split('.')
-    print(reservation_info)
     if (reservation_info[0] == 'immediate'): 
       _, job_key = reservation_info
     else:
@@ -41,10 +46,7 @@ class RedisGradingJobRetriever(GradingJobRetriever):
     return job_key
 
   def __get_next_job_with_key(self, job_key: str) -> str:
-    grading_job = self.__redis_client.getdel(job_key)
-    print(job_key)
-    print(grading_job)
-    return grading_job
+    return self.__redis_client.getdel(job_key)
 
   def __get_redis_client(self, redis_db_url: str) -> Redis:
     connection = Redis.from_url(redis_db_url, decode_responses=True)

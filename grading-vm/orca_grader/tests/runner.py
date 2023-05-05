@@ -15,12 +15,12 @@ import orca_grader.tests.docker_images.test_docker_image_loading as test_docker_
 import orca_grader.tests.container.build_script.preprocess.test_utils as test_preprocess_utils
 
 __TIME_FOR_FILE_SERVER_STARTUP = 2 # seconds
-__FIXTURE_DIRS_TO_COPY = ["code_files", "images"]
+__FIXTURE_DIRS_TO_COPY = ["code_files", "test-images"]
 
 def __copy_fixtures_to_test_server() -> None:
   for dir in __FIXTURE_DIRS_TO_COPY:
     shutil.copytree(path.join("orca_grader/tests/fixtures", dir),
-      path.join("images/testing/simple-server/files", dir))
+      path.join("images/testing/simple-server/files", dir), dirs_exist_ok=True)
     
 def __rm_fixtures_from_test_server() -> None:
   for dir in __FIXTURE_DIRS_TO_COPY:
