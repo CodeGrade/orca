@@ -15,7 +15,7 @@ import orca_grader.tests.docker_images.test_docker_image_loading as test_docker_
 import orca_grader.tests.container.build_script.preprocess.test_utils as test_preprocess_utils
 
 __TIME_FOR_FILE_SERVER_STARTUP = 2 # seconds
-__FIXTURE_DIRS_TO_COPY = ["code_files", "test-images"]
+__FIXTURE_DIRS_TO_COPY = ["code_files", "images"]
 
 def __copy_fixtures_to_test_server() -> None:
   for dir in __FIXTURE_DIRS_TO_COPY:
