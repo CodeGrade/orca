@@ -1,8 +1,14 @@
+import random
 import time
 from redis import Redis
-from redis.lock import Lock
+from orca_grader.config import APP_CONFIG
 from orca_grader.job_retrieval.grading_job_retriever import GradingJobRetriever
 from orca_grader.job_retrieval.redis.exceptions import FailedToConnectToRedisException, RedisJobRetrievalException
+from orca_grader.queue_diagnostics import JobState, log_diagnostics
+from orca_grader import get_redis_client
+
+def _generate_random_sleep_time() -> float:
+  return 1
 
 class RedisGradingJobRetriever(GradingJobRetriever):
 
@@ -11,10 +17,10 @@ class RedisGradingJobRetriever(GradingJobRetriever):
 
   def __init__(self, redis_db_url: str) -> None:
     try:
-      self.__redis_client: Redis = self.__get_redis_client(redis_db_url)
+      self.__redis_client: Redis = get_redis_client(redis_db_url)
     except:
       raise FailedToConnectToRedisException(redis_db_url)
-    
+
   def retrieve_grading_job(self) -> str:
     return self.__get_next_job_from_queue()
 
@@ -24,7 +30,7 @@ class RedisGradingJobRetriever(GradingJobRetriever):
   def __get_next_job_from_queue(self) -> str:
     wait_initialized = False
     while True:
-      with self.__redis_client.lock('GradingQueueLock'):
+      with self.__redis_client.lock('GradingQueueLock', sleep=_generate_random_sleep_time(), timeout=2):
         if self.__waiting_on_jobs():
           if not wait_initialized:
             print("Waiting on jobs...")
@@ -32,10 +38,19 @@ class RedisGradingJobRetriever(GradingJobRetriever):
           continue
         next_job_key = self.__get_next_job_key()
         grading_job = self.__get_next_job_with_key(next_job_key)
-        return grading_job
+      self.__log_diagnostics(next_job_key)
+      return grading_job
+      
+  def __log_diagnostics(self, job_key: str) -> None:
+    if not APP_CONFIG.enable_diagnostics:
+      return
+    dequeued_time = time.time_ns()
+    state = JobState.DEQUEUED
+    log_diagnostics(self.__redis_client, dequeued_time, job_key, state)
 
   def __get_next_job_key(self) -> str:
     reservation_str, _ = self.__redis_client.zpopmin('Reservations')[0]
+    print(reservation_str)
     reservation_info = reservation_str.split('.')
     if (reservation_info[0] == 'immediate'): 
       _, job_key = reservation_info
@@ -47,7 +62,3 @@ class RedisGradingJobRetriever(GradingJobRetriever):
 
   def __get_next_job_with_key(self, job_key: str) -> str:
     return self.__redis_client.getdel(job_key)
-
-  def __get_redis_client(self, redis_db_url: str) -> Redis:
-    connection = Redis.from_url(redis_db_url, decode_responses=True)
-    return connection

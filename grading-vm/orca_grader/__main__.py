@@ -5,6 +5,7 @@ import subprocess
 import time
 import traceback
 from typing import List, Optional
+from orca_grader import get_redis_client
 from orca_grader.common.grading_job.grading_job_output import GradingJobOutput
 from orca_grader.common.services import push_results
 from orca_grader.common.services.push_results import push_results_to_bottlenose
@@ -17,6 +18,8 @@ from orca_grader.job_retrieval.local.local_grading_job_retriever import LocalGra
 from orca_grader.job_retrieval.redis.grading_job_retriever import RedisGradingJobRetriever
 from orca_grader.docker_utils.images.utils import does_image_exist
 from orca_grader.docker_utils.images.image_loading import retrieve_image_tgz_from_url, load_image_from_tgz
+from orca_grader.queue_diagnostics import log_diagnostics
+from orca_grader.queue_diagnostics import JobState
 from orca_grader.validations.exceptions import InvalidGradingJobJSONException
 from orca_grader.validations.grading_job import is_valid_grading_job_json
 
@@ -93,6 +96,11 @@ def process_redis_jobs(redis_url: str, no_container: bool, container_command: Li
       push_results_with_exception(job_string, InvalidGradingJobJSONException())
       continue
     run_grading_job(job_string, no_container, container_command)
+    if APP_CONFIG.enable_diagnostics:
+      log_diagnostics(get_redis_client(redis_url), 
+                      time.time_ns(), 
+                      json.loads(job_string)["key"],
+                      JobState.COMPLETED)
     clean_up_unused_images()
 
 def get_container_sha(json_job_string: str) -> str:
