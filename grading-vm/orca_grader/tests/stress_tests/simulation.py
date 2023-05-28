@@ -1,63 +1,71 @@
+import copy
 import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from orca_grader.tests.stress_tests.realistic_scenario import SubmissionMetadatum
 from orca_grader.queue_diagnostics import JobState
 
-def run_simulation(metadata: Dict[str, SubmissionMetadatum], num_workers: int) -> Dict[int, Dict[JobState, int]]:
-  workers = [None for _ in range(num_workers)]
-  simulatable_metadata = make_metadata_simulatable(list(metadata.values()))
+QueueState = Tuple[datetime.datetime, List[datetime.datetime], List[SubmissionMetadatum]]
+
+def run_simulation(metadata: Dict[str, SubmissionMetadatum], num_workers: int) \
+    -> Tuple[List[QueueState], Dict[int, Dict[JobState, int]]]:
+  if len(metadata) == 0 or num_workers < 1:
+    raise ValueError('Cannot run simulation on empty metadata or less than one worker.')
+  simulatable_metadata = process_metadata(metadata)
+  min_timestamp = simulatable_metadata[0]['submitted']
+  before_all_dt = min_timestamp - datetime.timedelta(milliseconds=1)
+  workers = [before_all_dt for _ in range(num_workers)]
+  queue_states: List[QueueState] = [(before_all_dt, copy.deepcopy(workers), [])]
   job_log = { k: dict() for k in list(metadata.keys()) }
   for metadatum in simulatable_metadata:
-    created_at_timestamp = simulatable_metadata['submitted'].timestamp()
-    released_at_timestamp = created_at_timestamp + simulatable_metadata['priority']
-    job_log[metadatum['id']][JobState.CREATED] = created_at_timestamp
-    job_log[metadatum['id']][JobState.RELEASED] = released_at_timestamp
-    give_job_to_worker(metadatum, workers, job_log)
-  return job_log
+    prev_state = queue_states[-1]
+    sub_created_dt = metadatum['submitted']
+    job_log[metadatum['id']][JobState.CREATED] = sub_created_dt
+    job_log[metadatum['id']][JobState.RELEASED] = sub_created_dt
+    prev_back_log = copy.deepcopy(prev_state[2])
+    while (worker_available(sub_created_dt, workers)):
+      next_job = prev_back_log.pop(0)
+      give_job_to_worker(next_job, workers, job_log)
+    queue_states.append((sub_created_dt, copy.deepcopy(workers), prev_back_log.extend([metadatum])))
+    if worker_available(sub_created_dt, workers) and len(prev_back_log) == 0:
+      give_job_to_worker(metadatum, workers, job_log)
+      queue_states.append((sub_created_dt + datetime.timedelta(seconds=metadatum['duration']),
+                            copy.deepcopy(workers),
+                            []))
+  last_state = queue_states[-1]
+  last_backlog = last_state[2]
+  if len(last_backlog) == 0:
+    return queue_states, job_log
+  for i in range(len(copy.deepcopy(last_backlog))):
+    curr_job = last_backlog[i]
+    worker_to_get_job = workers[0]
+    give_job_to_worker(curr_job, workers, job_log)
+    queue_states.append((worker_to_get_job + datetime.timedelta(seconds=curr_job['duration']),
+                          copy.deepcopy(workers),
+                          last_backlog[i+1:] if i < len(last_backlog) - 1 else []))    
+  return queue_states, job_log
+
+def worker_available(dt: datetime.datetime, workers: List[datetime.datetime]) -> bool:
+  return workers[0] <= dt
+
+def process_metadata(metadata: Dict[str, SubmissionMetadatum]) -> List[SubmissionMetadatum]:
+  for m in metadata:
+    m['submitted'] = datetime.datetime.fromisoformat(m['submitted'])
+  return sorted(list(metadata.values()), key=lambda m: m['submitted'])
 
 def give_job_to_worker(job: SubmissionMetadatum, 
-                       workers: List[Optional[datetime.datetime]],
+                       workers: List[datetime.datetime],
                        job_log: Dict[int, Dict[JobState, int]]) -> None:
   next_worker_to_finish = workers.pop(0)
   job_finished_at = calculate_job_finish_time(job, next_worker_to_finish)
   job_dequeued_at = job_finished_at - datetime.timedelta(job['duration'])
-  job_log[job['id']][JobState.DEQUEUED] = job_dequeued_at.timestamp()
-  job_log[job['id']][JobState.COMPLETED] = job_finished_at.timestamp()
+  job_log[job['id']][JobState.DEQUEUED] = job_dequeued_at
+  job_log[job['id']][JobState.COMPLETED] = job_finished_at
   workers.append(job_finished_at)
+  workers.sort()
 
 def calculate_job_finish_time(job: SubmissionMetadatum, 
-                              worker_finish_info: Optional[datetime.datetime]) -> datetime.datetime:
+                              worker_finish_info: datetime.datetime) -> datetime.datetime:
   base_job_completion_dt = job['submitted'] + datetime.timedelta(seconds=job['duration'])
-  if worker_finish_info is None:
-    return base_job_completion_dt
   secs_before_dequeue = (worker_finish_info - job['submitted']).total_seconds() \
     if worker_finish_info > job['submitted'] else 0
   return base_job_completion_dt + datetime.timedelta(seconds=secs_before_dequeue)
-
-def make_metadata_simulatable(metadata: List[SubmissionMetadatum]) -> List[SubmissionMetadatum]:
-  for metadatum in metadata:
-    metadatum['submitted'] = datetime.datetime.fromisoformat(metadatum['submitted'])
-  metadata_with_priorities = list(get_metadata_by_user_id(metadata).values())
-  metadata_in_timestamp_order = [m for arr in metadata_with_priorities for m in arr]
-  metadata_in_timestamp_order.sort(key=lambda m: m['submitted'])
-  return metadata_in_timestamp_order
-
-def get_metadata_by_user_id(metadata: List[SubmissionMetadatum]) -> Dict[int, List[SubmissionMetadatum]]:
-  user_id_to_metadata = dict()
-  for metadatum in metadata:
-    if metadatum['user_id'] not in user_id_to_metadata:
-      user_id_to_metadata[metadatum['user_id']] = []
-    user_id_to_metadata[metadatum['user_id']].append(metadatum)
-  for arr in user_id_to_metadata.values():
-    arr.sort(key=lambda m: m['submitted'])
-    for i in range(len(arr)):
-      arr[i]['priority'] = calculate_priority(arr[i], arr[:i-1] if i > 0 else [])
-  return user_id_to_metadata
-
-def calculate_priority(current_sub_time: datetime.datetime, 
-                       previous_sub_times: datetime.datetime) -> int:
-  num_times_within_15_mins = 0
-  for sub_time in previous_sub_times:
-    if (current_sub_time - sub_time) <= datetime.timedelta(minutes=15):
-      num_times_within_15_mins += 1
-  return 60 * num_times_within_15_mins
