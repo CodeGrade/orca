@@ -1,6 +1,6 @@
 from enum import Enum
 
-class JobState(Enum):
+class JobState(str, Enum):
   CREATED = "created"
   RELEASED = "released"
   DEQUEUED = "dequeued"
