@@ -166,4 +166,4 @@ images/testing/simple-server/files/**/*
 !images/testing/simple-server/files/.gitkeep
 !images/testing/simple-server/files/Dockerfile
 
-.vscode/
+.vscode/**
