@@ -1,4 +1,5 @@
 import json
+import os
 import shutil
 import sys
 import traceback
@@ -58,7 +59,7 @@ def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobOutpu
 if __name__ == "__main__":
   secret = GradingJobExecutionSecret.get_secret()
   try:
-    _, file_name = sys.argv
+    file_name = os.getenv('GRADING_JOB_FILE_NAME', 'grading_job.json')
     with open(file_name, 'r') as job_json_fp:
       grading_job = get_job_from_input_stream(job_json_fp)
       do_grading(secret, grading_job)

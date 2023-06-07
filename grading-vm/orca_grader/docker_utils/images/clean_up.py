@@ -1,6 +1,6 @@
 import subprocess
 from typing import List
-from orca_grader.docker_images.utils import get_all_docker_images
+from orca_grader.docker_utils.images.utils import get_all_docker_images
 
 # NOTE: Docker image name lists always have a trailing new line, hence
 # why the lists generated from string splitting include all but the last string.
