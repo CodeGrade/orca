@@ -1,4 +1,7 @@
+import Redlock from "redlock";
 import { client } from "../index";
+
+const LOCK_TIMEOUT = 2000; // Two seconds
 
 export const redisSet = async (
   key: string,
@@ -285,4 +288,14 @@ export const redisLPos = async (
   } catch (error) {
     return [null, error];
   }
+};
+
+export const withLock = async <T>(redisOperation: () => Promise<T>) => {
+  const redlock = new Redlock([client]);
+  redlock.acquire(["GradingQueueLock"], LOCK_TIMEOUT);
+  return await redisOperation();
+};
+
+export const redisLPop = async (key: string) => {
+  return await client.LPOP(key);
 };

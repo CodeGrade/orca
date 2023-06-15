@@ -39,6 +39,7 @@ export interface GradingJob {
   collation: Collation;
   metadata_table: Map<string, string | string[]>;
   files: Map<string, CodeFileInfo>;
+  container_sha: string;
   priority: number;
   script: GradingScriptCommand[];
   response_url: string;

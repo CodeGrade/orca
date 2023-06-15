@@ -1,9 +1,9 @@
 import { addReservation, generateGradingJobFromConfig } from "../utils/helpers";
 import { redisLPush, redisSAdd, redisSet, redisZAdd } from "../utils/redis";
-import { GradingJobConfig } from "./types";
+import { GradingJob, GradingJobConfig } from "./types";
 
 const createJob = async (
-  gradingJobConfig: GradingJobConfig,
+  gradingJobConfig: GradingJob,
   arrivalTime: number,
 ): Promise<Error | null> => {
   const { key, priority, collation } = gradingJobConfig;
