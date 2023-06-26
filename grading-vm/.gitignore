@@ -166,3 +166,7 @@ images/testing/simple-server/files/**/*
 !images/testing/simple-server/files/.gitkeep
 
 .vscode
+
+# Job Kill/Complete Signal Files
+.killjob
+.jobcompleted
