@@ -3,7 +3,7 @@ import express, { json } from "express";
 const PORT = 9001;
 
 const app = express();
-app.use(json());
+app.use(json({ limit: "1mb" }));
 
 const responses = {};
 
