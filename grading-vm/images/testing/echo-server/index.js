@@ -11,6 +11,8 @@ app.get("/", (_, res) => {
   res.send("Hello world!");
 });
 
+app.get("/job-output", (req, res) => res.json(Object.keys(responses))); 
+
 app.get("/job-output/:key", (req, res) => {
   const { key } = req.params;
   if (responses[key]) {
