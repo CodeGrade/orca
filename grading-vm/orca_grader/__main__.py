@@ -23,7 +23,7 @@ from orca_grader.docker_utils.images.utils import does_image_exist
 from orca_grader.docker_utils.images.image_loading import retrieve_image_tgz_from_url, load_image_from_tgz
 from orca_grader.queue_diagnostics import log_diagnostics
 from orca_grader.queue_diagnostics import JobState
-from orca_grader.stop_worker import JOB_COMPLETED_FILE_NAME, KILL_JOB_FILE_NAME, GracefulKiller, JobKillObserver, reenqueue_job
+from orca_grader.stop_worker import GracefulKiller, reenqueue_job
 from orca_grader.validations.exceptions import InvalidGradingJobJSONException
 from orca_grader.validations.grading_job import is_valid_grading_job_json
 
@@ -50,7 +50,6 @@ def run_grading_job(json_job_string: str, no_container: bool, container_command:
     handle_grading_job(json_job_string, container_sha, container_command)
   else:
     handle_grading_job(json_job_string, container_sha)
-  pathlib.Path(JOB_COMPLETED_FILE_NAME).touch()
 
 def handle_grading_job(grading_job_json_str: str, container_sha: str | None = None, 
     container_cmd: List[str] | None = None):
@@ -96,21 +95,20 @@ def run_local_job(job_path: str, no_container: bool, container_command: Optional
 def process_redis_jobs(redis_url: str, no_container: bool, container_command: List[str] | None):
   retriever = RedisGradingJobRetriever(redis_url)
   killer = GracefulKiller()
-  while not killer.kill_now:
-    job_string = retriever.retrieve_grading_job()
-    print(job_string[:10])
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as futures_executor:
-      job_kill_observer = JobKillObserver()
-      stop_future = futures_executor.submit(job_kill_observer.wait_for_jobkill_touch)
+  with concurrent.futures.ThreadPoolExecutor(max_workers=2) as futures_executor:
+    stop_future = futures_executor.submit(killer.wait_for_stop_signal())
+    while True:
+      job_string = retriever.retrieve_grading_job()
       job_future = futures_executor.submit(run_grading_job, job_string, no_container, container_command)
       done, not_done = concurrent.futures.wait([stop_future, job_future], return_when="FIRST_COMPLETED")
       if stop_future in done and job_future in not_done:
         reenqueue_job(json.loads(job_string), get_redis_client(redis_url))
-        return
+        break
       if type(job_future.exception()) == InvalidWorkerStateException:
         exit(1)
       handle_completed_grading_job(job_string, redis_url)
-      clear_job_sig_files()
+      if stop_future in done:
+        break
 
 def handle_completed_grading_job(job_string: str, redis_url: str):
   if APP_CONFIG.enable_diagnostics:
@@ -123,13 +121,7 @@ def handle_completed_grading_job(job_string: str, redis_url: str):
 def get_container_sha(json_job_string: str) -> str:
   return json.loads(json_job_string)["grader_image_sha"]
 
-def clear_job_sig_files():
-  for name in (KILL_JOB_FILE_NAME, JOB_COMPLETED_FILE_NAME):
-    if os.path.exists(name):
-      os.remove(name)
-
 if __name__ == "__main__":
-  clear_job_sig_files()
   arg_parser = argparse.ArgumentParser(
       prog="Orca Grader",
       description="Pulls a job from a Redis queue and executes a script to autograde." 
