@@ -96,7 +96,7 @@ def process_redis_jobs(redis_url: str, no_container: bool, container_command: Li
   retriever = RedisGradingJobRetriever(redis_url)
   killer = GracefulKiller()
   with concurrent.futures.ThreadPoolExecutor(max_workers=2) as futures_executor:
-    stop_future = futures_executor.submit(killer.wait_for_stop_signal())
+    stop_future = futures_executor.submit(killer.wait_for_stop_signal)
     while True:
       job_string = retriever.retrieve_grading_job()
       job_future = futures_executor.submit(run_grading_job, job_string, no_container, container_command)
