@@ -1,7 +1,7 @@
 import {
   Collation,
+  EnrichedGradingJob,
   GradingJob,
-  GradingJobConfig,
 } from "../grading-queue/types";
 import {
   redisExists,
@@ -38,11 +38,11 @@ export const jobInQueue = async (
 };
 
 export const generateGradingJobFromConfig = (
-  gradingJobConfig: GradingJobConfig,
+  gradingJobConfig: GradingJob,
   arrivalTime: number,
   releaseTime: number,
-): GradingJob => {
-  const gradingJob: GradingJob = {
+): EnrichedGradingJob => {
+  const gradingJob: EnrichedGradingJob = {
     ...gradingJobConfig,
     release_at: releaseTime,
     created_at: arrivalTime,
@@ -79,62 +79,4 @@ export const getSubmitterInfo = async (
       ),
     ];
   return [submitterInfo, null];
-};
-
-export const removeNonImmediateJob = async (
-  key: string,
-  collation: Collation,
-): Promise<null | Error> => {
-  const collationKey = `${collation.type}.${collation.id}`;
-  const submitterInfoKey = `SubmitterInfo.${collationKey}`;
-  const noncesKey = `Nonces.${collationKey}`;
-
-  // Get index of job key in SubmitterInfo list
-  const [index, lPosErr] = await redisLPos(submitterInfoKey, key);
-  if (lPosErr) return lPosErr;
-  if (index === null)
-    return Error(
-      "Failed to find job key in submitter info when removing non-immediate job",
-    );
-
-  // Get nonce
-  const [nonces, zRangeErr] = await redisZRange(noncesKey, index, index);
-  if (zRangeErr) return zRangeErr;
-  if (!nonces || nonces.length !== 1)
-    return Error(
-      "Something went wrong while getting nonce for removing non-immediate job",
-    );
-  const [nonce] = nonces;
-  if (!nonce)
-    return Error(
-      "Something went wrong while deleting nonce for removing non-immediate job",
-    );
-
-  // Delete nonce
-  const [numNonceRemoved, remNonceErr] = await redisZRem(noncesKey, nonce);
-  if (remNonceErr) return remNonceErr;
-  if (numNonceRemoved !== 1)
-    return Error(
-      "Something went wrong while removing nonce for removing non-immediate job.",
-    );
-
-  // Delete job key from SubmitterInfo
-  const [numLRemoved, lRemErr] = await redisLRem(submitterInfoKey, key);
-  if (lRemErr) return lRemErr;
-  if (numLRemoved !== 1)
-    return Error(
-      "Something went wrong while removing key from submitter info for existing non-immediate job.",
-    );
-
-  // Delete reservation
-  const [numZRemoved, zRemErr] = await redisZRem(
-    "Reservations",
-    `${collationKey}.${nonce}`,
-  );
-  if (zRemErr) return zRemErr;
-  if (numZRemoved !== 1)
-    return Error(
-      "Something went wrong while removing reservation for existing non-immediate job.",
-    );
-  return null;
 };

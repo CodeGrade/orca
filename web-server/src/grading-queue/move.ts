@@ -1,7 +1,7 @@
 import {
   Collation,
+  EnrichedGradingJob,
   GradingJob,
-  GradingJobConfig,
   MoveJobAction,
   MoveJobRequest,
 } from "./types";
@@ -31,7 +31,7 @@ const moveJobHandler = async (
   if (!gradingJobStr)
     return [null, Error("Something went wrong while getting job to move.")];
 
-  let gradingJob: GradingJob;
+  let gradingJob: EnrichedGradingJob;
   try {
     gradingJob = JSON.parse(gradingJobStr);
   } catch (error) {
@@ -43,7 +43,7 @@ const moveJobHandler = async (
     case MoveJobAction.RELEASE:
       newReleaseAt = now;
       const newPriority = 0;
-      const upgradedJobConfig: GradingJobConfig = {
+      const upgradedJobConfig: GradingJob = {
         ...gradingJob,
         priority: newPriority,
       };
@@ -64,7 +64,7 @@ const moveJobHandler = async (
   }
 
   // Update stored grading job with newReleaseAt
-  const releasedGradingJob: GradingJob = {
+  const releasedGradingJob: EnrichedGradingJob = {
     ...gradingJob,
     release_at: newReleaseAt,
   };

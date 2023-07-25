@@ -3,7 +3,7 @@ import {
   Collation,
   CollationType,
   DeleteJobRequest,
-  GradingJobConfig,
+  GradingJob,
   MoveJobAction,
   MoveJobRequest,
 } from "../grading-queue/types";
@@ -91,9 +91,7 @@ const validateMetadataTable = (metadataTable: object) => {
 };
 
 // TODO: Pull these out as separate middleware validation checks?
-export const validateGradingJobConfig = (
-  config: any,
-): config is GradingJobConfig => {
+export const validateGradingJobConfig = (config: any): config is GradingJob => {
   const validateGradingJobFields = (config: any): boolean => {
     const fields =
       "key" in config &&

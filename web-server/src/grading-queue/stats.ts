@@ -1,4 +1,4 @@
-import { TimeStats, GradingQueueStats, GradingJob } from "./types";
+import { TimeStats, GradingQueueStats, EnrichedGradingJob } from "./types";
 
 export const getTimeInQueue = (timestamp: number): number => {
   const now: number = new Date().getTime();
@@ -20,12 +20,12 @@ const calculateTimeStats = (times: number[]): TimeStats => {
 };
 
 export const getGradingQueueStats = (
-  gradingJobs: GradingJob[],
+  gradingJobs: EnrichedGradingJob[],
 ): GradingQueueStats => {
   let waitTimes: number[] = [];
   let timeSinceReleasedArr: number[] = [];
   const now: number = new Date().getTime();
-  gradingJobs.map((gradingJob: GradingJob) => {
+  gradingJobs.map((gradingJob: EnrichedGradingJob) => {
     const releaseTime: number = gradingJob.release_at;
     const released: boolean = releaseTime < now;
     if (released) {

@@ -1,14 +1,14 @@
-import { removeNonImmediateJob } from "../utils/helpers";
-import createImmediateJob from "./create-immediate";
-import { GradingJob, GradingJobConfig } from "./types";
+import { RedisClientType } from "redis";
+import { OrcaRedisClient } from "./client";
+import { removeNonImmediateJob } from "./delete";
+import { GradingJob } from "./types";
+import { createOrUpdateGradingJob } from "./create-or-update";
 
-export const upgradeJob = async (
-  gradingJobConfig: GradingJobConfig,
-): Promise<null | Error> => {
-  const { key, collation } = gradingJobConfig;
-  const remErr = await removeNonImmediateJob(key, collation);
-  if (remErr) return remErr;
-  const createErr = await createImmediateJob(gradingJobConfig);
-  if (createErr) return createErr;
-  return null;
+export const upgradeJob = async (gradingJob: GradingJob): Promise<void> => {
+  const { key, collation } = gradingJob;
+  await new OrcaRedisClient().runOperation(async (client: RedisClientType) => {
+    const enrichedJob = await removeNonImmediateJob(client, key, collation);
+    const gradingJob: GradingJob = enrichedJob;
+    createOrUpdateGradingJob(client, gradingJob, true);
+  }, true);
 };

@@ -1,8 +1,6 @@
 import { Request, Response } from "express";
 import getCollatedGradingJobs from "../grading-queue/get";
-import createImmediateJob from "../grading-queue/create-immediate";
 import moveJobHandler from "../grading-queue/move";
-import updateGradingJob from "../grading-queue/update";
 import {
   validateOffsetAndLimit,
   formatOffsetAndLimit,
@@ -10,7 +8,11 @@ import {
 } from "../utils/pagination";
 import { getGradingQueueStats } from "../grading-queue/stats";
 import { filterGradingJobs, getFilterInfo } from "../grading-queue/filter";
-import { GradingJob } from "../grading-queue/types";
+import {
+  DeleteJobRequest,
+  EnrichedGradingJob,
+  GradingJob,
+} from "../grading-queue/types";
 import {
   validateDeleteRequest,
   validateFilterRequest,
@@ -18,9 +20,11 @@ import {
   validateMoveRequest,
 } from "../utils/validate";
 import { jobInQueue, nonImmediateJobExists } from "../utils/helpers";
-import createJob from "../grading-queue/create";
 import { upgradeJob } from "../grading-queue/upgrade";
-import deleteJobHandler from "../grading-queue/delete";
+import { OrcaRedisClient } from "../grading-queue/client";
+import { RedisClientType } from "redis";
+import { createOrUpdateGradingJob } from "../grading-queue/create-or-update";
+import { default as deleteJobHandler } from "../grading-queue/delete";
 
 const errorResponse = (res: Response, status: number, errors: string[]) => {
   res.status(status);
@@ -61,7 +65,7 @@ export const getGradingJobs = async (req: Request, res: Response) => {
   }
 
   let filtered = false;
-  let filteredGradingJobs: GradingJob[] = [];
+  let filteredGradingJobs: EnrichedGradingJob[] = [];
   // TODO: Use RequestHandler from express
   if (req.query.filter_type && req.query.filter_value) {
     // TODO: Validate filter type and filter value
@@ -110,123 +114,33 @@ export const createOrUpdateImmediateJob = async (
 ) => {
   const gradingJobConfig = req.body;
 
-  try {
-    if (!validateGradingJobConfig(gradingJobConfig)) {
-      errorResponse(res, 400, ["Invalid grading job configuration."]);
-      return;
-    }
-  } catch (error) {
-    errorResponse(res, 500, [
-      "An internal server error occurred while trying to validate immediate grading job.",
-    ]);
-
+  if (!validateGradingJobConfig(gradingJobConfig)) {
+    errorResponse(res, 400, ["Invalid grading job configuration."]);
     return;
   }
 
-  const { key, collation } = gradingJobConfig;
-  const [jobExists, existsErr] = await jobInQueue(key);
-  if (existsErr) {
-    errorResponse(res, 500, [
-      "An internal server error occurred while trying to create immediate grading job.",
-    ]);
-    return;
-  }
-
-  if (!jobExists) {
-    // Create job if it doesn't already exist
-    const createErr = await createImmediateJob(gradingJobConfig);
-    if (createErr) {
-      errorResponse(res, 500, [
-        "An internal server error occurred while trying to create immediate grading job.",
-      ]);
-      return;
-    }
-  } else {
-    // Update content of existing job
-    const updateErr = await updateGradingJob(gradingJobConfig);
-    if (updateErr) {
-      errorResponse(res, 500, [
-        "An internal server error occurred while trying to update immediate grading job.",
-      ]);
-      return;
-    }
-  }
-
-  const [regJobExists, regExistsErr] = await nonImmediateJobExists(
-    key,
-    collation,
+  const redisClient = new OrcaRedisClient();
+  await redisClient.runOperation(
+    (client: RedisClientType) =>
+      createOrUpdateGradingJob(client, gradingJobConfig, true),
+    true,
   );
-  if (regExistsErr) {
-    errorResponse(res, 500, [
-      "An internal server error occurred while trying to upgrade immediate grading job.",
-    ]);
-    return;
-  }
-
-  if (regJobExists) {
-    const upgradeErr = await upgradeJob(gradingJobConfig);
-    if (upgradeErr) {
-      errorResponse(res, 500, [
-        "An internal server error occurred while trying to upgrade immediate grading job.",
-      ]);
-      return;
-    }
-  }
 
   res.status(200);
   res.json({ message: "OK" });
 };
 
 export const createOrUpdateJob = async (req: Request, res: Response) => {
-  const gradingJobConfig = req.body;
-
-  try {
-    if (!validateGradingJobConfig(gradingJobConfig)) {
-      res.status(400);
-      res.json({ errors: ["Invalid grading job configuration."] });
-      return;
-    }
-  } catch (error) {
-    res.status(500);
-    res.json({
-      errors: [
-        "An internal server error occurred while trying to validate grading job.",
-      ],
-    });
-    return;
+  if (!validateGradingJobConfig(req.body)) {
+    return errorResponse(res, 400, ["The given grading job was invalid."]);
   }
 
-  const { key } = gradingJobConfig;
-  const [jobExists, existsErr] = await jobInQueue(key);
-  if (existsErr) {
-    errorResponse(res, 500, [
-      "An internal server error occurred while trying to create grading job.",
-    ]);
-    return;
-  }
-  if (!jobExists) {
-    // Create job if it doesn't already exist
-    const arrivalTime = new Date().getTime();
-    const createErr = await createJob(gradingJobConfig, arrivalTime);
-    if (createErr) {
-      console.error(createErr);
-      errorResponse(res, 500, [
-        "An internal server error occurred while trying to create grading job.",
-      ]);
-      return;
-    }
-  } else {
-    // Update content of existing job
-    const updateErr = await updateGradingJob(gradingJobConfig);
-    if (updateErr) {
-      errorResponse(res, 500, [
-        "An internal server error occurred while trying to update grading job.",
-      ]);
-      return;
-    }
-  }
-  res.status(200);
-  res.json({ message: "OK" });
+  const gradingJob = req.body as GradingJob;
+
+  await new OrcaRedisClient().runOperation(
+    (client: RedisClientType) => createOrUpdateGradingJob(client, gradingJob),
+    true,
+  );
 };
 
 export const moveJob = async (req: Request, res: Response) => {
@@ -257,25 +171,17 @@ export const moveJob = async (req: Request, res: Response) => {
 };
 
 export const deleteJob = async (req: Request, res: Response) => {
-  const deleteRequest = req.body.deleteJobRequest;
-  try {
-    if (!validateDeleteRequest(deleteRequest)) {
-      errorResponse(res, 400, ["Invalid delete request."]);
-      return;
-    }
-  } catch (error) {
-    errorResponse(res, 500, [
-      "An internal server error occurred while trying to validate delete request.",
-    ]);
+  if (!validateDeleteRequest(req.body.deleteJobRequest)) {
+    errorResponse(res, 400, ["Invalid delete request."]);
     return;
   }
-  const deleteErr = await deleteJobHandler(deleteRequest);
-  if (deleteErr) {
-    errorResponse(res, 500, [
-      "An internal server error occurred while trying to delete grading job.",
-    ]);
-    return;
-  }
+  const deleteRequest = req.body.deleteJobRequest as DeleteJobRequest;
+
+  await new OrcaRedisClient().runOperation(
+    async (client: RedisClientType) =>
+      await deleteJobHandler(client, deleteRequest),
+    true,
+  );
 
   res.status(200);
   res.json({ message: "OK" });

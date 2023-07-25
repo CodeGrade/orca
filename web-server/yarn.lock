@@ -692,6 +692,11 @@ readdirp@~3.6.0:
   dependencies:
     picomatch "^2.2.1"
 
+redis-lock@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/redis-lock/-/redis-lock-1.0.0.tgz#bc70d5b3ebb0081b11fb49b94bb13a986751fc9d"
+  integrity sha512-zfI+Il36jXwRT/W8SBsG132Bc2yp3tMuf3KTGjSzXimadI17NEGBvb/KrDkCuAC2hzVxW5uR5ns/rxuqiWeV3Q==
+
 redis@^4.2.0:
   version "4.3.1"
   resolved "https://registry.yarnpkg.com/redis/-/redis-4.3.1.tgz#290532a0c22221e05e991162ac4dca1e1b2ff6da"

@@ -24,7 +24,7 @@ export interface Collation {
   id: string;
 }
 
-export interface GradingJobConfig {
+export interface GradingJob {
   key: string; // JSONString
   collation: Collation;
   metadata_table: Map<string, string | string[]>;
@@ -34,18 +34,13 @@ export interface GradingJobConfig {
   response_url: string;
 }
 
-export interface GradingJob {
-  key: string; // JSONString
-  collation: Collation;
-  metadata_table: Map<string, string | string[]>;
-  files: Map<string, CodeFileInfo>;
-  priority: number;
-  script: GradingScriptCommand[];
-  response_url: string;
-  release_at: number; // Release timestamp in ms
-  created_at: number; // Created timestamp in ms
-  // updated_at: number; // Last updated timestamp in ms
+interface AdditionalJobData {
+  release_at: number;
+  created_at: number;
+  orca_key: string;
 }
+
+export type EnrichedGradingJob = GradingJob & AdditionalJobData;
 
 export interface PaginationInfo {
   offset: number;
@@ -57,7 +52,7 @@ export interface PaginationData {
   last?: PaginationInfo;
   prev?: PaginationInfo;
   next?: PaginationInfo;
-  data: GradingJob[];
+  data: EnrichedGradingJob[];
 }
 
 export interface TimeStats {
@@ -86,7 +81,7 @@ export interface MoveJobRequest {
 
 export interface DeleteJobRequest {
   jobKey: string; // JSONString
-  nonce?: number;
+  nonce: number;
   collation?: Collation;
 }
 

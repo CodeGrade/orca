@@ -1,4 +1,4 @@
-import { GradingJob } from "./types";
+import { EnrichedGradingJob } from "./types";
 import { getSubmitterInfo } from "../utils/helpers";
 import { redisGet, redisZRangeWithScores } from "../utils/redis";
 
@@ -6,7 +6,7 @@ const KEY_DELIM = ".";
 
 // Get grading jobs with their corresponding nonces
 const getCollatedGradingJobs = async (): Promise<
-  [GradingJob[] | null, Error | null]
+  [EnrichedGradingJob[] | null, Error | null]
 > => {
   const [reservations, reservationsErr] = await redisZRangeWithScores(
     "Reservations",
@@ -25,7 +25,7 @@ const getCollatedGradingJobs = async (): Promise<
 
   // TODO: Handling errors here
   const gradingJobs = await Promise.all(
-    reservations.map(async (reservation): Promise<GradingJob> => {
+    reservations.map(async (reservation): Promise<EnrichedGradingJob> => {
       const { value: reservationKey, score: releaseAt } = reservation;
       const reservationKeySplit = reservationKey.split(KEY_DELIM);
 
