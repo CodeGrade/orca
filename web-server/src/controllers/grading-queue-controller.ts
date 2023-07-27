@@ -178,8 +178,7 @@ export const deleteJob = async (req: Request, res: Response) => {
   const deleteRequest = req.body.deleteJobRequest as DeleteJobRequest;
 
   await new OrcaRedisClient().runOperation(
-    async (client: RedisClientType) =>
-      await deleteJobHandler(client, deleteRequest),
+    (client: RedisClientType) => deleteJobHandler(client, deleteRequest),
     true,
   );
 

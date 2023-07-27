@@ -1,6 +1,6 @@
 import { RedisClientType } from "redis";
 import { GradingJob, EnrichedGradingJob } from "./types";
-import { createQueueKey, generateNonce } from "./utils";
+import { createQueueKey, generateNonce, toMilliseconds } from "./utils";
 
 export const createOrUpdateGradingJob = async (
   client: RedisClientType,
@@ -11,7 +11,7 @@ export const createOrUpdateGradingJob = async (
   const jobExists = await client.EXISTS(queueKey);
   if (jobExists) {
     const existingJob = JSON.parse(
-      (await client.GET(job.key)) as string,
+      (await client.GET(queueKey)) as string,
     ) as EnrichedGradingJob;
     client.SET(
       queueKey,
@@ -26,12 +26,13 @@ export const createOrUpdateGradingJob = async (
     const releaseTime = arrivalTime + job.priority;
     await enqueueJob(client, job, arrivalTime, queueKey, isImmediateJob);
     await client.SET(
-      job.key,
+      queueKey,
       JSON.stringify({
         ...job,
         created_at: arrivalTime,
         release_at: releaseTime,
-      }),
+        orca_key: queueKey,
+      } as EnrichedGradingJob),
     );
   }
 };
@@ -57,8 +58,8 @@ const createJob = async (
   orcaKey: string,
 ): Promise<void> => {
   const { priority, collation } = gradingJob;
-  const releaseTime = arrivalTime + priority;
-  const enrichedJob: EnrichedGradingJob = {
+  const releaseTime = arrivalTime + toMilliseconds(priority);
+  const enrichedGradingJob: EnrichedGradingJob = {
     ...gradingJob,
     created_at: arrivalTime,
     release_at: releaseTime,
@@ -68,7 +69,7 @@ const createJob = async (
   const nextTask = `${collation.type}.${collation.id}`;
 
   // Create reservation
-  const nonce = generateNonce(client, enrichedJob, arrivalTime);
+  const nonce = await generateNonce(client, enrichedGradingJob, arrivalTime);
   await client.ZADD("Reservations", {
     score: releaseTime,
     value: `${nextTask}.${nonce}`,
@@ -78,7 +79,7 @@ const createJob = async (
   await client.LPUSH(`SubmitterInfo.${nextTask}`, orcaKey);
 
   // Store nonce
-  client.SADD(`Nonces.${nextTask}`, nonce.toString());
+  await client.SADD(`Nonces.${nextTask}`, nonce.toString());
 };
 
 const createImmediateJob = async (
@@ -95,7 +96,7 @@ const createImmediateJob = async (
   };
 
   // Create reservation
-  const nonce = generateNonce(client, enrichedGradingJob, arrivalTime);
+  const nonce = await generateNonce(client, enrichedGradingJob, arrivalTime);
   await client.ZADD("Reservations", {
     score: arrivalTime,
     value: `immediate.${orcaKey}.${nonce}`,

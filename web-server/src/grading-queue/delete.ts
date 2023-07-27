@@ -7,7 +7,7 @@ const deleteJob = async (
   client: RedisClientType,
   { jobKey, collation, nonce }: DeleteJobRequest,
 ): Promise<void> => {
-  if (!client.EXISTS(jobKey)) {
+  if (!(await client.EXISTS(jobKey))) {
     throw new JobNonexistentError(jobKey);
   }
 
