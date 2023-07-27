@@ -4,7 +4,7 @@ import shutil
 import sys
 import traceback
 from typing import Dict, List, TextIO
-from orca_grader.common.services.push_results import push_results_to_bottlenose
+from orca_grader.common.services.push_results import push_results_to_response_url
 from orca_grader.container.build_script.preprocess.preprocessor import GradingScriptPreprocessor
 from orca_grader.container.exec_secret import GradingJobExecutionSecret
 from orca_grader.common.grading_job.grading_job_output import GradingJobOutput
@@ -51,9 +51,8 @@ def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobOutpu
   except PreprocessingException as preprocess_e:
     output = GradingJobOutput(command_responses, [preprocess_e])
   except Exception as e:
-    traceback.print_tb(e.__traceback__)
     output = GradingJobOutput(command_responses, [e])
-  push_results_to_bottlenose(output)
+  push_results_to_response_url(output, grading_job_json["key"], grading_job_json["response_url"])
   return output
 
 if __name__ == "__main__":
@@ -66,6 +65,6 @@ if __name__ == "__main__":
   except Exception as e:
     traceback.print_tb(e.__traceback__)
     output = GradingJobOutput([], [e.with_traceback(None)])
-    push_results_to_bottlenose(output)
+    push_results_to_response_url(output, grading_job["key"], grading_job["response_url"])
   # cleanup(secret) # useful for execution with no container, but generally optional
 

@@ -10,7 +10,7 @@ import redis
 from orca_grader import get_redis_client
 from orca_grader.common.grading_job.grading_job_output import GradingJobOutput
 from orca_grader.common.services import push_results
-from orca_grader.common.services.push_results import push_results_to_bottlenose
+from orca_grader.common.services.push_results import push_results_to_response_url, push_results_with_exception
 from orca_grader.common.types.grading_job_json_types import GradingJobJSON
 from orca_grader.config import APP_CONFIG
 from orca_grader.docker_utils.images.clean_up import clean_up_unused_images
@@ -74,17 +74,9 @@ def handle_grading_job(grading_job_json_str: str, container_sha: str | None = No
     result = executor.execute()
     if result and result.stdout:
       print(result.stdout.decode())
-  except subprocess.CalledProcessError as c:
-    print(c.stderr.decode())
   except Exception as e:
-    traceback.print_exception(e)
-    pass
+    push_results_with_exception(grading_job_json_str, e)
   os.remove(file_name)
-
-def push_results_with_exception(job_json_string: str, e: Exception):
-  # job_json = json.loads(job_json_string) # To be added when credentials are added to output
-  output = GradingJobOutput([], [e])
-  return push_results_to_bottlenose(output)
 
 def run_local_job(job_path: str, no_container: bool, container_command: Optional[List[str]]):
   retriever = LocalGradingJobRetriever(job_path)
