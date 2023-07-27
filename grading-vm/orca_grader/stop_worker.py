@@ -1,15 +1,7 @@
-import json
 import signal
-import pathlib
-import os
 import threading
-import time
-import redis
 
 from orca_grader.common.types.grading_job_json_types import GradingJobJSON
-
-
-_EVENT = threading.Event()
 
 class GracefulKiller:
   """
@@ -17,20 +9,24 @@ class GracefulKiller:
   """
   
   def __init__(self) -> None:
-    signal.signal(signal.SIGINT, self.exit_gracefully)
-    signal.signal(signal.SIGTERM, self.exit_gracefully)
+    self.event = threading.Event()
+    self.sigint_handler = signal.signal(signal.SIGINT, self.exit_gracefully)
+    self.sigterm_handler = signal.signal(signal.SIGTERM, self.exit_gracefully)
 
   def exit_gracefully(self):
-    _EVENT.set()
+    self.event.set()
   
   def wait_for_stop_signal(self):
-    _EVENT.wait()
+    self.event.wait()
 
+  # NOTE: enter and exit needed to make class usable witth Python's with statement.
+  def __enter__(self):
+    return self
+  
+  # Resets the original signal handlers for sigint and sigterm
+  # to ensure program is cleaned up properly after this instance
+  # dies in a with statement.
+  def __exit__(self, exc_type, exc_value, traceback):
+    signal.signal(signal.SIGINT, self.sigint_handler)
+    signal.signal(signal.SIGTERM, self.sigterm_handler)
 
-def reenqueue_job(grading_job_json: GradingJobJSON, client: redis.Redis) -> None:
-  if not client.exists(grading_job_json['key']):
-    client.set(grading_job_json['key'], json.dumps(grading_job_json))
-  arrival_time = time.time_ns()
-  client.zadd('Reservations',
-              {f'immediate.{grading_job_json["key"]}': 
-               arrival_time + grading_job_json['priority']})

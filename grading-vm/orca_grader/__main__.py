@@ -2,11 +2,11 @@ import argparse
 import concurrent.futures
 import json
 import os
-import pathlib
 import subprocess
 import time
 import traceback
 from typing import List, Optional
+import redis
 from orca_grader import get_redis_client
 from orca_grader.common.grading_job.grading_job_output import GradingJobOutput
 from orca_grader.common.services import push_results
@@ -94,21 +94,35 @@ def run_local_job(job_path: str, no_container: bool, container_command: Optional
 
 def process_redis_jobs(redis_url: str, no_container: bool, container_command: List[str] | None):
   retriever = RedisGradingJobRetriever(redis_url)
-  killer = GracefulKiller()
-  with concurrent.futures.ThreadPoolExecutor(max_workers=2) as futures_executor:
-    stop_future = futures_executor.submit(killer.wait_for_stop_signal)
-    while True:
-      job_string = retriever.retrieve_grading_job()
-      job_future = futures_executor.submit(run_grading_job, job_string, no_container, container_command)
-      done, not_done = concurrent.futures.wait([stop_future, job_future], return_when="FIRST_COMPLETED")
-      if stop_future in done and job_future in not_done:
-        reenqueue_job(json.loads(job_string), get_redis_client(redis_url))
-        break
-      if type(job_future.exception()) == InvalidWorkerStateException:
-        exit(1)
-      handle_completed_grading_job(job_string, redis_url)
-      if stop_future in done:
-        break
+  with GracefulKiller() as killer:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as futures_executor:
+      stop_future = futures_executor.submit(killer.wait_for_stop_signal)
+      while True:
+        job_string = retriever.retrieve_grading_job()
+        job_future = futures_executor.submit(run_grading_job, job_string, no_container, container_command)
+        done, not_done = concurrent.futures.wait([stop_future, job_future], return_when="FIRST_COMPLETED")
+        # States of job and stop future after wait
+        # 1. Stop future done, job_future not done.
+        # 2. Stop future not done, job future done.
+        # 3. Stop futuro done, job future done.
+        if stop_future in done and job_future in not_done:
+          reenqueue_job(json.loads(job_string), get_redis_client(redis_url))
+
+        if job_future in done:
+          if type(job_future.exception()) == InvalidWorkerStateException:
+            exit(1)
+          handle_completed_grading_job(job_string, redis_url)
+          
+        if stop_future in done:
+          break
+
+def reenqueue_job(grading_job_json: GradingJobJSON, client: redis.Redis) -> None:
+  if not client.exists(grading_job_json['key']):
+    client.set(grading_job_json['key'], json.dumps(grading_job_json))
+  arrival_time = time.time_ns()
+  client.zadd('Reservations',
+              {f'immediate.{grading_job_json["key"]}': 
+               arrival_time})
 
 def handle_completed_grading_job(job_string: str, redis_url: str):
   if APP_CONFIG.enable_diagnostics:
@@ -116,7 +130,7 @@ def handle_completed_grading_job(job_string: str, redis_url: str):
                     time.time_ns(), 
                     json.loads(job_string)["key"],
                     JobState.COMPLETED)
-    clean_up_unused_images()
+  clean_up_unused_images()
 
 def get_container_sha(json_job_string: str) -> str:
   return json.loads(json_job_string)["grader_image_sha"]
