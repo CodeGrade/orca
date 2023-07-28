@@ -13,7 +13,7 @@ class GracefulKiller:
     self.sigint_handler = signal.signal(signal.SIGINT, self.exit_gracefully)
     self.sigterm_handler = signal.signal(signal.SIGTERM, self.exit_gracefully)
 
-  def exit_gracefully(self):
+  def exit_gracefully(self, *args):
     self.event.set()
   
   def wait_for_stop_signal(self):
