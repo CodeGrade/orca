@@ -53,31 +53,26 @@ def run_grading_job(json_job_string: str, no_container: bool, container_command:
 
 def handle_grading_job(grading_job_json_str: str, container_sha: str | None = None, 
     container_cmd: List[str] | None = None):
-  processing_timestamp = int(time.time() * 1_000_000)
-  # NOTE: Two containers running at once cannot access the same file simultaneously without 
-  # undefined behavior.
-  temp_job_file = tempfile.NamedTemporaryFile()
-  file_path = temp_job_file.name
-  file_name = os.path.basename(file_path)
-  with open(file_path, "w") as temp_job_file_ptr:
-    temp_job_file_ptr.write(grading_job_json_str)
-  if container_sha:
-    file_abs_path = temp_job_file.name
-    container_job_path = f"{CONTAINER_WORKING_DIR}/{os.path.basename(file_name)}"
-    builder = DockerGradingJobExecutorBuilder(container_job_path, container_sha, container_cmd) if container_cmd \
-        else DockerGradingJobExecutorBuilder(container_job_path, container_sha)
-    builder.add_docker_environment_variable_mapping("GRADING_JOB_FILE_NAME", file_name)
-    builder.add_docker_volume_mapping(file_abs_path, container_job_path)
-  else:
-    os.environ["GRADING_JOB_FILE_NAME"] = file_name
-    builder = GradingJobExecutorBuilder(file_name)
-  executor = builder.build()
-  try:
-    result = executor.execute()
-    if result and result.stdout:
-      print(result.stdout.decode())
-  except Exception as e:
-    push_results_with_exception(grading_job_json_str, e)
+  with tempfile.NamedTemporaryFile(mode="w") as temp_job_file:
+    file_name = os.path.basename(temp_job_file.name)
+    temp_job_file.write(grading_job_json_str)
+    temp_job_file.flush()
+    if container_sha:
+      container_job_path = f"{CONTAINER_WORKING_DIR}/{file_name}"
+      builder = DockerGradingJobExecutorBuilder(container_job_path, container_sha, container_cmd) if container_cmd \
+          else DockerGradingJobExecutorBuilder(container_job_path, container_sha)
+      builder.add_docker_environment_variable_mapping("GRADING_JOB_FILE_NAME", file_name)
+      builder.add_docker_volume_mapping(temp_job_file.name, container_job_path)
+    else:
+      os.environ["GRADING_JOB_FILE_NAME"] = file_name
+      builder = GradingJobExecutorBuilder(file_name)
+    executor = builder.build()
+    try:
+      result = executor.execute()
+      if result and result.stdout:
+        print(result.stdout.decode())
+    except Exception as e:
+      push_results_with_exception(grading_job_json_str, e)
 
 def run_local_job(job_path: str, no_container: bool, container_command: Optional[List[str]]):
   retriever = LocalGradingJobRetriever(job_path)
