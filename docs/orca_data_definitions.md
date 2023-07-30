@@ -141,7 +141,7 @@ Execution of a grading job will result in a `GradingJobOutput` object to send ba
 
 ```typescript
 interface GradingJobOutput {
-  tap_output?: string;
+  output?: string;
   shell_responses: [GradingScriptCommandResponse];
   errors?: [string];
   key: JSONString;
@@ -158,4 +158,4 @@ interface GradingScriptCommandResponse {
 
 The output includes the key given in the original job for use on the Bottlenose side. The `shell_responses` array contains a transcript of the output from each `GradingScriptCommand`.
 
-A successful `GradingJobOutput` will _always_ contain TAP output. An unsuccessful `GradingJobOutput` will still contain any responses of commands executed by the script; if the Orca VM harness fails (e.g., due to resource limits) the `errors` array will be non-empty.
+A successful `GradingJobOutput` will _always_ contain output. An unsuccessful `GradingJobOutput` will still contain any responses of commands executed by the script; if the worker fails (e.g., due to resource limits) or an operation on the server removes the job (e.g., cancelling a job in the queue), the `errors` property will contain a non-empty array.
