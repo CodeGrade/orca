@@ -2,7 +2,7 @@ from typing import List, Optional
 from orca_grader.container.grading_script.grading_script_command_response import GradingScriptCommandResponse
 from orca_grader.common.types.grading_job_json_types import GradingJobOutputJSON, GradingJobOutputJSON
 
-class GradingJobOutput:
+class GradingJobResult:
   
   def __init__(self, command_responses: List[GradingScriptCommandResponse],
                execution_errors: List[Exception] = [],

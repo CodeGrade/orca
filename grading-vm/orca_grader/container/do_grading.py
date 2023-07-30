@@ -7,7 +7,7 @@ from typing import Dict, List, TextIO
 from orca_grader.common.services.push_results import push_results_to_response_url
 from orca_grader.container.build_script.preprocess.preprocessor import GradingScriptPreprocessor
 from orca_grader.container.exec_secret import GradingJobExecutionSecret
-from orca_grader.common.grading_job.grading_job_output import GradingJobOutput
+from orca_grader.common.grading_job.grading_job_result import GradingJobResult
 from orca_grader.container.grading_script.grading_script_command import GradingScriptCommand
 from orca_grader.container.grading_script.grading_script_command_response import GradingScriptCommandResponse
 from orca_grader.container.build_script.code_file.processing.code_file_processor import CodeFileProcessor
@@ -24,7 +24,7 @@ def produce_code_files_dictionary(code_files_json: Dict[str, any]) -> Dict[str, 
 def cleanup(secret: str) -> None:
   shutil.rmtree(f"{secret}/")
 
-def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobOutput:
+def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobResult:
   command_responses: List[GradingScriptCommandResponse] = []
   # The following exceptions are used to encapsulate things "expected to go wrong":
   # - GradingJobRetrievalException*: Thrown when encountering issue with Redis.
@@ -47,11 +47,11 @@ def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobOutpu
     preprocessor = GradingScriptPreprocessor(secret, commands, code_files, 
       code_file_processor)
     script: GradingScriptCommand = preprocessor.preprocess_job()
-    output: GradingJobOutput = script.execute(command_responses)
+    output: GradingJobResult = script.execute(command_responses)
   except PreprocessingException as preprocess_e:
-    output = GradingJobOutput(command_responses, [preprocess_e])
+    output = GradingJobResult(command_responses, [preprocess_e])
   except Exception as e:
-    output = GradingJobOutput(command_responses, [e])
+    output = GradingJobResult(command_responses, [e])
   push_results_to_response_url(output, grading_job_json["key"], grading_job_json["response_url"])
   return output
 
@@ -64,7 +64,7 @@ if __name__ == "__main__":
       do_grading(secret, grading_job)
   except Exception as e:
     traceback.print_tb(e.__traceback__)
-    output = GradingJobOutput([], [e.with_traceback(None)])
+    output = GradingJobResult([], [e.with_traceback(None)])
     push_results_to_response_url(output, grading_job["key"], grading_job["response_url"])
   # cleanup(secret) # useful for execution with no container, but generally optional
 
