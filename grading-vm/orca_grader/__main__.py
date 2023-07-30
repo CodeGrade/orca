@@ -7,9 +7,7 @@ from typing import List, Optional
 import redis
 import tempfile
 from orca_grader import get_redis_client
-from orca_grader.common.grading_job.grading_job_output import GradingJobOutput
-from orca_grader.common.services import push_results
-from orca_grader.common.services.push_results import push_results_to_response_url, push_results_with_exception
+from orca_grader.common.services.push_results import push_results_with_exception
 from orca_grader.common.types.grading_job_json_types import GradingJobJSON
 from orca_grader.config import APP_CONFIG
 from orca_grader.docker_utils.images.clean_up import clean_up_unused_images
@@ -86,7 +84,6 @@ def process_redis_jobs(redis_url: str, no_container: bool, container_command: Li
     with NonBlockingThreadPoolExecutor(max_workers=2) as futures_executor:
       stop_future = futures_executor.submit(killer.wait_for_stop_signal)
       while True:
-        print("Begin loop.")
         job_string, timestamp = retriever.retrieve_grading_job()
         job_future = futures_executor.submit(run_grading_job, job_string, no_container, container_command)
         done, not_done = concurrent.futures.wait([stop_future, job_future], return_when="FIRST_COMPLETED")

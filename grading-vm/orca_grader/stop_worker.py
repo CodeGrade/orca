@@ -1,8 +1,6 @@
 import signal
 import threading
 
-from orca_grader.common.types.grading_job_json_types import GradingJobJSON
-
 class GracefulKiller:
   """
   Idea pulled from https://stackoverflow.com/questions/18499497/how-to-process-sigterm-signal-gracefully.
