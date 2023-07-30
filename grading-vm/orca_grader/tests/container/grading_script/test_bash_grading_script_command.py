@@ -9,7 +9,7 @@ class TestBashGradingScriptCommand(unittest.TestCase):
     output = command.execute([])
     responses = output.get_command_responses()
     exceptions = output.get_execution_errors()
-    tap_output = output.get_tap_output()
+    tap_output = output.get_output()
 
     self.assertEqual(len(exceptions), 0)
     self.assertIsNone(tap_output)
@@ -29,7 +29,7 @@ class TestBashGradingScriptCommand(unittest.TestCase):
 
     responses = output.get_command_responses()
     exceptions = output.get_execution_errors()
-    tap_output = output.get_tap_output()
+    tap_output = output.get_output()
 
     self.assertEqual(len(exceptions), 0)
     self.assertEqual(tap_output, expected_tap)
@@ -49,7 +49,7 @@ class TestBashGradingScriptCommand(unittest.TestCase):
 
     responses = output.get_command_responses()
     exceptions = output.get_execution_errors()
-    tap_output = output.get_tap_output()
+    tap_output = output.get_output()
 
     self.assertEqual(len(exceptions), 0)
     self.assertIsNone(tap_output)
@@ -68,7 +68,7 @@ class TestBashGradingScriptCommand(unittest.TestCase):
     output = first_cmd.execute([])
     responses = output.get_command_responses()
     exceptions = output.get_execution_errors()
-    tap_output = output.get_tap_output()
+    tap_output = output.get_output()
 
     self.assertEqual(exceptions, [])
     self.assertEqual(tap_output, expected_tap)
@@ -86,7 +86,7 @@ class TestBashGradingScriptCommand(unittest.TestCase):
 
     output = first_cmd.execute([])
     responses, exceptions, tap_output = output.get_command_responses(), \
-        output.get_execution_errors(), output.get_tap_output()
+        output.get_execution_errors(), output.get_output()
 
     self.assertEqual(len(exceptions), 0)
     self.assertEqual(tap_output, expected_tap)
@@ -100,5 +100,5 @@ class TestBashGradingScriptCommand(unittest.TestCase):
     expected_tap = os.path.abspath('../')
     cmd = BashGradingScriptCommand(["pwd"], 1, working_dir="../")
     output = cmd.execute([])
-    tap_output = output.get_tap_output()
+    tap_output = output.get_output()
     self.assertEqual(tap_output, expected_tap)
