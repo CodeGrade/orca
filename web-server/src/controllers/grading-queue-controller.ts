@@ -19,12 +19,8 @@ import {
   validateGradingJobConfig,
   validateMoveRequest,
 } from "../utils/validate";
-import { jobInQueue, nonImmediateJobExists } from "../utils/helpers";
-import { upgradeJob } from "../grading-queue/upgrade";
-import { OrcaRedisClient } from "../grading-queue/client";
-import { RedisClientType } from "redis";
 import { createOrUpdateGradingJob } from "../grading-queue/create-or-update";
-import { default as deleteJobHandler } from "../grading-queue/delete";
+import { GradingQueueServiceError } from "../grading-queue/service/exceptions";
 
 const errorResponse = (res: Response, status: number, errors: string[]) => {
   res.status(status);
@@ -112,19 +108,25 @@ export const createOrUpdateImmediateJob = async (
   req: Request,
   res: Response,
 ) => {
-  const gradingJobConfig = req.body;
-
-  if (!validateGradingJobConfig(gradingJobConfig)) {
+  if (!validateGradingJobConfig(req.body)) {
     errorResponse(res, 400, ["Invalid grading job configuration."]);
     return;
   }
 
-  const redisClient = new OrcaRedisClient();
-  await redisClient.runOperation(
-    (client: RedisClientType) =>
-      createOrUpdateGradingJob(client, gradingJobConfig, true),
-    true,
-  );
+  const gradingJob = req.body as GradingJob;
+
+  try {
+    await createOrUpdateGradingJob(gradingJob, true);
+  } catch (error) {
+    if (error instanceof GradingQueueServiceError) {
+      return errorResponse(res, 500, [error.message]);
+    }
+    return errorResponse(res, 500, [
+      `An error occurred while trying to create an 
+    immediate job or update an existing one for 
+    ${gradingJob.collation.type} with ID ${gradingJob.collation.id}.`,
+    ]);
+  }
 
   res.status(200);
   res.json({ message: "OK" });
@@ -137,10 +139,18 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
 
   const gradingJob = req.body as GradingJob;
 
-  await new OrcaRedisClient().runOperation(
-    (client: RedisClientType) => createOrUpdateGradingJob(client, gradingJob),
-    true,
-  );
+  try {
+    await createOrUpdateGradingJob(gradingJob);
+  } catch (err) {
+    if (err instanceof GradingQueueServiceError) {
+      return errorResponse(res, 500, [err.message]);
+    } else {
+      return errorResponse(res, 500, [
+        `Something went wrong while trying to create or update a job 
+      for ${gradingJob.collation.type} with ID ${gradingJob.collation.id}.`,
+      ]);
+    }
+  }
 };
 
 export const moveJob = async (req: Request, res: Response) => {
@@ -177,10 +187,10 @@ export const deleteJob = async (req: Request, res: Response) => {
   }
   const deleteRequest = req.body.deleteJobRequest as DeleteJobRequest;
 
-  await new OrcaRedisClient().runOperation(
-    (client: RedisClientType) => deleteJobHandler(client, deleteRequest),
-    true,
-  );
+  // await new OrcaRedisClient().runOperation(
+  //   (client: RedisClientType) => deleteJobHandler(client, deleteRequest),
+  //   true,
+  // );
 
   res.status(200);
   res.json({ message: "OK" });

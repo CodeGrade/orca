@@ -14,10 +14,7 @@ export interface CodeFileInfo {
   mime_type: string;
 }
 
-export enum CollationType {
-  User = "user",
-  Team = "team",
-}
+export type CollationType = "team" | "user";
 
 export interface Collation {
   type: CollationType;
