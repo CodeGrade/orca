@@ -1,10 +1,14 @@
 import { RedisClientType, createClient } from "redis";
-import { Collation, EnrichedGradingJob, GradingJob } from "../types";
+import {
+  Collation,
+  DeleteJobRequest,
+  EnrichedGradingJob,
+  GradingJob,
+} from "../types";
 import { default as redisLock } from "redis-lock";
-import rollbacks from "./redis/rollbacks";
-import { isEqual } from "lodash";
 import { GradingQueueServiceError } from "./exceptions";
 import CONFIG from "../../config";
+import { collationToString } from "../utils";
 
 type RedisLockRelease = () => Promise<void>;
 type RedisLock = (
@@ -29,8 +33,46 @@ export class GradingQueueService {
       console.error(
         `The following error was encounterred when connecting to Redis: ${err}`,
       );
+      throw new GradingQueueServiceError(
+        "Could not connect to client successfully.",
+      );
     });
     this.lock = redisLock(this.client);
+  }
+
+  public async deleteJob({ orcaKey, nonce, collation }: DeleteJobRequest) {
+    this.runOperationWithLock(async () => {
+      let transactionBuilder = new RedisTransactionBuilder(this.client);
+      let reservationMember: string;
+      if (collation) {
+        const collationString = collationToString(collation);
+        const submitterInfoKey = `SubmitterInfo.${collationString}`;
+        reservationMember = `${collationString}.${nonce}`;
+        transactionBuilder = transactionBuilder
+          .SREM(`Nonces.${collationString}`, nonce.toString())
+          .LREM(
+            submitterInfoKey,
+            orcaKey,
+            await this.client.LPOS(submitterInfoKey, orcaKey),
+          )
+          .ZREM(
+            "Reservations",
+            reservationMember,
+            await this.client.ZSCORE("Reservations", reservationMember),
+          )
+          .DEL(orcaKey, await this.client.GET(orcaKey));
+      } else {
+        reservationMember = `immediate.${orcaKey}`;
+        transactionBuilder = transactionBuilder
+          .ZREM(
+            "Reservations",
+            reservationMember,
+            await this.client.ZSCORE("Reservations", reservationMember),
+          )
+          .DEL(orcaKey, await this.client.GET(orcaKey));
+      }
+      await transactionBuilder.build().execute();
+    });
   }
 
   public async createOrUpdateJob(
@@ -44,9 +86,16 @@ export class GradingQueueService {
         orcaKey,
         job.collation,
       );
-      if (nonImmediateJobExists && isImmediateJob) {
+      const immediateJobExists =
+        (await this.client.ZSCORE("Reservations", `immediate.${orcaKey}`)) !==
+        null;
+
+      if (!nonImmediateJobExists && !immediateJobExists) {
+        await this.enqueueJob(job, arrivalTime, orcaKey, isImmediateJob);
+      } else if (nonImmediateJobExists && isImmediateJob) {
         await this.deleteNonImmediateJob(orcaKey, job.collation);
-      } else if (nonImmediateJobExists) {
+        await this.enqueueJob(job, arrivalTime, orcaKey, isImmediateJob);
+      } else {
         const originalJob: EnrichedGradingJob = JSON.parse(
           (await this.client.GET(orcaKey)) as string,
         );
@@ -55,9 +104,7 @@ export class GradingQueueService {
           ...job,
         };
         await this.client.SET(orcaKey, JSON.stringify(updatedJob));
-        return;
       }
-      await this.enqueueJob(job, arrivalTime, orcaKey, isImmediateJob);
     });
   }
 
@@ -88,21 +135,49 @@ export class GradingQueueService {
   }
 
   private async deleteNonImmediateJob(orcaKey: string, collation: Collation) {
-    const nonce = await this.client.SPOP(
-      `Nonces.${collation.type}.${collation.id}`,
+    const currentJob = await this.client.GET(orcaKey);
+    const collationString = collationToString(collation);
+    const nonceToDel = await this.getNonceToDelete(collation);
+
+    const executor = new RedisTransactionBuilder(this.client)
+      .SREM(`Nonces.${collationString}`, nonceToDel)
+      .ZREM(
+        "Reservations",
+        `${collationString}.${nonceToDel}`,
+        await this.client.ZSCORE(
+          "Reservations",
+          `${collationString}.${nonceToDel}`,
+        ),
+      )
+      .LREM(
+        `SubmitterInfo.${collationString}`,
+        orcaKey,
+        await this.client.LPOS(`SubmitterInfo.${collationString}`, orcaKey),
+      )
+      .DEL(orcaKey, currentJob)
+      .build();
+    await executor.execute();
+  }
+
+  private async getNonceToDelete(collation: Collation): Promise<string> {
+    const collationString = collationToString(collation);
+    const nonces: string[] = await this.client.SMEMBERS(
+      `Nonces.${collationString}`,
     );
-    if (nonce.length == 0) {
+    const reservationScores = await this.client.ZMSCORE(
+      "Reservations",
+      nonces.map((n) => `${n}.${collationString}`),
+    );
+    if (!isNumberArray(reservationScores)) {
       throw new GradingQueueServiceError(
-        `There are no nonces for the collation ${collation.type} ${collation.id}`,
+        `The number of nonces is not equal to the number of reservations for collation ${collationString}`,
       );
     }
-    // const expectedReplies = [1, 1, 1];
-    await this.client
-      .multi()
-      .ZREM("Reservations", `${collation.type}.${collation.id}.${nonce}`)
-      .LREM(`SubmitterInfo.${collation.type}.${collation.id}`, 0, orcaKey)
-      .DEL(orcaKey)
-      .exec();
+    const scoreToIndex: Record<number, number> = reservationScores.reduce(
+      (prev, curr, i) => (prev[curr] = i),
+      {},
+    );
+    return nonces[scoreToIndex[reservationScores.sort()[0]]];
   }
 
   private async nonImmediateJobExists(orcaKey: string, collation: Collation) {
@@ -123,27 +198,12 @@ export class GradingQueueService {
       orca_key: orcaKey,
     };
 
-    const expectedReplies = [1, "OK"];
+    const executor = new RedisTransactionBuilder(this.client)
+      .ZADD("Reservations", arrivalTime, `immediate.${orcaKey}`, null)
+      .SET(orcaKey, JSON.stringify(enrichedGradingJob), null)
+      .build();
 
-    const replies = await this.client
-      .multi()
-      .ZADD("Reservations", {
-        score: arrivalTime,
-        value: `immediate.${orcaKey}`,
-      })
-      .SET(orcaKey, JSON.stringify(enrichedGradingJob))
-      .exec();
-    this.assertReplies(
-      new GradingQueueServiceError(
-        `Could not create an immediate job from given inputs. 
-        Transaction has been rolled back.`,
-      ),
-      replies,
-      expectedReplies,
-      rollbacks.createImmediateJob,
-      this.client,
-      orcaKey,
-    );
+    await executor.execute();
   }
 
   private async createJob(
@@ -161,28 +221,17 @@ export class GradingQueueService {
       orca_key: orcaKey,
     };
     const nonce = await this.generateNonce(enrichedJob, arrivalTime);
-    const originalSubmitterInfoLength = await this.client.LLEN(
-      `SubmitterInfo.${nextTask}`,
-    );
-    const expectedReplies = [1, originalSubmitterInfoLength + 1, 1, "OK"];
-    const replies = await this.client
-      .multi()
-      .ZADD("Reservations", {
-        score: releaseTime,
-        value: `${nextTask}.${nonce}`,
-      })
+    const executor = new RedisTransactionBuilder(this.client)
       .LPUSH(`SubmitterInfo.${nextTask}`, orcaKey)
-      .SADD(`Nonces.${nextTask}`, orcaKey)
-      .SET(orcaKey, JSON.stringify(enrichedJob))
-      .exec();
-    await this.assertReplies(
-      new GradingQueueServiceError(
-        "Error during job creation transaction; rollback steps completed.",
-      ),
-      replies,
-      expectedReplies,
-      rollbacks.createJob,
-    );
+      .ZADD("Reservations", nonce, `${nextTask}.${arrivalTime}`, null)
+      .SADD(
+        `Nonces.${nextTask}`,
+        nonce.toString(),
+        await this.client.SISMEMBER(`Nonces.${nextTask}`, nonce.toString()),
+      )
+      .SET(orcaKey, JSON.stringify(enrichedJob), null)
+      .build();
+    await executor.execute();
   }
 
   private async generateNonce(job: EnrichedGradingJob, arrivalTime: number) {
@@ -197,17 +246,232 @@ export class GradingQueueService {
     }
     return nonce;
   }
+}
 
-  private async assertReplies(
-    err: Error,
-    replies: unknown[],
-    expectedReplies: unknown[],
-    rollbackFunction: (...args: unknown[]) => Promise<void>,
-    ...args: unknown[]
+const isNumberArray = (arr: Array<number | null>): arr is Array<number> => {
+  return arr.every((n) => n !== null);
+};
+
+type RedisRollbackOperation = (actualReply: string | number) => any; // RedisClientMultiCommandType
+
+class RedisTransactionExecutor {
+  private readonly userMultiCommand;
+  private readonly rollbackMultiCommand;
+  private readonly rollbacks: Array<RedisRollbackOperation>;
+  private readonly expectedReplies: Array<string | number>;
+
+  constructor(
+    userOperations: any,
+    rollbacks: Array<RedisRollbackOperation>,
+    rollbackMultiCommand: any,
+    expectedReplies: Array<string | number>,
   ) {
-    if (!isEqual(replies, expectedReplies)) {
-      rollbackFunction(...args);
-      throw err;
+    if (rollbacks.length !== expectedReplies.length) {
+      throw new GradingQueueServiceError(
+        "A transaction is not valid is the length of the rollbacks and expected replies are not equal.",
+      );
     }
+    this.userMultiCommand = userOperations;
+    this.rollbacks = rollbacks;
+    this.rollbackMultiCommand = rollbackMultiCommand;
+    this.expectedReplies = expectedReplies;
+  }
+
+  public async execute(): Promise<Array<string | number>> {
+    const actualReplies: Array<string | number> =
+      await this.userMultiCommand.exec();
+    if (!actualReplies.every((v, i) => v === this.expectedReplies[i])) {
+      const rollbackMultiCommand = this.rollbacks.reduce((_, curr, i) => {
+        return curr(actualReplies[i]);
+      }, null);
+      await rollbackMultiCommand.exec();
+      throw new GradingQueueServiceError(`The transaction could not be executed successfully. 
+      Expected Replies: ${this.expectedReplies} | Actual Replies: ${actualReplies}`);
+    }
+    return actualReplies;
+  }
+}
+
+class RedisTransactionBuilder {
+  private readonly userMultiCommand; // RedisClientMultiCommandType
+  private readonly rollbackMultiCommand; // RedisClientMultiCommandType
+  private readonly expectedReplies: Array<string | number>;
+  private readonly rollbackOperations: Array<RedisRollbackOperation>;
+
+  constructor(client: RedisClientType) {
+    if (!client.isOpen) {
+      throw new GradingQueueServiceError(
+        "Cannot build a transaction with a closed client.",
+      );
+    }
+    this.expectedReplies = [];
+    this.userMultiCommand = client.multi();
+    this.rollbackMultiCommand = client.multi();
+    this.rollbackOperations = [];
+  }
+
+  public build(): RedisTransactionExecutor {
+    return new RedisTransactionExecutor(
+      this.userMultiCommand,
+      this.rollbackOperations,
+      this.rollbackMultiCommand,
+      this.expectedReplies,
+    );
+  }
+
+  public SET(key: string, value: string, previousValue: string | null) {
+    this.userMultiCommand.SET(key, value);
+    const expectedReply = "OK";
+    this.expectedReplies.push(expectedReply);
+    this.rollbackOperations.push((actualReply) => {
+      if (actualReply !== expectedReply) {
+        return this.rollbackMultiCommand;
+      }
+      if (previousValue) {
+        return this.rollbackMultiCommand.SET(key, previousValue);
+      } else {
+        return this.rollbackMultiCommand.DEL(key);
+      }
+    });
+    return this;
+  }
+
+  public LPUSH(key: string, value: string): RedisTransactionBuilder {
+    this.userMultiCommand.LPUSH(key, value);
+    // TODO: What if the element was *not* added?
+    const expectedReply = 1;
+    this.expectedReplies.push(expectedReply);
+    this.rollbackOperations.push((actualReply) => {
+      if (actualReply !== expectedReply) {
+        return this.rollbackMultiCommand;
+      }
+      return this.rollbackMultiCommand.LREM(key, 1, value);
+    });
+    return this;
+  }
+
+  public SADD(
+    key: string,
+    value: string,
+    alreadyInSet: boolean,
+  ): RedisTransactionBuilder {
+    this.userMultiCommand.sadd(key, value);
+    const expectedReply = 1;
+    this.expectedReplies.push(expectedReply);
+    this.rollbackOperations.push((actualReply) => {
+      if (actualReply !== expectedReply || alreadyInSet) {
+        return this.rollbackMultiCommand;
+      }
+      return this.rollbackMultiCommand.SREM(key, value);
+    });
+    return this;
+  }
+
+  public SREM(key: string, value: string): RedisTransactionBuilder {
+    this.userMultiCommand.srem(key, value);
+    const expectedReply = 1;
+    this.expectedReplies.push(expectedReply);
+    this.rollbackOperations.push((actualReply) => {
+      if (actualReply !== expectedReply) {
+        return this.rollbackMultiCommand;
+      }
+      return this.rollbackMultiCommand.SADD(key, value);
+    });
+    return this;
+  }
+
+  public ZADD(
+    key: string,
+    score: number,
+    value: string,
+    previousScore: number | null,
+  ): RedisTransactionBuilder {
+    this.userMultiCommand.ZADD(key, { score, value });
+    const expectedReply = 1;
+    this.expectedReplies.push(expectedReply);
+    this.rollbackOperations.push((actualReply) => {
+      if (actualReply !== expectedReply) {
+        return this.rollbackMultiCommand;
+      }
+      if (previousScore !== null) {
+        return this.rollbackMultiCommand.ZADD(key, {
+          score: previousScore,
+          value,
+        });
+      } else {
+        return this.rollbackMultiCommand.ZREM(key, value);
+      }
+    });
+    return this;
+  }
+
+  public ZREM(
+    key: string,
+    value: string,
+    prevScore: number | null,
+  ): RedisTransactionBuilder {
+    if (prevScore === null) {
+      throw new GradingQueueServiceError(
+        `While building a transaction, attempted to add a ZREM for a value that is not in the given ZSET ${key}.`,
+      );
+    }
+    this.userMultiCommand.ZREM(key, value);
+    const expectedReply = 1;
+    this.expectedReplies.push(expectedReply);
+    this.rollbackOperations.push((actualReply) => {
+      if (actualReply !== expectedReply) {
+        return this.rollbackMultiCommand;
+      }
+      return this.rollbackMultiCommand.ZADD(key, {
+        value,
+        score: prevScore,
+      });
+    });
+    return this;
+  }
+
+  public DEL(
+    key: string,
+    previousValue: string | null,
+  ): RedisTransactionBuilder {
+    if (previousValue === null) {
+      throw new GradingQueueServiceError(
+        `While building a transaction, attempted to add a DEL for a key that does not exist (${key}).`,
+      );
+    }
+    this.userMultiCommand.DEL(key);
+    const expectedReply = 1;
+    this.expectedReplies.push(expectedReply);
+    this.rollbackOperations.push((actualReply) => {
+      if (actualReply !== expectedReply) {
+        return this.rollbackMultiCommand;
+      }
+      this.rollbackMultiCommand.SET(key, previousValue);
+    });
+    return this;
+  }
+
+  public LREM(
+    key: string,
+    value: string,
+    prevPosition: number | null,
+  ): RedisTransactionBuilder {
+    if (prevPosition === null) {
+      throw new GradingQueueServiceError(
+        `While building a transaction, attempted to add a LREM for a value that is not in the given LIST ${key}.`,
+      );
+    }
+    this.userMultiCommand.LREM(key, 1, value);
+    const expectedReply = 1;
+    this.expectedReplies.push(expectedReply);
+    this.rollbackOperations.push((actualReply) => {
+      if (actualReply !== expectedReply) {
+        return this.rollbackMultiCommand;
+      }
+      return this.rollbackMultiCommand
+        .LPUSH(key, value)
+        .LSET(key, prevPosition, value);
+    });
+    return this;
   }
 }

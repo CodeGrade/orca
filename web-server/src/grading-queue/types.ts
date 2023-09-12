@@ -77,7 +77,7 @@ export interface MoveJobRequest {
 }
 
 export interface DeleteJobRequest {
-  jobKey: string; // JSONString
+  orcaKey: string; // JSONString
   nonce: number;
   collation?: Collation;
 }

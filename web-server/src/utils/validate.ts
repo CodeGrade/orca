@@ -57,13 +57,11 @@ const validateCollation = (collation: any): collation is Collation => {
   if (!types) return false;
 
   const validateCollationType = (type: string): type is CollationType => {
-    const collationValues: string[] = Object.values(CollationType);
-    return collationValues.includes(type);
+    return type === "team" || type === "user";
   };
 
   const collationType = validateCollationType(collation.type);
-  if (!collationType) return false;
-  return true;
+  return !collationType;
 };
 
 const validateFiles = (files: object) => {
@@ -91,7 +89,7 @@ const validateMetadataTable = (metadataTable: object) => {
 };
 
 // TODO: Pull these out as separate middleware validation checks?
-export const validateGradingJobConfig = (config: any): config is GradingJob => {
+export const validateGradingJob = (config: any): config is GradingJob => {
   const validateGradingJobFields = (config: any): boolean => {
     const fields =
       "key" in config &&

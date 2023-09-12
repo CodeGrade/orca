@@ -16,17 +16,13 @@ import {
 import {
   validateDeleteRequest,
   validateFilterRequest,
-  validateGradingJobConfig,
+  validateGradingJob,
   validateMoveRequest,
 } from "../utils/validate";
-import { createOrUpdateGradingJob } from "../grading-queue/create-or-update";
 import { GradingQueueServiceError } from "../grading-queue/service/exceptions";
-
-const errorResponse = (res: Response, status: number, errors: string[]) => {
-  res.status(status);
-  res.json({ errors: errors });
-  return;
-};
+import { errorResponse } from "./utils";
+import { createQueueKey } from "../grading-queue/utils";
+import { GradingQueueService } from "../grading-queue/service";
 
 export const getGradingJobs = async (req: Request, res: Response) => {
   if (
@@ -108,15 +104,20 @@ export const createOrUpdateImmediateJob = async (
   req: Request,
   res: Response,
 ) => {
-  if (!validateGradingJobConfig(req.body)) {
-    errorResponse(res, 400, ["Invalid grading job configuration."]);
-    return;
+  if (!validateGradingJob(req.body)) {
+    return errorResponse(res, 400, ["Invalid grading job configuration."]);
   }
-
   const gradingJob = req.body as GradingJob;
 
   try {
-    await createOrUpdateGradingJob(gradingJob, true);
+    const orcaKey = createQueueKey(gradingJob.key, gradingJob.response_url);
+    await new GradingQueueService().createOrUpdateJob(
+      gradingJob,
+      Date.now(),
+      orcaKey,
+      true,
+    );
+    return res.status(200).json({ message: "OK" });
   } catch (error) {
     if (error instanceof GradingQueueServiceError) {
       return errorResponse(res, 500, [error.message]);
@@ -127,20 +128,24 @@ export const createOrUpdateImmediateJob = async (
     ${gradingJob.collation.type} with ID ${gradingJob.collation.id}.`,
     ]);
   }
-
-  res.status(200);
-  res.json({ message: "OK" });
 };
 
 export const createOrUpdateJob = async (req: Request, res: Response) => {
-  if (!validateGradingJobConfig(req.body)) {
+  if (!validateGradingJob(req.body)) {
     return errorResponse(res, 400, ["The given grading job was invalid."]);
   }
 
   const gradingJob = req.body as GradingJob;
 
   try {
-    await createOrUpdateGradingJob(gradingJob);
+    const orcaKey = createQueueKey(gradingJob.key, gradingJob.response_url);
+    await new GradingQueueService().createOrUpdateJob(
+      gradingJob,
+      Date.now(),
+      orcaKey,
+      false,
+    );
+    return res.status(200).json({ message: "OK" });
   } catch (err) {
     if (err instanceof GradingQueueServiceError) {
       return errorResponse(res, 500, [err.message]);
@@ -182,16 +187,20 @@ export const moveJob = async (req: Request, res: Response) => {
 
 export const deleteJob = async (req: Request, res: Response) => {
   if (!validateDeleteRequest(req.body.deleteJobRequest)) {
-    errorResponse(res, 400, ["Invalid delete request."]);
-    return;
+    return errorResponse(res, 400, ["Invalid delete request."]);
   }
   const deleteRequest = req.body.deleteJobRequest as DeleteJobRequest;
 
-  // await new OrcaRedisClient().runOperation(
-  //   (client: RedisClientType) => deleteJobHandler(client, deleteRequest),
-  //   true,
-  // );
-
-  res.status(200);
-  res.json({ message: "OK" });
+  try {
+    return res.status(200).json({ message: "OK" });
+  } catch (err) {
+    if (err instanceof GradingQueueServiceError) {
+      await new GradingQueueService().deleteJob(deleteRequest);
+      return errorResponse(res, 500, [err.message]);
+    } else {
+      return errorResponse(res, 500, [
+        `Something went wrong when trying to delete job with key ${deleteRequest.orcaKey}.`,
+      ]);
+    }
+  }
 };
