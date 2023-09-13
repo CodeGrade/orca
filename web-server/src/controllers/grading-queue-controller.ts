@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import getCollatedGradingJobs from "../grading-queue/get";
 import {
   validateOffsetAndLimit,
   formatOffsetAndLimit,
@@ -30,7 +29,7 @@ export const getGradingJobs = async (req: Request, res: Response) => {
     !req.query.offset ||
     !validateOffsetAndLimit(req.query.offset, req.query.limit)
   ) {
-    errorResponse(res, 400, [
+    return errorResponse(res, 400, [
       "Must send a valid offset and a limit with this request.",
     ]);
   }
@@ -41,63 +40,68 @@ export const getGradingJobs = async (req: Request, res: Response) => {
     req.query.limit,
   );
 
-  let [gradingJobs, gradingJobsErr] = await getCollatedGradingJobs();
-  if (gradingJobsErr || !gradingJobs) {
-    errorResponse(res, 500, [
-      "An internal server error occurred while trying to retrieve the grading queue.  Please try again or contact an administrator",
-    ]);
-    return;
-  }
+  try {
+    const gradingJobs = await new GradingQueueService().getGradingJobs();
 
-  if (offset > 0 && offset >= gradingJobs.length) {
-    errorResponse(res, 400, [
-      "The given offset is out of range for the total number of items.",
-    ]);
-    return;
-  }
-
-  let filtered = false;
-  let filteredGradingJobs: EnrichedGradingJob[] = [];
-  // TODO: Use RequestHandler from express
-  if (req.query.filter_type && req.query.filter_value) {
-    // TODO: Validate filter type and filter value
-    const filterType = req.query.filter_type;
-    const filterValue = req.query.filter_value;
-    if (!validateFilterRequest(req.query.filter_type, req.query.filter_value)) {
-      errorResponse(res, 500, ["Failed to validate filter request."]);
-      return;
+    if (offset > 0 && offset >= gradingJobs.length) {
+      return errorResponse(res, 400, [
+        "The given offset is out of range for the total number of items.",
+      ]);
     }
 
-    filteredGradingJobs = filterGradingJobs(
-      gradingJobs,
-      filterType as string,
-      filterValue as string,
+    let filtered = false;
+    let filteredGradingJobs: EnrichedGradingJob[] = [];
+    // TODO: Use RequestHandler from express
+    if (req.query.filter_type && req.query.filter_value) {
+      const filterType = req.query.filter_type;
+      const filterValue = req.query.filter_value;
+      if (
+        !validateFilterRequest(req.query.filter_type, req.query.filter_value)
+      ) {
+        return errorResponse(res, 500, ["Failed to validate filter request."]);
+      }
+
+      filteredGradingJobs = filterGradingJobs(
+        gradingJobs,
+        filterType as string,
+        filterValue as string,
+      );
+      filtered = true;
+    }
+
+    const resGradingJobs = filtered ? filteredGradingJobs : gradingJobs;
+
+    const paginationData = getPageFromGradingJobs(
+      resGradingJobs,
+      offset,
+      limit,
     );
-    filtered = true;
+    const { first, next, prev, last } = paginationData;
+    const gradingJobsSlice = paginationData.data;
+
+    // Calculate Stats for entire grading queue
+    const stats = getGradingQueueStats(gradingJobs);
+    const filterInfo = getFilterInfo(gradingJobs);
+
+    // TODO: Create separate endpoint for filter info
+    return res.status(200).json({
+      grading_jobs: gradingJobsSlice,
+      first,
+      next,
+      prev,
+      last,
+      total: gradingJobsSlice.length,
+      stats,
+      filter_info: filterInfo,
+    });
+  } catch (err) {
+    if (err instanceof GradingQueueServiceError) {
+      return errorResponse(res, 500, [err.message]);
+    }
+    return errorResponse(res, 500, [
+      `An error occurred while trying get grading jobs in the queue. Please contact an admin or professor.`,
+    ]);
   }
-
-  const resGradingJobs = filtered ? filteredGradingJobs : gradingJobs;
-
-  const paginationData = getPageFromGradingJobs(resGradingJobs, offset, limit);
-  const { first, next, prev, last } = paginationData;
-  const gradingJobsSlice = paginationData.data;
-
-  // Calculate Stats for entire grading queue
-  const stats = getGradingQueueStats(gradingJobs);
-  const filterInfo = getFilterInfo(gradingJobs);
-
-  // TODO: Create separate endpoint for filter info
-  res.status(200);
-  res.json({
-    grading_jobs: gradingJobsSlice,
-    first,
-    next,
-    prev,
-    last,
-    total: gradingJobsSlice.length,
-    stats,
-    filter_info: filterInfo,
-  });
 };
 
 export const createOrUpdateImmediateJob = async (

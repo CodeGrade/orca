@@ -43,28 +43,64 @@ export class GradingQueueService {
     this.lock = redisLock(this.client);
   }
 
+  public async getGradingJobs(): Promise<EnrichedGradingJob[]> {
+    return this.runOperationWithLock(async () => {
+      const reservations = await this.client.ZRANGE_WITHSCORES(
+        "Reservations",
+        0,
+        -1,
+      );
+      if (reservations.length === 0) return [];
+      const submitterInfoCache: Record<string, string[]> = {};
+      return await Promise.all(
+        reservations.map(async (reservation) => {
+          const { value: reservationKey } = reservation;
+          const reservationKeySections = reservationKey.split(".");
+
+          if (reservationKeySections.length === 2) {
+            return await this.getImmediateJobFromReservation(
+              reservationKeySections,
+            );
+          } else {
+            return await this.getJobFromReservation(
+              reservationKeySections,
+              submitterInfoCache,
+            );
+          }
+        }),
+      );
+    });
+  }
+
   public async moveJob(moveRequest: MoveJobRequest) {
-    const { moveAction, orcaKey } = moveRequest;
-    switch (moveAction) {
-      case "release":
-        const currentJob = await this.client.GET(orcaKey);
-        if (!currentJob) {
-          throw new GradingQueueServiceError(
-            `Could not find job with key ${orcaKey}`,
+    this.runOperationWithLock(async () => {
+      const { moveAction, orcaKey } = moveRequest;
+      switch (moveAction) {
+        case "release":
+          const currentJob = await this.client.GET(orcaKey);
+          if (!currentJob) {
+            throw new GradingQueueServiceError(
+              `Could not find job with key ${orcaKey}`,
+            );
+          }
+          const { created_at, release_at, orca_key, ...baseGradingJob } =
+            JSON.parse(currentJob) as EnrichedGradingJob;
+          await this.createOrUpdateJob(
+            baseGradingJob,
+            created_at,
+            orcaKey,
+            true,
           );
-        }
-        const { created_at, release_at, orca_key, ...baseGradingJob } =
-          JSON.parse(currentJob) as EnrichedGradingJob;
-        await this.createOrUpdateJob(baseGradingJob, created_at, orcaKey, true);
-        break;
-      case "delay":
-        await this.delayJob(moveRequest);
-        break;
-      default:
-        throw new TypeError(
-          `Invalid moveAction ${moveAction} provided in MoveJobRequest.`,
-        );
-    }
+          break;
+        case "delay":
+          await this.delayJob(moveRequest);
+          break;
+        default:
+          throw new TypeError(
+            `Invalid moveAction ${moveAction} provided in MoveJobRequest.`,
+          );
+      }
+    });
   }
 
   public async deleteJob({ orcaKey, nonce, collation }: DeleteJobRequest) {
@@ -284,6 +320,48 @@ export class GradingQueueService {
       .SET(orcaKey, JSON.stringify(enrichedJob), null)
       .build();
     await executor.execute();
+  }
+
+  private async getImmediateJobFromReservation(
+    reservationKeySections: string[],
+  ): Promise<EnrichedGradingJob> {
+    const [_, orcaKey] = reservationKeySections;
+    const enqueuedJobString = await this.client.GET(orcaKey);
+    if (enqueuedJobString === null) {
+      throw new GradingQueueServiceError(
+        `Could not find a job with key ${orcaKey}.`,
+      );
+    }
+    return JSON.parse(enqueuedJobString) as EnrichedGradingJob;
+  }
+
+  private async getJobFromReservation(
+    reservationKeySections: string[],
+    submitterInfoCache: Record<string, string[]>,
+  ): Promise<EnrichedGradingJob> {
+    const collationString = reservationKeySections
+      .slice(0, reservationKeySections.length - 1)
+      .join(".");
+
+    const submitterInfoKey = `SubmitterInfo.${collationString}`;
+    if (!submitterInfoCache[submitterInfoKey]) {
+      const orcaKeys = await this.client.LRANGE(submitterInfoKey, 0, -1);
+      submitterInfoCache[submitterInfoKey] = orcaKeys;
+    }
+
+    const orcaKey = submitterInfoCache[submitterInfoKey].shift();
+    if (!orcaKey) {
+      throw new GradingQueueServiceError(
+        `No job key to match reservation ${reservationKeySections.join(".")}.`,
+      );
+    }
+    const enqueuedJobString = await this.client.GET(orcaKey);
+    if (!enqueuedJobString) {
+      throw new GradingQueueServiceError(
+        `No job was found with key ${orcaKey}.`,
+      );
+    }
+    return JSON.parse(enqueuedJobString) as EnrichedGradingJob;
   }
 
   private async generateNonce(job: EnrichedGradingJob, arrivalTime: number) {
