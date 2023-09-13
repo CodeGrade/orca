@@ -4,11 +4,13 @@ import {
   DeleteJobRequest,
   EnrichedGradingJob,
   GradingJob,
+  MoveJobRequest,
 } from "../types";
 import { default as redisLock } from "redis-lock";
 import { GradingQueueServiceError } from "./exceptions";
 import CONFIG from "../../config";
 import { collationToString } from "../utils";
+import { toMilliseconds } from "./utils";
 
 type RedisLockRelease = () => Promise<void>;
 type RedisLock = (
@@ -16,6 +18,7 @@ type RedisLock = (
   timeout: number,
 ) => Promise<RedisLockRelease>;
 const DEFAULT_TIMEOUT = 5000;
+const MOVE_TO_BACK_BUFFER = toMilliseconds(10);
 
 /**
  * Wraps operations carried out by a Redis client needed to
@@ -38,6 +41,30 @@ export class GradingQueueService {
       );
     });
     this.lock = redisLock(this.client);
+  }
+
+  public async moveJob(moveRequest: MoveJobRequest) {
+    const { moveAction, orcaKey } = moveRequest;
+    switch (moveAction) {
+      case "release":
+        const currentJob = await this.client.GET(orcaKey);
+        if (!currentJob) {
+          throw new GradingQueueServiceError(
+            `Could not find job with key ${orcaKey}`,
+          );
+        }
+        const { created_at, release_at, orca_key, ...baseGradingJob } =
+          JSON.parse(currentJob) as EnrichedGradingJob;
+        await this.createOrUpdateJob(baseGradingJob, created_at, orcaKey, true);
+        break;
+      case "delay":
+        await this.delayJob(moveRequest);
+        break;
+      default:
+        throw new TypeError(
+          `Invalid moveAction ${moveAction} provided in MoveJobRequest.`,
+        );
+    }
   }
 
   public async deleteJob({ orcaKey, nonce, collation }: DeleteJobRequest) {
@@ -119,6 +146,31 @@ export class GradingQueueService {
       await releaseLock();
       await this.client.quit();
     }
+  }
+
+  private async delayJob({ collation, orcaKey, nonce }: MoveJobRequest) {
+    const jobsZrange = await this.client.ZRANGE_WITHSCORES(
+      "Reservations",
+      -1,
+      -1,
+    );
+    const lastJobPriority = jobsZrange[0].score;
+    const newPriority = lastJobPriority + MOVE_TO_BACK_BUFFER;
+    const submitterInfoKey = `SubmitterInfo.${collationToString(collation)}`;
+    const reservationsMember = `${collationToString(collation)}.${nonce}`;
+    const transactionBuilder = new RedisTransactionBuilder(this.client)
+      .ZADD(
+        "Reservations",
+        newPriority,
+        reservationsMember,
+        await this.client.ZSCORE("Reservations", reservationsMember),
+      )
+      .LREM(
+        submitterInfoKey,
+        orcaKey,
+        await this.client.LPOS(submitterInfoKey, orcaKey),
+      )
+      .RPUSH(submitterInfoKey, orcaKey);
   }
 
   private async enqueueJob(
@@ -471,6 +523,19 @@ class RedisTransactionBuilder {
       return this.rollbackMultiCommand
         .LPUSH(key, value)
         .LSET(key, prevPosition, value);
+    });
+    return this;
+  }
+
+  public RPUSH(key: string, value: string): RedisTransactionBuilder {
+    this.userMultiCommand.RPUSH(key, value);
+    const expectedReply = 1;
+    this.expectedReplies.push(expectedReply);
+    this.rollbackOperations.push((actualReply) => {
+      if (actualReply !== expectedReply) {
+        return this.rollbackMultiCommand;
+      }
+      return this.rollbackMultiCommand.LREM(key, -1, value);
     });
     return this;
   }

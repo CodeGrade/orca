@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import getCollatedGradingJobs from "../grading-queue/get";
-import moveJobHandler from "../grading-queue/move";
 import {
   validateOffsetAndLimit,
   formatOffsetAndLimit,
@@ -12,6 +11,7 @@ import {
   DeleteJobRequest,
   EnrichedGradingJob,
   GradingJob,
+  MoveJobRequest,
 } from "../grading-queue/types";
 import {
   validateDeleteRequest,
@@ -159,30 +159,23 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
 };
 
 export const moveJob = async (req: Request, res: Response) => {
-  const moveRequest = req.body.moveJobRequest;
+  if (!validateMoveRequest(req.body.moveJobRequest)) {
+    errorResponse(res, 400, ["Invalid move request."]);
+    return;
+  }
+  const moveRequest: MoveJobRequest = req.body.moveJobRequest;
+
   try {
-    if (!validateMoveRequest(moveRequest)) {
-      errorResponse(res, 400, ["Invalid move request."]);
-      return;
+    await new GradingQueueService().moveJob(moveRequest);
+    return res.status(200).json("OK");
+  } catch (err) {
+    if (err instanceof GradingQueueServiceError) {
+      return errorResponse(res, 500, [err.message]);
     }
-  } catch (error) {
-    errorResponse(res, 500, [
-      "An internal server error occurred while trying to validate move request.",
+    return errorResponse(res, 500, [
+      `An error occurred while trying to move job with key ${moveRequest.orcaKey}.`,
     ]);
-    return;
   }
-
-  const [releaseAt, moveErr] = await moveJobHandler(moveRequest);
-  if (moveErr || releaseAt === null) {
-    console.error(moveErr);
-    errorResponse(res, 500, [
-      "An internal server error occurred while trying to move grading job.",
-    ]);
-    return;
-  }
-
-  res.status(200);
-  res.json(releaseAt);
 };
 
 export const deleteJob = async (req: Request, res: Response) => {

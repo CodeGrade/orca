@@ -64,20 +64,17 @@ export interface GradingQueueStats {
   released: TimeStats;
 }
 
-export enum MoveJobAction {
-  RELEASE = "release",
-  DELAY = "delay",
-}
+export type MoveJobAction = "release" | "delay";
 
 export interface MoveJobRequest {
   nonce: number;
-  jobKey: string; // JSONString
+  orcaKey: string;
   moveAction: MoveJobAction;
   collation: Collation;
 }
 
 export interface DeleteJobRequest {
-  orcaKey: string; // JSONString
+  orcaKey: string;
   nonce: number;
   collation?: Collation;
 }

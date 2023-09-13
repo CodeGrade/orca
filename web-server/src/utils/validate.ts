@@ -126,6 +126,7 @@ export const validateMoveRequest = (
   request: any,
 ): request is MoveJobRequest => {
   const validateMoveRequestFields = (request: any): boolean => {
+    if (!isObject(request)) return false;
     const fields =
       "nonce" in request &&
       "jobKey" in request &&
@@ -133,18 +134,21 @@ export const validateMoveRequest = (
       "collation" in request;
     if (!fields) return false;
 
-    const types =
-      isNumber(request.nonce) &&
-      isString(request.jobKey) &&
-      isString(request.moveAction);
+    const types = isNumber(request.nonce) && isString(request.jobKey);
     if (!types) return false;
-    return true;
+    return (
+      validateCollation(request.collation) &&
+      validateMoveAction(request.moveAction)
+    );
   };
 
-  const validateMoveAction = (moveAction: string): boolean => {
-    if (!moveAction) return false;
-    const moveActionValues: string[] = Object.values(MoveJobAction);
-    return moveActionValues.includes(moveAction);
+  const validateMoveAction = (
+    moveAction: string,
+  ): moveAction is MoveJobAction => {
+    if (!moveAction) {
+      return false;
+    }
+    return moveAction === "delay" || moveAction === "release";
   };
 
   if (!validateMoveRequestFields(request)) return false;
