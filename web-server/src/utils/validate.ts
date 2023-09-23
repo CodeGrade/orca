@@ -23,6 +23,7 @@ const validateJSONKey = (key: string) => {
   return key.indexOf(".") === -1;
 };
 
+// TODO: Add conditional commands, recursive checking, etc.
 const validateScript = (script: any[]): boolean => {
   const validateOnFail = (onFail: any) => {
     return isInteger(onFail) || onFail === "abort";
@@ -33,16 +34,17 @@ const validateScript = (script: any[]): boolean => {
   return script.every((cmd) => {
     if (!isObject(cmd)) return false;
 
-    const cmdFields = "cmd" in cmd && "on_fail" in cmd && "on_complete" in cmd;
-    if (!cmdFields) return false;
+    const validCmdValue =
+      "cmd" in cmd &&
+      (isString(cmd.cmd) ||
+        (isArray(cmd.cmd) && cmd.cmd.every((m) => isString(m))));
 
     const cmdTypes =
-      isString(cmd.cmd) &&
-      validateOnFail(cmd.on_fail) &&
-      validateOnComplete(cmd.on_complete);
-    if (!cmdTypes) return false;
+      validCmdValue &&
+      ("on_complete" in cmd ? validateOnComplete(cmd.on_complete) : true) &&
+      ("on_fail" in cmd ? validateOnFail(cmd.on_fail) : true);
 
-    return true;
+    return cmdTypes;
   });
 };
 
@@ -51,17 +53,18 @@ const validateCollation = (collation: any): collation is Collation => {
   if (!collation) return false;
 
   const fields = "type" in collation && "id" in collation;
+
   if (!fields) return false;
 
   const types = isString(collation.type) && isString(collation.id);
+
   if (!types) return false;
 
   const validateCollationType = (type: string): type is CollationType => {
     return type === "team" || type === "user";
   };
 
-  const collationType = validateCollationType(collation.type);
-  return !collationType;
+  return validateCollationType(collation.type);
 };
 
 const validateFiles = (files: object) => {
@@ -98,7 +101,8 @@ export const validateGradingJob = (config: any): config is GradingJob => {
       "files" in config &&
       "priority" in config &&
       "script" in config &&
-      "response_url" in config;
+      "response_url" in config &&
+      "grader_image_sha" in config;
     if (!fields) return false;
 
     const types =
@@ -108,17 +112,24 @@ export const validateGradingJob = (config: any): config is GradingJob => {
       isObject(config.files) &&
       isInteger(config.priority) &&
       isArray(config.script) &&
-      isString(config.response_url);
+      isString(config.response_url) &&
+      isString(config.grader_image_sha);
     if (!types) return false;
     return true;
   };
 
   if (!validateGradingJobFields(config)) return false;
+
   if (!validateJSONKey(config.key)) return false;
+
   if (!validateCollation(config.collation)) return false;
+
   if (!validateFiles(config.files)) return false;
+
   if (!validateScript(config.script)) return false;
+
   if (!validateMetadataTable(config.metadata_table)) return false;
+
   return true;
 };
 
@@ -162,22 +173,20 @@ export const validateDeleteRequest = (
   request: any,
 ): request is DeleteJobRequest => {
   const validateDeleteRequestFields = (request: any): boolean => {
-    const requiredFields = "jobKey" in request;
+    const requiredFields = "orcaKey" in request;
     if (!requiredFields) return false;
-    const requiredFieldTypes = isString(request.jobKey);
+    const requiredFieldTypes = isString(request.orcaKey);
     if (!requiredFieldTypes) return false;
 
-    if ("collation" in request) {
-      if ("nonce" in request) {
-        return validateCollation(request.collation) && isNumber(request.nonce);
-      }
-      return false;
+    if ("collation" in request && "nonce" in request) {
+      return validateCollation(request.collation) && isNumber(request.nonce);
     }
     return true;
   };
 
   if (!validateDeleteRequestFields(request)) return false;
-  if (!validateJSONKey(request.jobKey)) return false;
+  if (!validateJSONKey(request.orcaKey)) return false;
+
   return true;
 };
 

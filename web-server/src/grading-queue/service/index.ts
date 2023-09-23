@@ -44,7 +44,7 @@ export class GradingQueueService {
   }
 
   public async getGradingJobs(): Promise<EnrichedGradingJob[]> {
-    return this.runOperationWithLock(async () => {
+    return await this.runOperationWithLock(async () => {
       const reservations = await this.client.ZRANGE_WITHSCORES(
         "Reservations",
         0,
@@ -73,7 +73,7 @@ export class GradingQueueService {
   }
 
   public async moveJob(moveRequest: MoveJobRequest) {
-    this.runOperationWithLock(async () => {
+    await this.runOperationWithLock(async () => {
       const { moveAction, orcaKey } = moveRequest;
       switch (moveAction) {
         case "release":
@@ -104,7 +104,7 @@ export class GradingQueueService {
   }
 
   public async deleteJob({ orcaKey, nonce, collation }: DeleteJobRequest) {
-    this.runOperationWithLock(async () => {
+    await this.runOperationWithLock(async () => {
       let transactionBuilder = new RedisTransactionBuilder(this.client);
       let reservationMember: string;
       if (collation) {
@@ -311,7 +311,7 @@ export class GradingQueueService {
     const nonce = await this.generateNonce(enrichedJob, arrivalTime);
     const executor = new RedisTransactionBuilder(this.client)
       .LPUSH(`SubmitterInfo.${nextTask}`, orcaKey)
-      .ZADD("Reservations", nonce, `${nextTask}.${arrivalTime}`, null)
+      .ZADD("Reservations", nonce, `${nextTask}.${nonce}`, null)
       .SADD(
         `Nonces.${nextTask}`,
         nonce.toString(),
@@ -485,7 +485,7 @@ class RedisTransactionBuilder {
     value: string,
     alreadyInSet: boolean,
   ): RedisTransactionBuilder {
-    this.userMultiCommand.sadd(key, value);
+    this.userMultiCommand.SADD(key, value);
     const expectedReply = 1;
     this.expectedReplies.push(expectedReply);
     this.rollbackOperations.push((actualReply) => {
@@ -498,7 +498,7 @@ class RedisTransactionBuilder {
   }
 
   public SREM(key: string, value: string): RedisTransactionBuilder {
-    this.userMultiCommand.srem(key, value);
+    this.userMultiCommand.SREM(key, value);
     const expectedReply = 1;
     this.expectedReplies.push(expectedReply);
     this.rollbackOperations.push((actualReply) => {

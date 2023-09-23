@@ -9,11 +9,6 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
-client.on("error", (err) => console.log("Redis Client Error", err));
-
-// awaited in example
-client.connect();
-
 app.use("/api/v1", gradingQueueRouter);
 
 app.listen(PORT, () => {

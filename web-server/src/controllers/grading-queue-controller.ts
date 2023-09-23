@@ -183,16 +183,16 @@ export const moveJob = async (req: Request, res: Response) => {
 };
 
 export const deleteJob = async (req: Request, res: Response) => {
-  if (!validateDeleteRequest(req.body.deleteJobRequest)) {
+  if (!validateDeleteRequest(req.body)) {
     return errorResponse(res, 400, ["Invalid delete request."]);
   }
-  const deleteRequest = req.body.deleteJobRequest as DeleteJobRequest;
+  const deleteRequest = req.body as DeleteJobRequest;
 
   try {
+    await new GradingQueueService().deleteJob(deleteRequest);
     return res.status(200).json({ message: "OK" });
   } catch (err) {
     if (err instanceof GradingQueueServiceError) {
-      await new GradingQueueService().deleteJob(deleteRequest);
       return errorResponse(res, 500, [err.message]);
     } else {
       return errorResponse(res, 500, [
