@@ -2,8 +2,8 @@ import { RedisClientType, createClient } from "redis";
 import {
   Collation,
   DeleteJobRequest,
-  EnrichedGradingJob,
   GradingJob,
+  GradingJobConfig,
   MoveJobRequest,
 } from "../types";
 import { default as redisLock } from "redis-lock";
@@ -43,7 +43,7 @@ export class GradingQueueService {
     this.lock = redisLock(this.client);
   }
 
-  public async getGradingJobs(): Promise<EnrichedGradingJob[]> {
+  public async getGradingJobs(): Promise<GradingJob[]> {
     return await this.runOperationWithLock(async () => {
       const reservations = await this.client.ZRANGE_WITHSCORES(
         "Reservations",
@@ -83,8 +83,8 @@ export class GradingQueueService {
               `Could not find job with key ${orcaKey}`,
             );
           }
-          const { created_at, release_at, orca_key, ...baseGradingJob } =
-            JSON.parse(currentJob) as EnrichedGradingJob;
+          const { created_at, release_at, orca_key, nonce, ...baseGradingJob } =
+            JSON.parse(currentJob) as GradingJob;
           await this.createOrUpdateJob(
             baseGradingJob,
             created_at,
@@ -107,7 +107,7 @@ export class GradingQueueService {
     await this.runOperationWithLock(async () => {
       let transactionBuilder = new RedisTransactionBuilder(this.client);
       let reservationMember: string;
-      if (collation) {
+      if (collation && nonce !== undefined) {
         const collationString = collationToString(collation);
         const submitterInfoKey = `SubmitterInfo.${collationString}`;
         reservationMember = `${collationString}.${nonce}`;
@@ -139,32 +139,32 @@ export class GradingQueueService {
   }
 
   public async createOrUpdateJob(
-    job: GradingJob,
+    jobConfig: GradingJobConfig,
     arrivalTime: number,
     orcaKey: string,
     isImmediateJob: boolean,
   ) {
-    this.runOperationWithLock(async () => {
+    await this.runOperationWithLock(async () => {
       const nonImmediateJobExists = await this.nonImmediateJobExists(
         orcaKey,
-        job.collation,
+        jobConfig.collation,
       );
       const immediateJobExists =
         (await this.client.ZSCORE("Reservations", `immediate.${orcaKey}`)) !==
         null;
 
       if (!nonImmediateJobExists && !immediateJobExists) {
-        await this.enqueueJob(job, arrivalTime, orcaKey, isImmediateJob);
+        await this.enqueueJob(jobConfig, arrivalTime, orcaKey, isImmediateJob);
       } else if (nonImmediateJobExists && isImmediateJob) {
-        await this.deleteNonImmediateJob(orcaKey, job.collation);
-        await this.enqueueJob(job, arrivalTime, orcaKey, isImmediateJob);
+        await this.deleteNonImmediateJob(orcaKey, jobConfig.collation);
+        await this.enqueueJob(jobConfig, arrivalTime, orcaKey, isImmediateJob);
       } else {
-        const originalJob: EnrichedGradingJob = JSON.parse(
+        const originalJob: GradingJob = JSON.parse(
           (await this.client.GET(orcaKey)) as string,
         );
-        const updatedJob: EnrichedGradingJob = {
+        const updatedJob: GradingJob = {
           ...originalJob,
-          ...job,
+          ...jobConfig,
         };
         await this.client.SET(orcaKey, JSON.stringify(updatedJob));
       }
@@ -207,18 +207,19 @@ export class GradingQueueService {
         await this.client.LPOS(submitterInfoKey, orcaKey),
       )
       .RPUSH(submitterInfoKey, orcaKey);
+    await transactionBuilder.build().execute();
   }
 
   private async enqueueJob(
-    job: GradingJob,
+    jobConfig: GradingJobConfig,
     arrivalTime: number,
     orcaKey: string,
     isImmediateJob: boolean,
   ) {
     if (isImmediateJob) {
-      await this.createImmediateJob(job, arrivalTime, orcaKey);
+      await this.createImmediateJob(jobConfig, arrivalTime, orcaKey);
     } else {
-      await this.createJob(job, arrivalTime, orcaKey);
+      await this.createJob(jobConfig, arrivalTime, orcaKey);
     }
   }
 
@@ -275,12 +276,12 @@ export class GradingQueueService {
   }
 
   private async createImmediateJob(
-    gradingJob: GradingJob,
+    gradingJobConfig: GradingJobConfig,
     arrivalTime: number,
     orcaKey: string,
   ) {
-    const enrichedGradingJob: EnrichedGradingJob = {
-      ...gradingJob,
+    const gradingJob: GradingJob = {
+      ...gradingJobConfig,
       created_at: arrivalTime,
       release_at: arrivalTime,
       orca_key: orcaKey,
@@ -288,27 +289,27 @@ export class GradingQueueService {
 
     const executor = new RedisTransactionBuilder(this.client)
       .ZADD("Reservations", arrivalTime, `immediate.${orcaKey}`, null)
-      .SET(orcaKey, JSON.stringify(enrichedGradingJob), null)
+      .SET(orcaKey, JSON.stringify(gradingJobConfig), null)
       .build();
 
     await executor.execute();
   }
 
   private async createJob(
-    gradingJob: GradingJob,
+    gradingJobConfig: GradingJobConfig,
     arrivalTime: number,
     orcaKey: string,
   ) {
-    const { priority, collation } = gradingJob;
+    const { priority, collation } = gradingJobConfig;
     const releaseTime = arrivalTime + priority;
     const nextTask = `${collation.type}.${collation.id}`;
-    const enrichedJob: EnrichedGradingJob = {
-      ...gradingJob,
+    const gradingJob: GradingJob = {
+      ...gradingJobConfig,
       created_at: arrivalTime,
       release_at: releaseTime,
       orca_key: orcaKey,
     };
-    const nonce = await this.generateNonce(enrichedJob, arrivalTime);
+    const nonce = await this.generateNonce(gradingJob, arrivalTime);
     const executor = new RedisTransactionBuilder(this.client)
       .LPUSH(`SubmitterInfo.${nextTask}`, orcaKey)
       .ZADD("Reservations", nonce, `${nextTask}.${nonce}`, null)
@@ -317,14 +318,14 @@ export class GradingQueueService {
         nonce.toString(),
         await this.client.SISMEMBER(`Nonces.${nextTask}`, nonce.toString()),
       )
-      .SET(orcaKey, JSON.stringify(enrichedJob), null)
+      .SET(orcaKey, JSON.stringify(gradingJob), null)
       .build();
     await executor.execute();
   }
 
   private async getImmediateJobFromReservation(
     reservationKeySections: string[],
-  ): Promise<EnrichedGradingJob> {
+  ): Promise<GradingJob> {
     const [_, orcaKey] = reservationKeySections;
     const enqueuedJobString = await this.client.GET(orcaKey);
     if (enqueuedJobString === null) {
@@ -332,13 +333,13 @@ export class GradingQueueService {
         `Could not find a job with key ${orcaKey}.`,
       );
     }
-    return JSON.parse(enqueuedJobString) as EnrichedGradingJob;
+    return JSON.parse(enqueuedJobString) as GradingJob;
   }
 
   private async getJobFromReservation(
     reservationKeySections: string[],
     submitterInfoCache: Record<string, string[]>,
-  ): Promise<EnrichedGradingJob> {
+  ): Promise<GradingJob> {
     const collationString = reservationKeySections
       .slice(0, reservationKeySections.length - 1)
       .join(".");
@@ -361,10 +362,10 @@ export class GradingQueueService {
         `No job was found with key ${orcaKey}.`,
       );
     }
-    return JSON.parse(enqueuedJobString) as EnrichedGradingJob;
+    return JSON.parse(enqueuedJobString) as GradingJob;
   }
 
-  private async generateNonce(job: EnrichedGradingJob, arrivalTime: number) {
+  private async generateNonce(job: GradingJob, arrivalTime: number) {
     let nonce = arrivalTime + job.priority;
     while (
       await this.client.SISMEMBER(

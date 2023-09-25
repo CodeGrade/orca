@@ -5,4 +5,4 @@ export const collationSchema = {
     type: { type: "string", enum: ["user", "team"] },
     id: { type: "string" },
   },
-};
+} as const;

@@ -1,25 +1,24 @@
-import { EnrichedGradingJob, FilterInfo, FilterType } from "./types";
+import { GradingJob, FilterInfo, FilterType } from "./types";
 
 export const filterGradingJobs = (
-  gradingJobs: EnrichedGradingJob[],
+  gradingJobs: GradingJob[],
   filterType: string,
   filterValue: string,
-): EnrichedGradingJob[] => {
+): GradingJob[] => {
   return gradingJobs.filter(
     (gradingJob) =>
-      gradingJob.metadata_table[filterType as keyof EnrichedGradingJob] ==
-      filterValue,
+      gradingJob.metadata_table[filterType as keyof GradingJob] == filterValue,
   );
 };
 
 // Get the filter info for all filterable fields of a GradingJob
-export const getFilterInfo = (gradingJobs: EnrichedGradingJob[]) => {
+export const getFilterInfo = (gradingJobs: GradingJob[]) => {
   const filterTypes: string[] = Array.from(Object.values(FilterType));
   let filterInfo: FilterInfo = {};
   filterTypes.map((filterType) => {
     const values: Set<string> = new Set(
       gradingJobs.map(
-        (job) => job.metadata_table[filterType as keyof EnrichedGradingJob],
+        (job) => job.metadata_table[filterType as keyof GradingJob],
       ),
     );
     filterInfo[filterType] = Array.from(values);

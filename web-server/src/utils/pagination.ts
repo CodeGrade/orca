@@ -1,5 +1,5 @@
 import {
-  EnrichedGradingJob,
+  GradingJob,
   PaginationData,
   PaginationInfo,
 } from "../grading-queue/types";
@@ -24,7 +24,7 @@ const findLastPageOffset = (limit: number, grading_queue_length: number) => {
 };
 
 export const getPageFromGradingQueue = (
-  grading_queue: EnrichedGradingJob[],
+  grading_queue: GradingJob[],
   offset: number,
   limit: number,
 ): PaginationData => {

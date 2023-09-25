@@ -8,20 +8,16 @@ import { getGradingQueueStats } from "../grading-queue/stats";
 import { filterGradingJobs, getFilterInfo } from "../grading-queue/filter";
 import {
   DeleteJobRequest,
-  EnrichedGradingJob,
   GradingJob,
+  GradingJobConfig,
   MoveJobRequest,
 } from "../grading-queue/types";
-import {
-  validateDeleteRequest,
-  validateFilterRequest,
-  validateGradingJob,
-  validateMoveRequest,
-} from "../utils/validate";
+import { validateFilterRequest } from "../utils/validate";
 import { GradingQueueServiceError } from "../grading-queue/service/exceptions";
 import { errorResponse } from "./utils";
-import { createQueueKey } from "../grading-queue/utils";
+import { generateQueueKey } from "../grading-queue/utils";
 import { GradingQueueService } from "../grading-queue/service";
+import validations from "../validations";
 
 export const getGradingJobs = async (req: Request, res: Response) => {
   if (
@@ -50,7 +46,7 @@ export const getGradingJobs = async (req: Request, res: Response) => {
     }
 
     let filtered = false;
-    let filteredGradingJobs: EnrichedGradingJob[] = [];
+    let filteredGradingJobs: GradingJob[] = [];
     // TODO: Use RequestHandler from express
     if (req.query.filter_type && req.query.filter_value) {
       const filterType = req.query.filter_type;
@@ -108,15 +104,18 @@ export const createOrUpdateImmediateJob = async (
   req: Request,
   res: Response,
 ) => {
-  if (!validateGradingJob(req.body)) {
+  if (!validations.gradingJobConfig(req.body)) {
     return errorResponse(res, 400, ["Invalid grading job configuration."]);
   }
-  const gradingJob = req.body as GradingJob;
+  const gradingJobConfig = req.body;
 
   try {
-    const orcaKey = createQueueKey(gradingJob.key, gradingJob.response_url);
+    const orcaKey = generateQueueKey(
+      gradingJobConfig.key,
+      gradingJobConfig.response_url,
+    );
     await new GradingQueueService().createOrUpdateJob(
-      gradingJob,
+      gradingJobConfig,
       Date.now(),
       orcaKey,
       true,
@@ -129,22 +128,25 @@ export const createOrUpdateImmediateJob = async (
     return errorResponse(res, 500, [
       `An error occurred while trying to create an 
     immediate job or update an existing one for 
-    ${gradingJob.collation.type} with ID ${gradingJob.collation.id}.`,
+    ${gradingJobConfig.collation.type} with ID ${gradingJobConfig.collation.id}.`,
     ]);
   }
 };
 
 export const createOrUpdateJob = async (req: Request, res: Response) => {
-  if (!validateGradingJob(req.body)) {
+  if (!validations.gradingJobConfig(req.body)) {
     return errorResponse(res, 400, ["The given grading job was invalid."]);
   }
 
-  const gradingJob = req.body as GradingJob;
+  const gradingJobConfig = req.body;
 
   try {
-    const orcaKey = createQueueKey(gradingJob.key, gradingJob.response_url);
+    const orcaKey = generateQueueKey(
+      gradingJobConfig.key,
+      gradingJobConfig.response_url,
+    );
     await new GradingQueueService().createOrUpdateJob(
-      gradingJob,
+      gradingJobConfig,
       Date.now(),
       orcaKey,
       false,
@@ -156,47 +158,44 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
     } else {
       return errorResponse(res, 500, [
         `Something went wrong while trying to create or update a job 
-      for ${gradingJob.collation.type} with ID ${gradingJob.collation.id}.`,
+      for ${gradingJobConfig.collation.type} with ID ${gradingJobConfig.collation.id}.`,
       ]);
     }
   }
 };
 
 export const moveJob = async (req: Request, res: Response) => {
-  if (!validateMoveRequest(req.body.moveJobRequest)) {
+  if (!validations.moveJobRequest(req.body)) {
     errorResponse(res, 400, ["Invalid move request."]);
     return;
   }
-  const moveRequest: MoveJobRequest = req.body.moveJobRequest;
-
   try {
-    await new GradingQueueService().moveJob(moveRequest);
+    await new GradingQueueService().moveJob(req.body);
     return res.status(200).json("OK");
   } catch (err) {
     if (err instanceof GradingQueueServiceError) {
       return errorResponse(res, 500, [err.message]);
     }
     return errorResponse(res, 500, [
-      `An error occurred while trying to move job with key ${moveRequest.orcaKey}.`,
+      `An error occurred while trying to move job with key ${req.body.orcaKey}.`,
     ]);
   }
 };
 
 export const deleteJob = async (req: Request, res: Response) => {
-  if (!validateDeleteRequest(req.body)) {
+  if (!validations.deleteJobRequest(req.body)) {
     return errorResponse(res, 400, ["Invalid delete request."]);
   }
-  const deleteRequest = req.body as DeleteJobRequest;
 
   try {
-    await new GradingQueueService().deleteJob(deleteRequest);
+    await new GradingQueueService().deleteJob(req.body);
     return res.status(200).json({ message: "OK" });
   } catch (err) {
     if (err instanceof GradingQueueServiceError) {
       return errorResponse(res, 500, [err.message]);
     } else {
       return errorResponse(res, 500, [
-        `Something went wrong when trying to delete job with key ${deleteRequest.orcaKey}.`,
+        `Something went wrong when trying to delete job with key ${req.body.orcaKey}.`,
       ]);
     }
   }

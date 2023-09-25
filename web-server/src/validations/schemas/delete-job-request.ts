@@ -1,13 +1,10 @@
-import { JTDDataType } from "ajv/dist/core";
-
 export const deleteJobRequestSchema = {
+  $id: "https://orca-schemas.com/delete-job-request",
   type: "object",
   properties: {
     orcaKey: { type: "string" },
-    collation: { $ref: "shared/collation" },
+    collation: { $ref: "https://orca-schemas.com/shared/collation" },
     nonce: { type: "number" },
   },
   required: ["orcaKey"],
 } as const;
-
-export type DeleteJobRequest = JTDDataType<typeof deleteJobRequestSchema>;

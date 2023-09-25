@@ -3,13 +3,32 @@ export interface Reservation {
   score: number;
 }
 
-interface GradingScriptCommand {
-  cmd: string;
-  on_fail: "abort" | number;
-  on_complete: "output" | number;
+type GradingScriptCommand =
+  | BashGradingScriptCommand
+  | ConditionalGradingScriptCommand;
+
+interface ConditionalGradingScriptCommand {
+  condition: GradingScriptCondition;
+  on_true?: GradingScriptCommandEdge;
+  on_false?: GradingScriptCommandEdge;
 }
 
-export interface CodeFileInfo {
+interface GradingScriptCondition {
+  predicate: "exists" | "dir" | "file";
+  path: string;
+}
+
+interface BashGradingScriptCommand {
+  cmd: string | Array<string>;
+  on_fail?: "abort" | GradingScriptCommandEdge;
+  on_complete?: "output" | GradingScriptCommandEdge;
+  replace_paths?: boolean;
+  working_dir?: string;
+}
+
+type GradingScriptCommandEdge = number | string | GradingScriptCommand;
+
+export interface FileInfo {
   url: string;
   mime_type: string;
 }
@@ -21,11 +40,11 @@ export interface Collation {
   id: string;
 }
 
-export interface GradingJob {
+export interface GradingJobConfig {
   key: string; // JSONString
   collation: Collation;
   metadata_table: Map<string, string | string[]>;
-  files: Map<string, CodeFileInfo>;
+  files: Map<string, FileInfo>;
   priority: number;
   script: GradingScriptCommand[];
   response_url: string;
@@ -35,9 +54,10 @@ interface AdditionalJobData {
   release_at: number;
   created_at: number;
   orca_key: string;
+  nonce?: number;
 }
 
-export type EnrichedGradingJob = GradingJob & AdditionalJobData;
+export type GradingJob = GradingJobConfig & AdditionalJobData;
 
 export interface PaginationInfo {
   offset: number;
@@ -49,7 +69,7 @@ export interface PaginationData {
   last?: PaginationInfo;
   prev?: PaginationInfo;
   next?: PaginationInfo;
-  data: EnrichedGradingJob[];
+  data: GradingJob[];
 }
 
 export interface TimeStats {
@@ -75,7 +95,7 @@ export interface MoveJobRequest {
 
 export interface DeleteJobRequest {
   orcaKey: string;
-  nonce: number;
+  nonce?: number;
   collation?: Collation;
 }
 

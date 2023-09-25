@@ -1,24 +1,27 @@
 import Ajv from "ajv";
 import { collationSchema } from "./schemas/shared";
 import {
-  GradingJobConfig,
   gradingJobConfigSchema,
+  gradingJobConfigSubSchemas,
 } from "./schemas/grading-job-config";
+import { deleteJobRequestSchema } from "./schemas/delete-job-request";
+import { moveJobRequestSchema } from "./schemas/move-job-request";
 import {
   DeleteJobRequest,
-  deleteJobRequestSchema,
-} from "./schemas/delete-job-request";
-import {
+  GradingJobConfig,
   MoveJobRequest,
-  moveJobRequestSchema,
-} from "./schemas/move-job-request";
+} from "../grading-queue/types";
 
-const ajv = new Ajv().addSchema(collationSchema);
+let ajv = new Ajv().addSchema(collationSchema);
+ajv = gradingJobConfigSubSchemas.reduce(
+  (prev, curr) => prev.addSchema(curr),
+  ajv,
+);
 
 const validations = {
   gradingJobConfig: ajv.compile<GradingJobConfig>(gradingJobConfigSchema),
-  deleteJobRequestSchema: ajv.compile<DeleteJobRequest>(deleteJobRequestSchema),
-  moveJobRequestSchema: ajv.compile<MoveJobRequest>(moveJobRequestSchema),
+  deleteJobRequest: ajv.compile<DeleteJobRequest>(deleteJobRequestSchema),
+  moveJobRequest: ajv.compile<MoveJobRequest>(moveJobRequestSchema),
 };
 
 export default validations;
