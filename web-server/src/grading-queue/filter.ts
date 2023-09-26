@@ -17,9 +17,7 @@ export const getFilterInfo = (gradingJobs: GradingJob[]) => {
   let filterInfo: FilterInfo = {};
   filterTypes.map((filterType) => {
     const values: Set<string> = new Set(
-      gradingJobs.map(
-        (job) => job.metadata_table[filterType as keyof GradingJob],
-      ),
+      gradingJobs.map((job) => job.metadata_table[filterType]).flat(),
     );
     filterInfo[filterType] = Array.from(values);
   });
