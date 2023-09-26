@@ -43,8 +43,8 @@ export interface Collation {
 export interface GradingJobConfig {
   key: string; // JSONString
   collation: Collation;
-  metadata_table: Map<string, string | string[]>;
-  files: Map<string, FileInfo>;
+  metadata_table: Record<string, string | string[]>;
+  files: Record<string, FileInfo>;
   priority: number;
   script: GradingScriptCommand[];
   response_url: string;
