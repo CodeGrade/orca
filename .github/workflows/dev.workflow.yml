@@ -28,7 +28,7 @@ jobs:
 
   web_server:
     name: "Web Server Tests"
-    runs-on: node:18.18.0-alpine
+    runs-on: ubuntu-20.04
     defaults:
       run:
         working-directory: web-server
