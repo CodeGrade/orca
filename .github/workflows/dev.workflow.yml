@@ -44,5 +44,5 @@ jobs:
           node-version: "18.18.0"
       - name: "Install dependencies"
         run: yarn --frozen-lockfile
-      - run: yarn run build
+      - run: yarn run check
       - run: yarn run test
