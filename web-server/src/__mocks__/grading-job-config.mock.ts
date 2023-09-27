@@ -1,6 +1,6 @@
-import { GradingJobConfig } from "../../grading-queue/types";
+import { GradingJobConfig } from "../grading-queue/types";
 
-export const validGradingJobConfig: GradingJobConfig = {
+export const defaultGradingJobConfig: GradingJobConfig = {
   key: "random-key",
   response_url: "https://www.example.com/callback",
   collation: {

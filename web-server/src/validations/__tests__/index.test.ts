@@ -3,18 +3,18 @@ import {
   validDeleteRequest,
   validImmediateDeleteRequest,
 } from "../__mocks__/delete-request.mock";
-import { validGradingJobConfig } from "../__mocks__/grading-job-config.mock";
+import { defaultGradingJobConfig } from "../../__mocks__/grading-job-config.mock";
 
 describe("JSONSchema validations", () => {
   describe("GradingJobConfig schema validation", () => {
     it("validates a job from a user", () => {
-      expect(validations.gradingJobConfig(validGradingJobConfig)).toBe(true);
+      expect(validations.gradingJobConfig(defaultGradingJobConfig)).toBe(true);
     });
 
     it("validates a job from a team", () => {
       expect(
         validations.gradingJobConfig({
-          ...validGradingJobConfig,
+          ...defaultGradingJobConfig,
           collation: {
             type: "team",
             id: "123456",
