@@ -387,7 +387,6 @@ type RedisRollbackOperation = (actualReply: string | number) => any; // RedisCli
 
 class RedisTransactionExecutor {
   private readonly userMultiCommand;
-  private readonly rollbackMultiCommand;
   private readonly rollbacks: Array<RedisRollbackOperation>;
   private readonly expectedReplies: Array<string | number>;
 
@@ -404,7 +403,6 @@ class RedisTransactionExecutor {
     }
     this.userMultiCommand = userOperations;
     this.rollbacks = rollbacks;
-    this.rollbackMultiCommand = rollbackMultiCommand;
     this.expectedReplies = expectedReplies;
   }
 
