@@ -6,7 +6,7 @@ export const validImmediateDeleteRequest: DeleteJobRequest = {
 
 export const validDeleteRequest: DeleteJobRequest = {
   ...validImmediateDeleteRequest,
-  nonce: 12345,
+  arrivalTime: 12345,
   collation: {
     type: "user",
     id: "12345",

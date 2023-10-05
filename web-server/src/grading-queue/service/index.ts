@@ -83,8 +83,13 @@ export class GradingQueueService {
               `Could not find job with key ${orcaKey}`,
             );
           }
-          const { created_at, release_at, orca_key, nonce, ...baseGradingJob } =
-            JSON.parse(currentJob) as GradingJob;
+          const {
+            created_at,
+            release_at,
+            orca_key,
+            arrivalTime,
+            ...baseGradingJob
+          } = JSON.parse(currentJob) as GradingJob;
           await this.createOrUpdateJob(
             baseGradingJob,
             created_at,
@@ -103,16 +108,20 @@ export class GradingQueueService {
     });
   }
 
-  public async deleteJob({ orcaKey, nonce, collation }: DeleteJobRequest) {
+  public async deleteJob({
+    orcaKey,
+    arrivalTime,
+    collation,
+  }: DeleteJobRequest) {
     await this.runOperationWithLock(async () => {
       let transactionBuilder = new RedisTransactionBuilder(this.client);
       let reservationMember: string;
-      if (collation && nonce !== undefined) {
+      if (collation && arrivalTime !== undefined) {
         const collationString = collationToString(collation);
         const submitterInfoKey = `SubmitterInfo.${collationString}`;
-        reservationMember = `${collationString}.${nonce}`;
+        reservationMember = `${collationString}.${arrivalTime}`;
         transactionBuilder = transactionBuilder
-          .SREM(`Nonces.${collationString}`, nonce.toString())
+          .SREM(`ArrivalTimes.${collationString}`, arrivalTime.toString())
           .LREM(
             submitterInfoKey,
             orcaKey,
@@ -125,6 +134,7 @@ export class GradingQueueService {
           )
           .DEL(orcaKey, await this.client.GET(orcaKey));
       } else {
+        console.log("Attempting to delete immediate job.");
         reservationMember = `immediate.${orcaKey}`;
         transactionBuilder = transactionBuilder
           .ZREM(
@@ -184,7 +194,7 @@ export class GradingQueueService {
     }
   }
 
-  private async delayJob({ collation, orcaKey, nonce }: MoveJobRequest) {
+  private async delayJob({ collation, orcaKey, arrivalTime }: MoveJobRequest) {
     const jobsZrange = await this.client.ZRANGE_WITHSCORES(
       "Reservations",
       -1,
@@ -193,7 +203,7 @@ export class GradingQueueService {
     const lastJobPriority = jobsZrange[0].score;
     const newPriority = lastJobPriority + MOVE_TO_BACK_BUFFER;
     const submitterInfoKey = `SubmitterInfo.${collationToString(collation)}`;
-    const reservationsMember = `${collationToString(collation)}.${nonce}`;
+    const reservationsMember = `${collationToString(collation)}.${arrivalTime}`;
     const transactionBuilder = new RedisTransactionBuilder(this.client)
       .ZADD(
         "Reservations",
@@ -226,16 +236,16 @@ export class GradingQueueService {
   private async deleteNonImmediateJob(orcaKey: string, collation: Collation) {
     const currentJob = await this.client.GET(orcaKey);
     const collationString = collationToString(collation);
-    const nonceToDel = await this.getNonceToDelete(collation);
+    const arrivalTimeToDel = await this.getArrivalTimeToDelete(collation);
 
     const executor = new RedisTransactionBuilder(this.client)
-      .SREM(`Nonces.${collationString}`, nonceToDel)
+      .SREM(`ArrivalTimes.${collationString}`, arrivalTimeToDel)
       .ZREM(
         "Reservations",
-        `${collationString}.${nonceToDel}`,
+        `${collationString}.${arrivalTimeToDel}`,
         await this.client.ZSCORE(
           "Reservations",
-          `${collationString}.${nonceToDel}`,
+          `${collationString}.${arrivalTimeToDel}`,
         ),
       )
       .LREM(
@@ -248,25 +258,25 @@ export class GradingQueueService {
     await executor.execute();
   }
 
-  private async getNonceToDelete(collation: Collation): Promise<string> {
+  private async getArrivalTimeToDelete(collation: Collation): Promise<string> {
     const collationString = collationToString(collation);
-    const nonces: string[] = await this.client.SMEMBERS(
-      `Nonces.${collationString}`,
+    const arrivalTimes: string[] = await this.client.SMEMBERS(
+      `ArrivalTimes.${collationString}`,
     );
     const reservationScores = await this.client.ZMSCORE(
       "Reservations",
-      nonces.map((n) => `${n}.${collationString}`),
+      arrivalTimes.map((n) => `${n}.${collationString}`),
     );
     if (!isNumberArray(reservationScores)) {
       throw new GradingQueueServiceError(
-        `The number of nonces is not equal to the number of reservations for collation ${collationString}`,
+        `The number of cached arrival times is not equal to the number of reservations for collation ${collationString}`,
       );
     }
     const scoreToIndex: Record<number, number> = reservationScores.reduce(
       (prev, curr, i) => (prev[curr] = i),
       {},
     );
-    return nonces[scoreToIndex[reservationScores.sort()[0]]];
+    return arrivalTimes[scoreToIndex[reservationScores.sort()[0]]];
   }
 
   private async nonImmediateJobExists(orcaKey: string, collation: Collation) {
@@ -309,14 +319,16 @@ export class GradingQueueService {
       release_at: releaseTime,
       orca_key: orcaKey,
     };
-    const nonce = await this.generateNonce(gradingJob, arrivalTime);
     const executor = new RedisTransactionBuilder(this.client)
       .LPUSH(`SubmitterInfo.${nextTask}`, orcaKey)
-      .ZADD("Reservations", nonce, `${nextTask}.${nonce}`, null)
+      .ZADD("Reservations", arrivalTime, `${nextTask}.${arrivalTime}`, null)
       .SADD(
-        `Nonces.${nextTask}`,
-        nonce.toString(),
-        await this.client.SISMEMBER(`Nonces.${nextTask}`, nonce.toString()),
+        `ArrivalTimes.${nextTask}`,
+        arrivalTime.toString(),
+        await this.client.SISMEMBER(
+          `ArrivalTimes.${nextTask}`,
+          arrivalTime.toString(),
+        ),
       )
       .SET(orcaKey, JSON.stringify(gradingJob), null)
       .build();
@@ -363,19 +375,6 @@ export class GradingQueueService {
       );
     }
     return JSON.parse(enqueuedJobString) as GradingJob;
-  }
-
-  private async generateNonce(job: GradingJob, arrivalTime: number) {
-    let nonce = arrivalTime + job.priority;
-    while (
-      await this.client.SISMEMBER(
-        `Nonces.${job.collation.type}${job.collation.id}`,
-        nonce.toString(),
-      )
-    ) {
-      nonce++;
-    }
-    return nonce;
   }
 }
 

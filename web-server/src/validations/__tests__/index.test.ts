@@ -25,11 +25,11 @@ describe("JSONSchema validations", () => {
   });
 
   describe("DeleteJobRequest schema validation", () => {
-    it("validates a request with a key, nonce, and user collation", () => {
+    it("validates a request with a key, arrivalTime, and user collation", () => {
       expect(validations.deleteJobRequest(validDeleteRequest)).toBe(true);
     });
 
-    it("validates a request with a key, nonce, and team collation", () => {
+    it("validates a request with a key, arrivalTime, and team collation", () => {
       expect(
         validations.deleteJobRequest({
           ...validDeleteRequest,
