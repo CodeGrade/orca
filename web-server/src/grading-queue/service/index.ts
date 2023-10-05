@@ -83,13 +83,8 @@ export class GradingQueueService {
               `Could not find job with key ${orcaKey}`,
             );
           }
-          const {
-            created_at,
-            release_at,
-            orca_key,
-            arrivalTime,
-            ...baseGradingJob
-          } = JSON.parse(currentJob) as GradingJob;
+          const { created_at, release_at, orca_key, ...baseGradingJob } =
+            JSON.parse(currentJob) as GradingJob;
           await this.createOrUpdateJob(
             baseGradingJob,
             created_at,
