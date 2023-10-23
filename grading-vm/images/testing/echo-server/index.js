@@ -11,7 +11,7 @@ app.get("/", (_, res) => {
   res.send("Hello world!");
 });
 
-app.get("/job-output", (req, res) => res.json(Object.keys(responses))); 
+app.get("/job-output", (req, res) => res.json(Object.keys(responses)));
 
 app.get("/job-output/:key", (req, res) => {
   const { key } = req.params;
@@ -23,7 +23,7 @@ app.get("/job-output/:key", (req, res) => {
 
 app.post("/job-output", (req, res) => {
   const { key, output } = req.body;
-  if (!!key && !!output) {
+  if (key && output) {
     responses[key] = output;
     return res.sendStatus(200);
   }
