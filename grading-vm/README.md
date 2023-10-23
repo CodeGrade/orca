@@ -14,14 +14,27 @@ This software component is set up through the use of Python's virtual environmen
 2. To activate the virtual environment, run `source .venv/bin/activate`
 3. Set up local packages with `python -m pip install -r requirements.txt`.
 
+These steps, as well as the building of Docker images utilized in multiple aspects of testing the worker, are all contained in a single shell script. This can be run with:
+
+```
+$ ./init_dev.sh
+```
+
 ## Running the Grader
 
 For standard execution, run the following commands:
 
 ```
-$ ./init_dev.sh
 $ docker compose up
 $ python -m orca_grader
+```
+
+**BONUS: Populate Redis with Jobs**
+
+Useful for both stress testing and generally populating the Redis queue, the following script can be run to enqueue 1000 jobs:
+
+```
+$ python -m orca_grader.tests.stress_tests.burst_scenario
 ```
 
 ### Using Redis
@@ -81,6 +94,14 @@ Note that whether the grading job is executed from the container or the local ma
 If running without the container, the URL should be "http://localhost:9000/files/PATH/TO/FILE".
 
 If running with th contianer, the URL should be "http://simple-server:9000/files/PATH/TO/FILE". This is because docker does not allow containers to connect to each other through localhost. We are able to change the host name here since both the file server and grading container are connected to the same docker network, `orca-testing`.
+
+## Running Unit Tests
+
+The worker features multiple test suites to ensure robustness. All of these suites can be run by execution the command:
+
+```
+$ python -m orca_grader.tests.runner
+```
 
 ## Exiting the Virtual Environment
 
