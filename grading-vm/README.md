@@ -16,10 +16,12 @@ This software component is set up through the use of Python's virtual environmen
 
 ## Running the Grader
 
-For standard execution, run the following command:
+For standard execution, run the following commands:
 
 ```
-python -m orca_grader
+$ ./init_dev.sh
+$ docker compose up
+$ python -m orca_grader
 ```
 
 ### Using Redis
@@ -29,7 +31,7 @@ The grading vm, when run normally (e.g., as it would be in production), has the 
 To emulate this behavior, devs can kick off a local Redis DB server instance by running the following:
 
 ```
-docker run --rm -p 6379:6379 --name redis-server redis:7
+$ docker run --rm -p 6379:6379 --name redis-server redis:7
 ```
 
 ### With Containers
@@ -39,14 +41,14 @@ By default, Orca's grading vm will execute a grading job within a given containe
 To ensure it connects to Redis correctly, we will need to connect the Redis instance to a custom Docker network. We can do this by running the following:
 
 ```
-docker network create orca-testing
-docker network connect orca-testing redis-server
+$ docker network create orca-testing
+$ docker network connect orca-testing redis-server
 ```
 
 For debugging, devs can optionally specify a custom command to the grading container such that instead of running the grading job, it will simply execute that command instead. For example:
 
 ```
-python -m orca_grader --custom-container-cmd "echo hello world!"
+$ python -m orca_grader --custom-container-cmd "echo hello world!"
 ```
 
 This is useful for running sanity checks, such as ensuring containers are being spun up properly and are able to be killed if they timeout.
@@ -68,8 +70,8 @@ First, all files to be used in local testing must be added under the `images/tes
 Then, run the following commands from this directory:
 
 ```
-docker build -t simple-server -f images/testing/simple-server/Dockerfile images/testing/simple-server
-docker run -p 9000:9000 --rm -d --network orca-testing --name simple-server
+$ docker build -t simple-server -f images/testing/simple-server/Dockerfile images/testing/simple-server
+$ docker run -p 9000:9000 --rm -d --network orca-testing --name simple-server
 ```
 
 The first command builds the server image by copying all files in the given directory to the server such that it's able to deliver them over HTTP. The second command runs the server in the background, exposing port 9000 for machines to access.
