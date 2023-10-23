@@ -1,4 +1,6 @@
-if [ -d ".venv" ]; then
+#!/bin/bash
+
+if [ ! -d ".venv" ]; then
   echo "Creating virtual environment..."
   python -m venv .venv
   echo "Created."
@@ -10,8 +12,8 @@ if [ ! -f ".env" ]; then
   echo "Creating .env from .default.env..."
   cp .default.env .env
   echo "Created."
+  echo "Please make any desired environment variable changes in .env."
 fi
-echo "Please change make any desired environment variable changes in .env." 
 
 docker build -t orca-grader-base -f images/orca-grader-base.Dockerfile .
 docker build -t orca-java-grader -f images/java-grader.Dockerfile .
