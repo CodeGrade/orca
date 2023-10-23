@@ -37,6 +37,12 @@ Useful for both stress testing and generally populating the Redis queue, the fol
 $ python -m orca_grader.tests.stress_tests.burst_scenario
 ```
 
+### Checking Output
+
+To emulate sending the result of a grading job to a response URL, the worker module has a built-in _echo server_ provided by a basic Express API run in a docker container (this is included in the `docker-compose.yml` file). 
+
+GETing the URL `http://localhost:9001/job-output` will yield which IDs can be queried for their results, and GETing the URL `http://localhost:9001/job-output/:id` will give the result of grading that specific job.
+
 ### Using Redis
 
 The grading vm, when run normally (e.g., as it would be in production), has the machine talk to a Redis DB, where it fetches grading jobs and processes them one at a time.
