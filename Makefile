@@ -22,4 +22,4 @@ build:
 
 
 run:
-	docker compose up
+	@docker compose up
