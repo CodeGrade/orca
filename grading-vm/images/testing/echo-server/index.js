@@ -22,11 +22,10 @@ app.get("/job-output/:key", (req, res) => {
 });
 
 app.post("/job-output", (req, res) => {
-  const result = req.body;
-  console.log(result);
-  const { key } = result;
-  if (!key || !result["shell_responses"]) {
-    return res.sendStatus(400);
+  const { key, output } = req.body;
+  if (key && output) {
+    responses[key] = output;
+    return res.sendStatus(200);
   }
   responses[key] = result;
   res.sendStatus(200);
