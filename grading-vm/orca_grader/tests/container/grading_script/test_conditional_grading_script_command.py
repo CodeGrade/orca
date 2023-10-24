@@ -18,7 +18,7 @@ class TestConditionalGradingScriptCommand(unittest.TestCase):
     
     output = command.execute([])
     responses, exceptions, tap_output = output.get_command_responses(), \
-        output.get_execution_errors(), output.get_tap_output()
+        output.get_execution_errors(), output.get_output()
 
     self.assertEqual(len(responses), 1)
     self.assertEqual(len(exceptions), 0)
@@ -32,7 +32,7 @@ class TestConditionalGradingScriptCommand(unittest.TestCase):
 
     output = command.execute([])
     responses, exceptions, tap_output = output.get_command_responses(), \
-        output.get_execution_errors(), output.get_tap_output()
+        output.get_execution_errors(), output.get_output()
 
     self.assertEqual(len(responses), 1)
     self.assertEqual(len(exceptions), 0)
@@ -46,7 +46,7 @@ class TestConditionalGradingScriptCommand(unittest.TestCase):
 
     output = command.execute([])
     responses, exceptions, tap_output = output.get_command_responses(), \
-        output.get_execution_errors(), output.get_tap_output()
+        output.get_execution_errors(), output.get_output()
 
     self.assertEqual(len(responses), 1)
     self.assertEqual(len(exceptions), 0)
@@ -60,7 +60,7 @@ class TestConditionalGradingScriptCommand(unittest.TestCase):
 
     output = command.execute([])
     responses, exceptions, tap_output = output.get_command_responses(), \
-        output.get_execution_errors(), output.get_tap_output()
+        output.get_execution_errors(), output.get_output()
 
     self.assertEqual(len(responses), 1)
     self.assertEqual(len(exceptions), 0)
@@ -74,7 +74,7 @@ class TestConditionalGradingScriptCommand(unittest.TestCase):
 
     output = command.execute([])
     responses, exceptions, tap_output = output.get_command_responses(), \
-        output.get_execution_errors(), output.get_tap_output()
+        output.get_execution_errors(), output.get_output()
 
     self.assertEqual(len(responses), 1)
     self.assertEqual(len(exceptions), 0)
@@ -88,7 +88,7 @@ class TestConditionalGradingScriptCommand(unittest.TestCase):
 
     output = command.execute([])
     responses, exceptions, tap_output = output.get_command_responses(), \
-        output.get_execution_errors(), output.get_tap_output()
+        output.get_execution_errors(), output.get_output()
 
     self.assertEqual(len(responses), 1)
     self.assertEqual(len(exceptions), 0)
@@ -103,7 +103,7 @@ class TestConditionalGradingScriptCommand(unittest.TestCase):
 
     output = command.execute([])
     responses, exceptions, tap_output = output.get_command_responses(), \
-        output.get_execution_errors(), output.get_tap_output()
+        output.get_execution_errors(), output.get_output()
 
     self.assertEqual(len(responses), 1)
     self.assertEqual(len(exceptions), 0)

@@ -1,6 +1,6 @@
 from subprocess import CalledProcessError, CompletedProcess, run, TimeoutExpired
 from typing import List
-from orca_grader.common.grading_job.grading_job_output import GradingJobOutput
+from orca_grader.common.grading_job.grading_job_result import GradingJobResult
 from orca_grader.container.grading_script.grading_script_command import GradingScriptCommand
 from orca_grader.container.grading_script.grading_script_command_response import GradingScriptCommandResponse
 
@@ -34,7 +34,7 @@ class BashGradingScriptCommand:
   def get_timeout(self) -> float:
     return self.__timeout
 
-  def execute(self, responses: List[GradingScriptCommandResponse]) -> GradingJobOutput:
+  def execute(self, responses: List[GradingScriptCommandResponse]) -> GradingJobResult:
     did_fail: bool = False
     try:
       proc_res: CompletedProcess = run(self.__cmd, timeout=self.__timeout, 
@@ -59,10 +59,10 @@ class BashGradingScriptCommand:
     if did_fail and self.__on_fail:
       return self.__on_fail.execute(responses)
     elif did_fail:
-      return GradingJobOutput(responses)
+      return GradingJobResult(responses)
     elif self.__on_complete:
       return self.__on_complete.execute(responses)
     else:
       response_with_tap = responses[-1] # If successful, TAP will be stored in last response.
-      return GradingJobOutput(responses, tap_output=response_with_tap.get_stdout_output())
+      return GradingJobResult(responses, output=response_with_tap.get_stdout_output())
   

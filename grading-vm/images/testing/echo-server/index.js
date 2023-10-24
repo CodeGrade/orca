@@ -18,7 +18,7 @@ app.get("/job-output/:key", (req, res) => {
   if (responses[key]) {
     return res.json(responses[key]);
   }
-  return res.sendStatus(400);
+  return res.sendStatus(404);
 });
 
 app.post("/job-output", (req, res) => {
@@ -27,7 +27,8 @@ app.post("/job-output", (req, res) => {
     responses[key] = output;
     return res.sendStatus(200);
   }
-  return res.sendStatus(400);
+  responses[key] = result;
+  res.sendStatus(200);
 });
 
 app.listen(PORT, () => {

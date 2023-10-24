@@ -135,13 +135,13 @@ Simlar to the `BashGradingScriptCommand`, the optional `on_true` and `on_false` 
 
 <hr>
 
-## `GradingJobOutput`
+## `GradingJobResult`
 
-Execution of a grading job will result in a `GradingJobOutput` object to send back data to Bottlenose.
+Execution of a grading job will result in a `GradingJobResult` object to send back data to a given job's `response_url`.
 
 ```typescript
-interface GradingJobOutput {
-  tap_output?: string;
+interface GradingJobResult {
+  output?: string;
   shell_responses: [GradingScriptCommandResponse];
   errors?: [string];
   key: JSONString;
@@ -158,4 +158,4 @@ interface GradingScriptCommandResponse {
 
 The output includes the key given in the original job for use on the Bottlenose side. The `shell_responses` array contains a transcript of the output from each `GradingScriptCommand`.
 
-A successful `GradingJobOutput` will _always_ contain TAP output. An unsuccessful `GradingJobOutput` will still contain any responses of commands executed by the script; if the Orca VM harness fails (e.g., due to resource limits) the `errors` array will be non-empty.
+A successful `GradingJobResult` will _always_ contain `output`. An unsuccessful `GradingJobResult` will still contain any responses of commands executed by the script; if the worker fails (e.g., due to resource limits) or an operation on the server removes the job (e.g., cancelling a job in the queue), the `errors` property will contain a non-empty array.
