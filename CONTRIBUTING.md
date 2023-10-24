@@ -4,7 +4,7 @@ Code in the Orca repo is expected to follow a certain set of style guidelines. E
 
 ## Commit Messages and Pull Requests
 
-Commit messages should follow the [Semantic Commit Messages gist](https://gist.github.com/joshbuchea/6f47e86d2510bce28f8e7f42ae84c716).
+Commit messages should follow the [Semantic Commit Messages gist](https://gist.github.com/joshbuchea/6f47e86d2510bce28f8e7f42ae84c716). Similarly, branch names should follow a similar format such as `feature/`, `refactor/`, etc.
 
 Pull requests submitted to Orca are expected to be small, covering only a single feature (fix, refactor, etc.) to be added to the repository. Issues that apply to the changes should be linked. If a pull request is in progress, it should be marked as a draft.
 
