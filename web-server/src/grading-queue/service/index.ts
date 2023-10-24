@@ -391,9 +391,8 @@ class RedisTransactionExecutor {
   private readonly expectedReplies: Array<string | number>;
 
   constructor(
-    userOperations: any,
+    userOperations: any, // RedisClientMultiCommandType
     rollbacks: Array<RedisRollbackOperation>,
-    rollbackMultiCommand: any,
     expectedReplies: Array<string | number>,
   ) {
     if (rollbacks.length !== expectedReplies.length) {
@@ -443,7 +442,6 @@ class RedisTransactionBuilder {
     return new RedisTransactionExecutor(
       this.userMultiCommand,
       this.rollbackOperations,
-      this.rollbackMultiCommand,
       this.expectedReplies,
     );
   }
