@@ -1,7 +1,7 @@
 from enum import Enum
 from types import FunctionType
 from typing import List
-from orca_grader.common.grading_job.grading_job_output import GradingJobOutput
+from orca_grader.common.grading_job.grading_job_result import GradingJobResult
 from orca_grader.container.grading_script.grading_script_command import GradingScriptCommand
 from os.path import exists, isdir, isfile
 from orca_grader.container.grading_script.grading_script_command_response \
@@ -51,7 +51,7 @@ class ConditionalGradingScriptCommand(GradingScriptCommand):
   def get_file_path(self) -> str:
     return self.__file_path
 
-  def execute(self, responses: List[GradingScriptCommandResponse]) -> GradingJobOutput:
+  def execute(self, responses: List[GradingScriptCommandResponse]) -> GradingJobResult:
     check = predicate_to_func(self.__predicate)
     if check(self.__file_path):
       return self.__on_true.execute(responses)

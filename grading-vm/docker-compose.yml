@@ -16,6 +16,14 @@ services:
     networks:
       - orca-testing
 
+  echo-server:
+    image: echo-server
+    ports:
+      - "9001:9001"
+    container_name: echo-server
+    networks:
+      - orca-testing
+
 networks:
   orca-testing:
     external: true

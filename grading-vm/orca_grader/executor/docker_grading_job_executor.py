@@ -1,4 +1,5 @@
 import subprocess
+from orca_grader.exceptions import InvalidWorkerStateException
 from orca_grader.executor.grading_job_executor import GradingJobExecutor
 from typing import List, Callable
 from subprocess import CompletedProcess, TimeoutExpired
@@ -17,5 +18,4 @@ class DockerGradingJobExecutor(GradingJobExecutor):
       subprocess.run(["docker", "stop", "-t", f"{self.__DOCKER_CONTAINER_STOPPAGE_TIMEOUT}", self.__container_name],
         stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, timeout=self.__DOCKER_CONTAINER_STOPPAGE_TIMEOUT+self.__STOP_BUFFER)
     except TimeoutExpired:
-      print("Failed to stop container.")
-      pass
+      raise InvalidWorkerStateException()
