@@ -18,6 +18,7 @@ build:
 	@docker save --output web-server/files/orca-java-grader.tgz orca-java-grader
 	@docker build -t orca-web-server -f web-server/Dockerfile web-server/
 	@docker build -t echo-server -f grading-vm/images/testing/echo-server/Dockerfile grading-vm/images/testing/echo-server/
+	@docker build -t simple-server -f grading-vm/images/testing/simple-server/Dockerfile grading-vm/images/testing/simple-server
 
 
 

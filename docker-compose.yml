@@ -25,6 +25,14 @@ services:
     networks:
       - orca-testing
 
+  simple-server:
+    image: simple-server
+    ports:
+      - "9000:9000"
+    container_name: echo-server
+    networks:
+      - orca-testing
+
 networks:
   orca-testing:
     external: true
