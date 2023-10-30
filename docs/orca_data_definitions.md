@@ -17,11 +17,12 @@ A `GradingJob` contains details about how to grade a submission.
 interface GradingJob {
   key: JSONString;
   collation: Collation;
-  metadata_table: Map<string, string>;
-  files: Map<string, CodeFileInfo>;
+  metadata_table: Record<string, string>;
+  files: Record<string, CodeFileInfo>;
   priority: integer;
   script: GradingScriptCommand[];
   response_url: string;
+  container_response_url?: string;
   grader_image_sha: string;
 }
 ```
@@ -87,7 +88,7 @@ Grading jobs have a numeric priority determined by Bottlenose, which is interpre
 
 Jobs are run inside Docker containers to provide a level of isolation from the local machine. When an assignment is generated, professors will provide a Dockerfile to build their grader image. Orca's web server will build this image and save it to a .tgz file with the name `<SHA>.tgz`, where `<SHA>` is the SHA sum generated from the image's Dockerfile.
 
-The grading VM will use the `container_sha`'s value to determine if the image already exists on its local machine or if it should be downloaded from the URL `https://<orca-server-hostname>/images/<SHA>.tgz`.
+The grading VM will use the `grader_image_sha`'s value to determine if the image already exists on its local machine or if it should be downloaded from the URL `https://<orca-server-hostname>/images/<SHA>.tgz`.
 
 The script defines the actual grading process, as a state machine specified below.
 
@@ -137,7 +138,7 @@ Simlar to the `BashGradingScriptCommand`, the optional `on_true` and `on_false` 
 
 ## `GradingJobResult`
 
-Execution of a grading job will result in a `GradingJobResult` object to send back data to a given job's `response_url`.
+Execution of a grading job will result in a `GradingJobResult` object to send back data to a given job's `response_url`. _Optionally_, a `container_response_url` may be included for local development as if the grading container needs to contact an test echo server also running in a container, then there will be a need for separate `http://localhost` and `http://<container_name>` URLs.
 
 ```typescript
 interface GradingJobResult {

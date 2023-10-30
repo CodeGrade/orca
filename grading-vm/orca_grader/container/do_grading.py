@@ -1,7 +1,6 @@
 import json
 import os
 import shutil
-import sys
 import traceback
 from typing import Dict, List, TextIO
 from orca_grader.common.services.push_results import push_results_to_response_url
@@ -52,7 +51,10 @@ def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobResul
     output = GradingJobResult(command_responses, [preprocess_e])
   except Exception as e:
     output = GradingJobResult(command_responses, [e])
-  push_results_to_response_url(output, grading_job_json["key"], grading_job_json["response_url"])
+  push_results_to_response_url(output, grading_job_json["key"],
+                               grading_job_json["container_response_url"] if \
+                                "container_response_url" in grading_job_json else \
+                                  grading_job_json["response_url"])
   return output
 
 if __name__ == "__main__":
