@@ -12,11 +12,21 @@ import CONFIG from "../../config";
 import { collationToString } from "../utils";
 import { toMilliseconds } from "./utils";
 
+// NOTE: Redis lock logic unfortunately does not have typing information.
+// Thus, here we are manually typing it based on the source code.
 type RedisLockRelease = () => Promise<void>;
 type RedisLock = (
   lockName: string,
   timeout: number,
 ) => Promise<RedisLockRelease>;
+
+// NOTE: Redis' .d.ts files do not yield an importable type definition
+// of the return type of RedisClient.multi, meaning we need to do the following
+// to actually acquire it:
+type RedisClientMultiCommandType = ReturnType<
+  ReturnType<typeof createClient>["multi"]
+>;
+
 const DEFAULT_TIMEOUT = 5000;
 const MOVE_TO_BACK_BUFFER = toMilliseconds(10);
 
@@ -383,7 +393,9 @@ const isNumberArray = (arr: Array<number | null>): arr is Array<number> => {
   return arr.every((n) => n !== null);
 };
 
-type RedisRollbackOperation = (actualReply: string | number) => any; // RedisClientMultiCommandType
+type RedisRollbackOperation = (
+  actualReply: string | number,
+) => RedisClientMultiCommandType; // RedisClientMultiCommandType
 
 class RedisTransactionExecutor {
   private readonly userMultiCommand;
@@ -412,7 +424,7 @@ class RedisTransactionExecutor {
       const rollbackMultiCommand = this.rollbacks.reduce((_, curr, i) => {
         return curr(actualReplies[i]);
       }, null);
-      await rollbackMultiCommand.exec();
+      await rollbackMultiCommand?.exec();
       throw new GradingQueueServiceError(`The transaction could not be executed successfully. 
       Expected Replies: ${this.expectedReplies} | Actual Replies: ${actualReplies}`);
     }
@@ -421,8 +433,8 @@ class RedisTransactionExecutor {
 }
 
 class RedisTransactionBuilder {
-  private readonly userMultiCommand; // RedisClientMultiCommandType
-  private readonly rollbackMultiCommand; // RedisClientMultiCommandType
+  private readonly userMultiCommand: RedisClientMultiCommandType; // RedisClientMultiCommandType
+  private readonly rollbackMultiCommand: RedisClientMultiCommandType; // RedisClientMultiCommandType
   private readonly expectedReplies: Array<string | number>;
   private readonly rollbackOperations: Array<RedisRollbackOperation>;
 
@@ -573,7 +585,7 @@ class RedisTransactionBuilder {
       if (actualReply !== expectedReply) {
         return this.rollbackMultiCommand;
       }
-      this.rollbackMultiCommand.SET(key, previousValue);
+      return this.rollbackMultiCommand.SET(key, previousValue);
     });
     return this;
   }
