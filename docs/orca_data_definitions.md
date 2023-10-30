@@ -145,6 +145,7 @@ interface GradingJobResult {
   shell_responses: [GradingScriptCommandResponse];
   errors?: [string];
   key: JSONString;
+  container_path: string;
 }
 
 interface GradingScriptCommandResponse {
@@ -156,6 +157,6 @@ interface GradingScriptCommandResponse {
 }
 ```
 
-The output includes the key given in the original job for use on the Bottlenose side. The `shell_responses` array contains a transcript of the output from each `GradingScriptCommand`.
+For use on the Bottlenose side, the output includes the key given in the original job, as well as the path code was stored in for formatting file paths in TAP. The `shell_responses` array contains a transcript of the output from each `GradingScriptCommand`.
 
 A successful `GradingJobResult` will _always_ contain `output`. An unsuccessful `GradingJobResult` will still contain any responses of commands executed by the script; if the worker fails (e.g., due to resource limits) or an operation on the server removes the job (e.g., cancelling a job in the queue), the `errors` property will contain a non-empty array.
