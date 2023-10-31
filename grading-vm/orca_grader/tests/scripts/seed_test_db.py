@@ -25,7 +25,8 @@ __BASIC_GRADING_JOB_SCAFFOLDING = {
   'collation': {
     'type': 'user'
   },
-  'response_url': 'http://echo-server:9001/job-output',
+  'response_url': 'http://localhost:9001/job-output',
+  'container_response_url': 'http://echo-server:9001/job-output',
   'files': {},
   'metadata_table': {}
 }
