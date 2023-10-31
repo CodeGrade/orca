@@ -49,6 +49,7 @@ export interface GradingJobConfig {
   script: GradingScriptCommand[];
   response_url: string;
   container_response_url?: string;
+  grader_image_sha: string;
 }
 
 interface AdditionalJobData {
