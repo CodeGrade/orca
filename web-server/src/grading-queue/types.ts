@@ -3,21 +3,37 @@ export interface Reservation {
   score: number;
 }
 
-interface GradingScriptCommand {
-  cmd: string;
-  on_fail: "abort" | number;
-  on_complete: "output" | number;
+type GradingScriptCommand =
+  | BashGradingScriptCommand
+  | ConditionalGradingScriptCommand;
+
+interface ConditionalGradingScriptCommand {
+  condition: GradingScriptCondition;
+  on_true?: GradingScriptCommandEdge;
+  on_false?: GradingScriptCommandEdge;
 }
 
-export interface CodeFileInfo {
+interface GradingScriptCondition {
+  predicate: "exists" | "dir" | "file";
+  path: string;
+}
+
+interface BashGradingScriptCommand {
+  cmd: string | Array<string>;
+  on_fail?: "abort" | GradingScriptCommandEdge;
+  on_complete?: "output" | GradingScriptCommandEdge;
+  replace_paths?: boolean;
+  working_dir?: string;
+}
+
+type GradingScriptCommandEdge = number | string | GradingScriptCommand;
+
+export interface FileInfo {
   url: string;
   mime_type: string;
 }
 
-export enum CollationType {
-  User = "user",
-  Team = "team",
-}
+export type CollationType = "team" | "user";
 
 export interface Collation {
   type: CollationType;
@@ -27,25 +43,23 @@ export interface Collation {
 export interface GradingJobConfig {
   key: string; // JSONString
   collation: Collation;
-  metadata_table: Map<string, string | string[]>;
-  files: Map<string, CodeFileInfo>;
+  metadata_table: Record<string, string | string[]>;
+  files: Record<string, FileInfo>;
   priority: number;
   script: GradingScriptCommand[];
   response_url: string;
+  container_response_url?: string;
+  grader_image_sha: string;
 }
 
-export interface GradingJob {
-  key: string; // JSONString
-  collation: Collation;
-  metadata_table: Map<string, string | string[]>;
-  files: Map<string, CodeFileInfo>;
-  priority: number;
-  script: GradingScriptCommand[];
-  response_url: string;
-  release_at: number; // Release timestamp in ms
-  created_at: number; // Created timestamp in ms
-  // updated_at: number; // Last updated timestamp in ms
+interface AdditionalJobData {
+  release_at: number;
+  created_at: number;
+  orca_key: string;
+  nonce?: number;
 }
+
+export type GradingJob = GradingJobConfig & AdditionalJobData;
 
 export interface PaginationInfo {
   offset: number;
@@ -72,20 +86,17 @@ export interface GradingQueueStats {
   released: TimeStats;
 }
 
-export enum MoveJobAction {
-  RELEASE = "release",
-  DELAY = "delay",
-}
+export type MoveJobAction = "release" | "delay";
 
 export interface MoveJobRequest {
   nonce: number;
-  jobKey: string; // JSONString
+  orcaKey: string;
   moveAction: MoveJobAction;
   collation: Collation;
 }
 
 export interface DeleteJobRequest {
-  jobKey: string; // JSONString
+  orcaKey: string;
   nonce?: number;
   collation?: Collation;
 }

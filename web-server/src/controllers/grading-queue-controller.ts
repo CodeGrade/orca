@@ -1,8 +1,4 @@
 import { Request, Response } from "express";
-import getCollatedGradingJobs from "../grading-queue/get";
-import createImmediateJob from "../grading-queue/create-immediate";
-import moveJobHandler from "../grading-queue/move";
-import updateGradingJob from "../grading-queue/update";
 import {
   validateOffsetAndLimit,
   formatOffsetAndLimit,
@@ -10,23 +6,18 @@ import {
 } from "../utils/pagination";
 import { getGradingQueueStats } from "../grading-queue/stats";
 import { filterGradingJobs, getFilterInfo } from "../grading-queue/filter";
-import { GradingJob } from "../grading-queue/types";
 import {
-  validateDeleteRequest,
-  validateFilterRequest,
-  validateGradingJobConfig,
-  validateMoveRequest,
-} from "../utils/validate";
-import { jobInQueue, nonImmediateJobExists } from "../utils/helpers";
-import createJob from "../grading-queue/create";
-import { upgradeJob } from "../grading-queue/upgrade";
-import deleteJobHandler from "../grading-queue/delete";
-
-const errorResponse = (res: Response, status: number, errors: string[]) => {
-  res.status(status);
-  res.json({ errors: errors });
-  return;
-};
+  DeleteJobRequest,
+  GradingJob,
+  GradingJobConfig,
+  MoveJobRequest,
+} from "../grading-queue/types";
+import { validateFilterRequest } from "../utils/validate";
+import { GradingQueueServiceError } from "../grading-queue/service/exceptions";
+import { errorResponse } from "./utils";
+import { generateQueueKey } from "../grading-queue/utils";
+import { GradingQueueService } from "../grading-queue/service";
+import validations from "../validations";
 
 export const getGradingJobs = async (req: Request, res: Response) => {
   if (
@@ -34,7 +25,7 @@ export const getGradingJobs = async (req: Request, res: Response) => {
     !req.query.offset ||
     !validateOffsetAndLimit(req.query.offset, req.query.limit)
   ) {
-    errorResponse(res, 400, [
+    return errorResponse(res, 400, [
       "Must send a valid offset and a limit with this request.",
     ]);
   }
@@ -45,238 +36,167 @@ export const getGradingJobs = async (req: Request, res: Response) => {
     req.query.limit,
   );
 
-  let [gradingJobs, gradingJobsErr] = await getCollatedGradingJobs();
-  if (gradingJobsErr || !gradingJobs) {
-    errorResponse(res, 500, [
-      "An internal server error occurred while trying to retrieve the grading queue.  Please try again or contact an administrator",
-    ]);
-    return;
-  }
+  try {
+    const gradingJobs = await new GradingQueueService().getGradingJobs();
 
-  if (offset > 0 && offset >= gradingJobs.length) {
-    errorResponse(res, 400, [
-      "The given offset is out of range for the total number of items.",
-    ]);
-    return;
-  }
-
-  let filtered = false;
-  let filteredGradingJobs: GradingJob[] = [];
-  // TODO: Use RequestHandler from express
-  if (req.query.filter_type && req.query.filter_value) {
-    // TODO: Validate filter type and filter value
-    const filterType = req.query.filter_type;
-    const filterValue = req.query.filter_value;
-    if (!validateFilterRequest(req.query.filter_type, req.query.filter_value)) {
-      errorResponse(res, 500, ["Failed to validate filter request."]);
-      return;
+    if (offset > 0 && offset >= gradingJobs.length) {
+      return errorResponse(res, 400, [
+        "The given offset is out of range for the total number of items.",
+      ]);
     }
 
-    filteredGradingJobs = filterGradingJobs(
-      gradingJobs,
-      filterType as string,
-      filterValue as string,
+    let filtered = false;
+    let filteredGradingJobs: GradingJob[] = [];
+    // TODO: Use RequestHandler from express
+    if (req.query.filter_type && req.query.filter_value) {
+      const filterType = req.query.filter_type;
+      const filterValue = req.query.filter_value;
+      if (
+        !validateFilterRequest(req.query.filter_type, req.query.filter_value)
+      ) {
+        return errorResponse(res, 500, ["Failed to validate filter request."]);
+      }
+
+      filteredGradingJobs = filterGradingJobs(
+        gradingJobs,
+        filterType as string,
+        filterValue as string,
+      );
+      filtered = true;
+    }
+
+    const resGradingJobs = filtered ? filteredGradingJobs : gradingJobs;
+
+    const paginationData = getPageFromGradingJobs(
+      resGradingJobs,
+      offset,
+      limit,
     );
-    filtered = true;
+    const { first, next, prev, last } = paginationData;
+    const gradingJobsSlice = paginationData.data;
+
+    // Calculate Stats for entire grading queue
+    const stats = getGradingQueueStats(gradingJobs);
+    const filterInfo = getFilterInfo(gradingJobs);
+
+    // TODO: Create separate endpoint for filter info
+    return res.status(200).json({
+      grading_jobs: gradingJobsSlice,
+      first,
+      next,
+      prev,
+      last,
+      total: gradingJobsSlice.length,
+      stats,
+      filter_info: filterInfo,
+    });
+  } catch (err) {
+    if (err instanceof GradingQueueServiceError) {
+      return errorResponse(res, 500, [err.message]);
+    }
+    return errorResponse(res, 500, [
+      `An error occurred while trying get grading jobs in the queue. Please contact an admin or professor.`,
+    ]);
   }
-
-  const resGradingJobs = filtered ? filteredGradingJobs : gradingJobs;
-
-  const paginationData = getPageFromGradingJobs(resGradingJobs, offset, limit);
-  const { first, next, prev, last } = paginationData;
-  const gradingJobsSlice = paginationData.data;
-
-  // Calculate Stats for entire grading queue
-  const stats = getGradingQueueStats(gradingJobs);
-  const filterInfo = getFilterInfo(gradingJobs);
-
-  // TODO: Create separate endpoint for filter info
-  res.status(200);
-  res.json({
-    grading_jobs: gradingJobsSlice,
-    first,
-    next,
-    prev,
-    last,
-    total: gradingJobsSlice.length,
-    stats,
-    filter_info: filterInfo,
-  });
 };
 
 export const createOrUpdateImmediateJob = async (
   req: Request,
   res: Response,
 ) => {
+  if (!validations.gradingJobConfig(req.body)) {
+    return errorResponse(res, 400, ["Invalid grading job configuration."]);
+  }
   const gradingJobConfig = req.body;
 
   try {
-    if (!validateGradingJobConfig(gradingJobConfig)) {
-      errorResponse(res, 400, ["Invalid grading job configuration."]);
-      return;
-    }
+    const orcaKey = generateQueueKey(
+      gradingJobConfig.key,
+      gradingJobConfig.response_url,
+    );
+    await new GradingQueueService().createOrUpdateJob(
+      gradingJobConfig,
+      Date.now(),
+      orcaKey,
+      true,
+    );
+    return res.status(200).json({ message: "OK" });
   } catch (error) {
-    errorResponse(res, 500, [
-      "An internal server error occurred while trying to validate immediate grading job.",
-    ]);
-
-    return;
-  }
-
-  const { key, collation } = gradingJobConfig;
-  const [jobExists, existsErr] = await jobInQueue(key);
-  if (existsErr) {
-    errorResponse(res, 500, [
-      "An internal server error occurred while trying to create immediate grading job.",
-    ]);
-    return;
-  }
-
-  if (!jobExists) {
-    // Create job if it doesn't already exist
-    const createErr = await createImmediateJob(gradingJobConfig);
-    if (createErr) {
-      errorResponse(res, 500, [
-        "An internal server error occurred while trying to create immediate grading job.",
-      ]);
-      return;
+    if (error instanceof GradingQueueServiceError) {
+      return errorResponse(res, 500, [error.message]);
     }
-  } else {
-    // Update content of existing job
-    const updateErr = await updateGradingJob(gradingJobConfig);
-    if (updateErr) {
-      errorResponse(res, 500, [
-        "An internal server error occurred while trying to update immediate grading job.",
-      ]);
-      return;
-    }
-  }
-
-  const [regJobExists, regExistsErr] = await nonImmediateJobExists(
-    key,
-    collation,
-  );
-  if (regExistsErr) {
-    errorResponse(res, 500, [
-      "An internal server error occurred while trying to upgrade immediate grading job.",
+    return errorResponse(res, 500, [
+      `An error occurred while trying to create an 
+    immediate job or update an existing one for 
+    ${gradingJobConfig.collation.type} with ID ${gradingJobConfig.collation.id}.`,
     ]);
-    return;
   }
-
-  if (regJobExists) {
-    const upgradeErr = await upgradeJob(gradingJobConfig);
-    if (upgradeErr) {
-      errorResponse(res, 500, [
-        "An internal server error occurred while trying to upgrade immediate grading job.",
-      ]);
-      return;
-    }
-  }
-
-  res.status(200);
-  res.json({ message: "OK" });
 };
 
 export const createOrUpdateJob = async (req: Request, res: Response) => {
+  if (!validations.gradingJobConfig(req.body)) {
+    return errorResponse(res, 400, ["The given grading job was invalid."]);
+  }
+
   const gradingJobConfig = req.body;
 
   try {
-    if (!validateGradingJobConfig(gradingJobConfig)) {
-      res.status(400);
-      res.json({ errors: ["Invalid grading job configuration."] });
-      return;
-    }
-  } catch (error) {
-    res.status(500);
-    res.json({
-      errors: [
-        "An internal server error occurred while trying to validate grading job.",
-      ],
-    });
-    return;
-  }
-
-  const { key } = gradingJobConfig;
-  const [jobExists, existsErr] = await jobInQueue(key);
-  if (existsErr) {
-    errorResponse(res, 500, [
-      "An internal server error occurred while trying to create grading job.",
-    ]);
-    return;
-  }
-  if (!jobExists) {
-    // Create job if it doesn't already exist
-    const arrivalTime = new Date().getTime();
-    const createErr = await createJob(gradingJobConfig, arrivalTime);
-    if (createErr) {
-      console.error(createErr);
-      errorResponse(res, 500, [
-        "An internal server error occurred while trying to create grading job.",
+    const orcaKey = generateQueueKey(
+      gradingJobConfig.key,
+      gradingJobConfig.response_url,
+    );
+    await new GradingQueueService().createOrUpdateJob(
+      gradingJobConfig,
+      Date.now(),
+      orcaKey,
+      false,
+    );
+    return res.status(200).json({ message: "OK" });
+  } catch (err) {
+    if (err instanceof GradingQueueServiceError) {
+      return errorResponse(res, 500, [err.message]);
+    } else {
+      return errorResponse(res, 500, [
+        `Something went wrong while trying to create or update a job 
+      for ${gradingJobConfig.collation.type} with ID ${gradingJobConfig.collation.id}.`,
       ]);
-      return;
-    }
-  } else {
-    // Update content of existing job
-    const updateErr = await updateGradingJob(gradingJobConfig);
-    if (updateErr) {
-      errorResponse(res, 500, [
-        "An internal server error occurred while trying to update grading job.",
-      ]);
-      return;
     }
   }
-  res.status(200);
-  res.json({ message: "OK" });
 };
 
 export const moveJob = async (req: Request, res: Response) => {
-  const moveRequest = req.body.moveJobRequest;
+  if (!validations.moveJobRequest(req.body)) {
+    errorResponse(res, 400, ["Invalid move request."]);
+    return;
+  }
   try {
-    if (!validateMoveRequest(moveRequest)) {
-      errorResponse(res, 400, ["Invalid move request."]);
-      return;
+    await new GradingQueueService().moveJob(req.body);
+    return res.status(200).json("OK");
+  } catch (err) {
+    if (err instanceof GradingQueueServiceError) {
+      return errorResponse(res, 500, [err.message]);
     }
-  } catch (error) {
-    errorResponse(res, 500, [
-      "An internal server error occurred while trying to validate move request.",
+    return errorResponse(res, 500, [
+      `An error occurred while trying to move job with key ${req.body.orcaKey}.`,
     ]);
-    return;
   }
-
-  const [releaseAt, moveErr] = await moveJobHandler(moveRequest);
-  if (moveErr || releaseAt === null) {
-    console.error(moveErr);
-    errorResponse(res, 500, [
-      "An internal server error occurred while trying to move grading job.",
-    ]);
-    return;
-  }
-
-  res.status(200);
-  res.json(releaseAt);
 };
 
 export const deleteJob = async (req: Request, res: Response) => {
-  const deleteRequest = req.body.deleteJobRequest;
-  try {
-    if (!validateDeleteRequest(deleteRequest)) {
-      errorResponse(res, 400, ["Invalid delete request."]);
-      return;
-    }
-  } catch (error) {
-    errorResponse(res, 500, [
-      "An internal server error occurred while trying to validate delete request.",
-    ]);
-    return;
-  }
-  const deleteErr = await deleteJobHandler(deleteRequest);
-  if (deleteErr) {
-    errorResponse(res, 500, [
-      "An internal server error occurred while trying to delete grading job.",
-    ]);
-    return;
+  if (!validations.deleteJobRequest(req.body)) {
+    return errorResponse(res, 400, ["Invalid delete request."]);
   }
 
-  res.status(200);
-  res.json({ message: "OK" });
+  try {
+    await new GradingQueueService().deleteJob(req.body);
+    return res.status(200).json({ message: "OK" });
+  } catch (err) {
+    if (err instanceof GradingQueueServiceError) {
+      return errorResponse(res, 500, [err.message]);
+    } else {
+      return errorResponse(res, 500, [
+        `Something went wrong when trying to delete job with key ${req.body.orcaKey}.`,
+      ]);
+    }
+  }
 };

@@ -1,0 +1,39 @@
+services:
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    container_name: redis-queue
+    networks:
+      - orca-testing
+
+  web-server:
+    image: orca-web-server
+    ports:
+      - "4000:4000"
+    container_name: orca-web-server
+    environment:
+      - REDIS_URL=redis://redis-queue:6379
+    networks:
+      - orca-testing
+
+  echo-server:
+    image: echo-server
+    ports:
+      - "9001:9001"
+    container_name: echo-server
+    networks:
+      - orca-testing
+
+  simple-server:
+    image: simple-server
+    ports:
+      - "9000:9000"
+    container_name: echo-server
+    networks:
+      - orca-testing
+
+networks:
+  orca-testing:
+    external: true
+    name: orca-testing

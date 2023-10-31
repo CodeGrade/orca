@@ -129,5 +129,8 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+# ---- End of Default Node Gitignore ---
+
 # Additional items for Typescript/Orca
 build/
+files
