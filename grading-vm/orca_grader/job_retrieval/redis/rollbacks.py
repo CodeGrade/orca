@@ -22,6 +22,7 @@ class RedisRollbackBuilder:
     self.rollback_steps = []
 
   def build(self) -> RedisRollbackExecutor:
+    self.rollback_steps.reverse()
     return RedisRollbackExecutor(self.rollback_steps)
 
   def add_reservation_rollback_step(self, reservation_str: str, timestamp: int):
