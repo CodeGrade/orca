@@ -22,6 +22,15 @@ describe("JSONSchema validations", () => {
         }),
       ).toBe(true);
     });
+
+    it("validates a job with a container response url", () => {
+      expect(
+        validations.gradingJobConfig({
+          ...defaultGradingJobConfig,
+          container_response_url: "https://example.com/response",
+        }),
+      ).toBe(true);
+    });
   });
 
   describe("DeleteJobRequest schema validation", () => {

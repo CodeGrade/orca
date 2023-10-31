@@ -121,6 +121,17 @@ export const gradingJobConfigSchema = {
       },
     },
     response_url: { type: "string" },
+    container_response_url: { type: "string" },
     grader_image_sha: { type: "string" },
   },
+  required: [
+    "key",
+    "collation",
+    "metadata_table",
+    "files",
+    "priority",
+    "script",
+    "response_url",
+    "grader_image_sha",
+  ],
 } as const;

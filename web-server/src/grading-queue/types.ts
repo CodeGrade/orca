@@ -48,6 +48,7 @@ export interface GradingJobConfig {
   priority: number;
   script: GradingScriptCommand[];
   response_url: string;
+  container_response_url?: string;
 }
 
 interface AdditionalJobData {
