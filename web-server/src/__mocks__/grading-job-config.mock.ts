@@ -24,4 +24,5 @@ export const defaultGradingJobConfig: GradingJobConfig = {
       on_fail: "abort",
     },
   ],
+  grader_image_sha: "orca-java-grader",
 };
