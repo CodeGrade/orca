@@ -299,9 +299,9 @@ This is either obtained directly by popping off the first item from `Reservation
 
 All data pointing to the job is deleted, either through a "pop" or deletion function.
 
-### Worker: Reenqueuing a Job
+### Worker: Re-enqueuing a Job
 
-If a worker is to be shut down prior to finishing a job, that job should be reenqueued to ensure it is not completely lost.
+If a worker is to be shut down prior to finishing a job, that job should be re-enqueued to ensure it is not completely lost.
 
 ```typescript
 function reenqueueJob(job: GradingJob) {
