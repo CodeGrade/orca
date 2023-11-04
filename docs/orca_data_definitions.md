@@ -86,7 +86,7 @@ A given file may contain file paths to be updated for use inside a grading conta
 
 <hr>
 
-Grading jobs have a numeric priority determined by Bottlenose, which is interpreted as a _delay_ to be applied to the job when added to the queue.
+Grading jobs have a numeric priority determined by their sources, which is interpreted as a _delay_ to be applied to the job when added to the queue.
 
 Jobs are run inside Docker containers to provide a level of isolation from the local machine. When an assignment is generated, professors will provide a Dockerfile to build their grader image. Orca's web server will build this image and save it to a .tgz file with the name `<SHA>.tgz`, where `<SHA>` is the SHA sum generated from the image's Dockerfile.
 
@@ -98,7 +98,7 @@ The script defines the actual grading process, as a state machine specified belo
 
 ### `GradingScriptCommand`
 
-A grading script takes many steps to complete, and the output of these steps needs to be captured in a useful way to send back to Bottlenose. Orca internalizes these steps as a list of `GradingScriptCommand`s rather than using a `Makefile` as a means of execution. This list encodes a control flow graph, and Orca requires this graph be **acyclic**.
+A grading script takes many steps to complete, and the output of these steps needs to be captured in a useful way to send back to job's originator. Orca internalizes these steps as a list of `GradingScriptCommand`s rather than using a `Makefile` as a means of execution. This list encodes a control flow graph, and Orca requires this graph be **acyclic**.
 
 `GradingScriptCommand`s can take on either of the following representations:
 
@@ -114,7 +114,7 @@ interface BashGradingScriptCommand {
 
 A `BashGradingScriptCommand` describes a step in the grading script that requires interaction with the shell. This can be compilation, running grader tests, etc. The `cmd` key points to the bash command to run with its options and arguments. It is generally recommended to pass in a sequence of program arguments (e.g., `["javac", ...]`), however in the case of needing to use shell utilities (e.g., a subshell with `(<cmd>)`), a `string` would be necessary.
 
-Each command could either succeed or fail. If successful and `on_complete` says to _output_, or if failed and `on_fail` says to _abort_, then the script exits and sends the results back to Bottlenose.
+Each command could either succeed or fail. If successful and `on_complete` says to _output_, or if failed and `on_fail` says to _abort_, then the script exits and sends the results back to the job's source.
 
 If `on_complete` is not specified, then the state machine goes to the next command in the list. If `on_fail` is not specified, then it will automatically abort the script.
 
@@ -191,7 +191,7 @@ interface GradingScriptCommandResponse {
 }
 ```
 
-The output includes the key given in the original job for use on the Bottlenose side. The `shell_responses` array contains a transcript of the output from each `GradingScriptCommand`.
+The output includes the key given in the original job for use by its originator. The `shell_responses` array contains a transcript of the output from each `GradingScriptCommand`.
 
 A successful `GradingJobResult` will _always_ contain `output`.
 
