@@ -11,7 +11,7 @@ import {
   GradingJobConfig,
   MoveJobRequest,
 } from "../grading-queue/types";
-import { DockerImageBuildRequest } from "../image-build/types";
+import { DockerImageBuildRequest } from "../docker-images/types";
 import { dockerImageBuildRequestSchema } from "./schemas/docker-image-build-request";
 
 let ajv = new Ajv().addSchema(collationSchema);
