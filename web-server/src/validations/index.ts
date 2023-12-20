@@ -11,6 +11,8 @@ import {
   GradingJobConfig,
   MoveJobRequest,
 } from "../grading-queue/types";
+import { DockerImageBuildRequest } from "../image-build/types";
+import { dockerImageBuildRequestSchema } from "./schemas/docker-image-build-request";
 
 let ajv = new Ajv().addSchema(collationSchema);
 ajv = gradingJobConfigSubSchemas.reduce(
@@ -22,6 +24,9 @@ const validations = {
   gradingJobConfig: ajv.compile<GradingJobConfig>(gradingJobConfigSchema),
   deleteJobRequest: ajv.compile<DeleteJobRequest>(deleteJobRequestSchema),
   moveJobRequest: ajv.compile<MoveJobRequest>(moveJobRequestSchema),
+  dockerImageBuildRequest: ajv.compile<DockerImageBuildRequest>(
+    dockerImageBuildRequestSchema,
+  ),
 };
 
 export default validations;

@@ -56,4 +56,19 @@ describe("JSONSchema validations", () => {
       );
     });
   });
+
+  describe("DockerImageBuildRequest schema validation", () => {
+    const baseRequest = {
+      shaSum: "abcd12345",
+      contents: "BUILD THIS IMAGE PLEASE",
+    };
+
+    it("validates a request successfully", () => {
+      expect(validations.dockerImageBuildRequest(baseRequest)).toBe(true);
+    });
+
+    it("fails on an invalid request", () => {
+      expect(validations.dockerImageBuildRequest({ shaSum: "allalone" }));
+    });
+  });
 });
