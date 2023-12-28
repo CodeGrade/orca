@@ -13,11 +13,17 @@ import {
   MoveJobRequest,
 } from "../grading-queue/types";
 import { validateFilterRequest } from "../utils/validate";
-import { GradingQueueServiceError } from "../grading-queue/service/exceptions";
 import { errorResponse } from "./utils";
-import { generateQueueKey } from "../grading-queue/utils";
-import { GradingQueueService } from "../grading-queue/service";
+import {
+  executeTransactions,
+  generateQueueKey,
+  getRedisConnection,
+  runOperationWithLock,
+} from "../grading-queue/utils";
 import validations from "../validations";
+import QueueOperations from "../grading-queue/operations";
+import { RedisTransactionBuilder } from "../grading-queue/transactions";
+import { GradingQueueOperationError } from "../grading-queue/exceptions";
 
 export const getGradingJobs = async (req: Request, res: Response) => {
   if (
@@ -37,7 +43,11 @@ export const getGradingJobs = async (req: Request, res: Response) => {
   );
 
   try {
-    const gradingJobs = await new GradingQueueService().getGradingJobs();
+    const redisConnection = getRedisConnection();
+    const gradingJobs = await runOperationWithLock<Array<GradingJob>>(
+      async () => QueueOperations.getAllGradingJobs(redisConnection),
+      redisConnection,
+    );
 
     if (offset > 0 && offset >= gradingJobs.length) {
       return errorResponse(res, 400, [
@@ -91,7 +101,7 @@ export const getGradingJobs = async (req: Request, res: Response) => {
       filter_info: filterInfo,
     });
   } catch (err) {
-    if (err instanceof GradingQueueServiceError) {
+    if (err instanceof GradingQueueOperationError) {
       return errorResponse(res, 500, [err.message]);
     }
     return errorResponse(res, 500, [
@@ -110,19 +120,26 @@ export const createOrUpdateImmediateJob = async (
   const gradingJobConfig = req.body;
 
   try {
+    const redisConnection = getRedisConnection();
     const orcaKey = generateQueueKey(
       gradingJobConfig.key,
       gradingJobConfig.response_url,
     );
-    await new GradingQueueService().createOrUpdateJob(
-      gradingJobConfig,
-      Date.now(),
-      orcaKey,
-      true,
-    );
+    await runOperationWithLock<void>(async () => {
+      await executeTransactions([
+        await QueueOperations.createOrUpdateJob(
+          redisConnection,
+          new RedisTransactionBuilder(redisConnection),
+          gradingJobConfig,
+          orcaKey,
+          Date.now(),
+          true,
+        ),
+      ]);
+    }, redisConnection);
     return res.status(200).json({ message: "OK" });
   } catch (error) {
-    if (error instanceof GradingQueueServiceError) {
+    if (error instanceof GradingQueueOperationError) {
       return errorResponse(res, 500, [error.message]);
     }
     return errorResponse(res, 500, [
@@ -141,19 +158,26 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
   const gradingJobConfig = req.body;
 
   try {
+    const redisConnection = getRedisConnection();
     const orcaKey = generateQueueKey(
       gradingJobConfig.key,
       gradingJobConfig.response_url,
     );
-    await new GradingQueueService().createOrUpdateJob(
-      gradingJobConfig,
-      Date.now(),
-      orcaKey,
-      false,
-    );
+    await runOperationWithLock(async () => {
+      await executeTransactions([
+        await QueueOperations.createOrUpdateJob(
+          redisConnection,
+          new RedisTransactionBuilder(redisConnection),
+          gradingJobConfig,
+          orcaKey,
+          Date.now(),
+          false,
+        ),
+      ]);
+    }, redisConnection);
     return res.status(200).json({ message: "OK" });
   } catch (err) {
-    if (err instanceof GradingQueueServiceError) {
+    if (err instanceof GradingQueueOperationError) {
       return errorResponse(res, 500, [err.message]);
     } else {
       return errorResponse(res, 500, [
@@ -170,10 +194,21 @@ export const moveJob = async (req: Request, res: Response) => {
     return;
   }
   try {
-    await new GradingQueueService().moveJob(req.body);
+    const redisConnection = getRedisConnection();
+    await runOperationWithLock(
+      async () =>
+        await executeTransactions([
+          await QueueOperations.moveJob(
+            redisConnection,
+            new RedisTransactionBuilder(redisConnection),
+            req.body,
+          ),
+        ]),
+      redisConnection,
+    );
     return res.status(200).json("OK");
   } catch (err) {
-    if (err instanceof GradingQueueServiceError) {
+    if (err instanceof GradingQueueOperationError) {
       return errorResponse(res, 500, [err.message]);
     }
     return errorResponse(res, 500, [
@@ -186,12 +221,21 @@ export const deleteJob = async (req: Request, res: Response) => {
   if (!validations.deleteJobRequest(req.body)) {
     return errorResponse(res, 400, ["Invalid delete request."]);
   }
-
   try {
-    await new GradingQueueService().deleteJob(req.body);
+    const redisConnection = getRedisConnection();
+    await runOperationWithLock(
+      async () =>
+        await executeTransactions([
+          await QueueOperations.deleteJob(
+            new RedisTransactionBuilder(redisConnection),
+            req.body,
+          ),
+        ]),
+      redisConnection,
+    );
     return res.status(200).json({ message: "OK" });
   } catch (err) {
-    if (err instanceof GradingQueueServiceError) {
+    if (err instanceof GradingQueueOperationError) {
       return errorResponse(res, 500, [err.message]);
     } else {
       return errorResponse(res, 500, [

@@ -6,7 +6,7 @@ export const validImmediateDeleteRequest: DeleteJobRequest = {
 
 export const validDeleteRequest: DeleteJobRequest = {
   ...validImmediateDeleteRequest,
-  nonce: 12345,
+  nonce: "some-random-uuid",
   collation: {
     type: "user",
     id: "12345",
