@@ -7,6 +7,7 @@ import {
   RedisTransactionBuilder,
   TransactionExecutionResult,
 } from "./transactions";
+import { reverse } from "lodash";
 
 const LOCK_AQUISITION_TIME = 10000; // 10 Seconds
 
@@ -39,11 +40,11 @@ export const executeTransactions = async (
     const transactionError = transactionResult[1];
     if (transactionError) {
       await Promise.all(
-        transactionResults
-          .toReversed()
-          .map(
+        reverse(
+          transactionResults.map(
             async ([rollbackMultiCommand]) => await rollbackMultiCommand.exec(),
           ),
+        ),
       );
       throw transactionError;
     }

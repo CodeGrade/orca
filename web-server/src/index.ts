@@ -1,6 +1,5 @@
 import express, { Express } from "express";
 import cors from "cors";
-import { createClient, RedisClientType } from "redis";
 import gradingQueueRouter from "./routes/grading-queue";
 import path from "path";
 
