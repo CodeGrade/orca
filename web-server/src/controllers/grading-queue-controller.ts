@@ -181,8 +181,8 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
       return errorResponse(res, 500, [err.message]);
     } else {
       return errorResponse(res, 500, [
-        `Something went wrong while trying to create or update a job 
-      for ${gradingJobConfig.collation.type} with ID ${gradingJobConfig.collation.id}.`,
+        "Something went wrong while trying to create or update a job" +
+          `for ${gradingJobConfig.collation.type} with ID ${gradingJobConfig.collation.id}.`,
       ]);
     }
   }

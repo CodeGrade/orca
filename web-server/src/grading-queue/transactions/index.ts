@@ -31,7 +31,7 @@ export class RedisTransactionExecutor {
     expectedReplies: Array<string | number>,
     rollbackSteps: Array<RollbackStep>,
   ) {
-    if (expectedReplies.length === rollbackSteps.length) {
+    if (expectedReplies.length !== rollbackSteps.length) {
       throw new RedisTransactionExecutorException(
         "The given transaction is not valid; the number of expected replies and rollback steps are not equal.",
       );
