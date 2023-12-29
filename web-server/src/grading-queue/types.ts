@@ -56,7 +56,7 @@ interface AdditionalJobData {
   release_at: number;
   created_at: number;
   orca_key: string;
-  nonce?: number;
+  nonce?: string;
 }
 
 export type GradingJob = GradingJobConfig & AdditionalJobData;
