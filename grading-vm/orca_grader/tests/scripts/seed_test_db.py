@@ -5,7 +5,7 @@ from redis import Redis
 import time
 import os
 from copy import copy
-from orca_grader import get_redis_client
+from orca_grader.redis_utils import get_redis_client
 from orca_grader.common.types.grading_job_json_types import GradingJobJSON
 from orca_grader.config import APP_CONFIG
 
@@ -34,7 +34,7 @@ __BASIC_GRADING_JOB_SCAFFOLDING = {
 def add_job_to_queue(client: Redis, job_json: GradingJobJSON) -> None:
   key, collation, priority = job_json["key"], job_json["collation"], job_json["priority"]
   nextTask = f'{collation["type"]}.{collation["id"]}'
-  arrival_time = time.time_ns()
+  arrival_time = int(time.time() * 10**6)
   nonce = priority + arrival_time
   with client.lock('GradingQueueLock'):
     client.rpush(f'SubmitterInfo.{nextTask}', key)
@@ -50,6 +50,6 @@ if __name__ == '__main__':
     job = copy(__BASIC_GRADING_JOB_SCAFFOLDING)
     job['key'] = str(i)
     job['collation']['id'] = str(i)
-    job['priority'] = i * 60
+    job['priority'] = 0
     client = get_redis_client(APP_CONFIG.redis_db_url)
     add_job_to_queue(client, job)

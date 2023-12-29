@@ -3,11 +3,9 @@ import json
 import copy
 import time
 from typing import Dict, List, Union
-
 import redis
-from orca_grader import get_redis_client
+from orca_grader.redis_utils import get_redis_client
 from orca_grader.config import APP_CONFIG
-
 from orca_grader.tests.scripts.seed_test_db import add_job_to_queue
 
 SubmissionMetadatum = Dict[str, Union[int, str, None]]

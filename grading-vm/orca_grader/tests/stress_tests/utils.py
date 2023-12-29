@@ -2,8 +2,8 @@ from copy import deepcopy
 import json
 import time
 import redis
-from typing import Callable, List, Optional, Tuple
-from orca_grader import get_redis_client
+from typing import Optional, Tuple
+from orca_grader.redis_utils import get_redis_client
 from orca_grader.config import APP_CONFIG
 from orca_grader.tests.scripts.seed_test_db import add_job_to_queue
 
