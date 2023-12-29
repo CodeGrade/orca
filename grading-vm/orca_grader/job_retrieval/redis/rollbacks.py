@@ -1,5 +1,4 @@
 from typing import Callable, List, Optional
-import redis
 from orca_grader.redis_utils import RedisRollbackBuilder, RedisRollbackExecutor
 
 
