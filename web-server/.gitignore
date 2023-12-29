@@ -134,3 +134,4 @@ dist
 # Additional items for Typescript/Orca
 build/
 files
+images
