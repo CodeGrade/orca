@@ -4,7 +4,7 @@ export const deleteJobRequestSchema = {
   properties: {
     orcaKey: { type: "string" },
     collation: { $ref: "https://orca-schemas.com/shared/collation" },
-    nonce: { type: "number" },
+    nonce: { type: "string" },
   },
   required: ["orcaKey"],
 } as const;
