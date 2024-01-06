@@ -4,6 +4,7 @@ import {
   validImmediateDeleteRequest,
 } from "../__mocks__/delete-request.mock";
 import { defaultGradingJobConfig } from "../../__mocks__/grading-job-config.mock";
+import { defaultGraderImageBuildRequest } from "../../__mocks__/grader-image-build-request";
 
 describe("JSONSchema validations", () => {
   describe("GradingJobConfig schema validation", () => {
@@ -54,6 +55,14 @@ describe("JSONSchema validations", () => {
       expect(validations.deleteJobRequest(validImmediateDeleteRequest)).toBe(
         true,
       );
+    });
+  });
+
+  describe("GraderImageBuildRequest schema validation", () => {
+    it("validates a request with contents and SHA sum of a dockerfile", () => {
+      expect(
+        validations.graderImageBuildRequest(defaultGraderImageBuildRequest),
+      ).toBe(true);
     });
   });
 });

@@ -24,6 +24,8 @@ import validations from "../validations";
 import QueueOperations from "../grading-queue/operations";
 import { RedisTransactionBuilder } from "../grading-queue/transactions";
 import { GradingQueueOperationError } from "../grading-queue/exceptions";
+import { graderImageExists } from "../grader-images";
+import { GradingJobRequestError } from "./exceptions";
 
 export const getGradingJobs = async (req: Request, res: Response) => {
   if (
@@ -43,10 +45,10 @@ export const getGradingJobs = async (req: Request, res: Response) => {
   );
 
   try {
-    const redisConnection = getRedisConnection();
     const gradingJobs = await runOperationWithLock<Array<GradingJob>>(
-      async () => QueueOperations.getAllGradingJobs(redisConnection),
-      redisConnection,
+      async (redisConnection) => {
+        return await QueueOperations.getAllGradingJobs(redisConnection);
+      },
     );
 
     if (offset > 0 && offset >= gradingJobs.length) {
@@ -120,13 +122,12 @@ export const createOrUpdateImmediateJob = async (
   const gradingJobConfig = req.body;
 
   try {
-    const redisConnection = getRedisConnection();
     const orcaKey = generateQueueKey(
       gradingJobConfig.key,
       gradingJobConfig.response_url,
     );
-    await runOperationWithLock<void>(async () => {
-      await executeTransactions([
+    await runOperationWithLock<void>(async (redisConnection) => {
+      if (graderImageExists(gradingJobConfig)) {
         await QueueOperations.createOrUpdateJob(
           redisConnection,
           new RedisTransactionBuilder(redisConnection),
@@ -134,9 +135,19 @@ export const createOrUpdateImmediateJob = async (
           orcaKey,
           Date.now(),
           true,
-        ),
-      ]);
-    }, redisConnection);
+        );
+      } else if (
+        await QueueOperations.graderImageBuildInProgress(
+          redisConnection,
+          gradingJobConfig,
+        )
+      ) {
+      } else {
+        throw new GradingJobRequestError(
+          `No image exists or is being built for SHA sum ${gradingJobConfig.grader_image_sha}.`,
+        );
+      }
+    });
     return res.status(200).json({ message: "OK" });
   } catch (error) {
     if (error instanceof GradingQueueOperationError) {
@@ -158,13 +169,12 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
   const gradingJobConfig = req.body;
 
   try {
-    const redisConnection = getRedisConnection();
-    const orcaKey = generateQueueKey(
-      gradingJobConfig.key,
-      gradingJobConfig.response_url,
-    );
-    await runOperationWithLock(async () => {
-      await executeTransactions([
+    await runOperationWithLock(async (redisConnection) => {
+      if (graderImageExists(gradingJobConfig)) {
+        const orcaKey = generateQueueKey(
+          gradingJobConfig.key,
+          gradingJobConfig.response_url,
+        );
         await QueueOperations.createOrUpdateJob(
           redisConnection,
           new RedisTransactionBuilder(redisConnection),
@@ -172,17 +182,34 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
           orcaKey,
           Date.now(),
           false,
-        ),
-      ]);
-    }, redisConnection);
+        );
+      } else if (
+        await QueueOperations.graderImageBuildInProgress(
+          redisConnection,
+          gradingJobConfig,
+        )
+      ) {
+        await QueueOperations.placeJobInHoldingPen(
+          new RedisTransactionBuilder(redisConnection),
+          gradingJobConfig,
+          false,
+        );
+      } else {
+        throw new GradingJobRequestError(
+          `No image exists or is being built for SHA sum ${gradingJobConfig.grader_image_sha}.`,
+        );
+      }
+    });
     return res.status(200).json({ message: "OK" });
   } catch (err) {
-    if (err instanceof GradingQueueOperationError) {
-      return errorResponse(res, 500, [err.message]);
+    if (
+      err instanceof GradingQueueOperationError ||
+      err instanceof GradingJobRequestError
+    ) {
+      return errorResponse(res, 400, [err.message]);
     } else {
       return errorResponse(res, 500, [
-        "Something went wrong while trying to create or update a job" +
-          `for ${gradingJobConfig.collation.type} with ID ${gradingJobConfig.collation.id}.`,
+        `The following error was encountered while trying to create out update the job for the given config: ${err.message}`,
       ]);
     }
   }
@@ -194,18 +221,13 @@ export const moveJob = async (req: Request, res: Response) => {
     return;
   }
   try {
-    const redisConnection = getRedisConnection();
-    await runOperationWithLock(
-      async () =>
-        await executeTransactions([
-          await QueueOperations.moveJob(
-            redisConnection,
-            new RedisTransactionBuilder(redisConnection),
-            req.body,
-          ),
-        ]),
-      redisConnection,
-    );
+    await runOperationWithLock(async (redisConnection) => {
+      await QueueOperations.moveJob(
+        redisConnection,
+        new RedisTransactionBuilder(redisConnection),
+        req.body,
+      );
+    });
     return res.status(200).json("OK");
   } catch (err) {
     if (err instanceof GradingQueueOperationError) {
@@ -222,17 +244,12 @@ export const deleteJob = async (req: Request, res: Response) => {
     return errorResponse(res, 400, ["Invalid delete request."]);
   }
   try {
-    const redisConnection = getRedisConnection();
-    await runOperationWithLock(
-      async () =>
-        await executeTransactions([
-          await QueueOperations.deleteJob(
-            new RedisTransactionBuilder(redisConnection),
-            req.body,
-          ),
-        ]),
-      redisConnection,
-    );
+    await runOperationWithLock(async (redisConnection) => {
+      await QueueOperations.deleteJob(
+        new RedisTransactionBuilder(redisConnection),
+        req.body,
+      );
+    });
     return res.status(200).json({ message: "OK" });
   } catch (err) {
     if (err instanceof GradingQueueOperationError) {

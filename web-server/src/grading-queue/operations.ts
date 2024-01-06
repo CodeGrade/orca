@@ -7,10 +7,16 @@ import {
   GradingJobConfig,
   MoveJobRequest,
 } from "./types";
-import { collationToString, isNumberArray, toMilliseconds } from "./utils";
+import {
+  collationToString,
+  generateQueueKey,
+  isNumberArray,
+  toMilliseconds,
+} from "./utils";
 import Redis from "ioredis";
-import { toInteger } from "lodash";
+import { reduceRight, toInteger } from "lodash";
 import { GradingQueueOperationError } from "./exceptions";
+import { GraderImageBuildRequest } from "../grader-images/types";
 
 const MOVE_TO_BACK_BUFFER = toMilliseconds(10);
 
@@ -46,6 +52,98 @@ const getAllGradingJobs = async (
       }
     }),
   );
+};
+
+const createHoldingPenKey = async (
+  transactionBuilder: RedisTransactionBuilder,
+  { dockerfileSHASum }: GraderImageBuildRequest,
+): Promise<RedisTransactionBuilder> => {
+  return transactionBuilder.SET(dockerfileSHASum, dockerfileSHASum);
+};
+
+const deleteHoldingPenKey = async (
+  transactionBuilder: RedisTransactionBuilder,
+  { dockerfileSHASum }: GraderImageBuildRequest,
+) => {
+  return transactionBuilder.DEL(dockerfileSHASum);
+};
+
+interface HoldingPenJobs {
+  regularJobs: Array<GradingJobConfig>;
+  immediateJobs: Array<GradingJobConfig>;
+}
+
+const clearHoldingPen = async (
+  redisConnection: Redis,
+  transactionBuilder: RedisTransactionBuilder,
+  { dockerfileSHASum }: GraderImageBuildRequest,
+): Promise<[RedisTransactionBuilder, HoldingPenJobs]> => {
+  const [jobPenKey, immediateJobPenKey] = [
+    `Jobs.${dockerfileSHASum}`,
+    `ImmediateJobs.${dockerfileSHASum}`,
+  ];
+  const regularJobs = (await redisConnection.lrange(jobPenKey, 0, -1)).map(
+    (jobConfigString) => JSON.parse(jobConfigString) as GradingJobConfig,
+  );
+  const immediateJobs = (
+    await redisConnection.lrange(immediateJobPenKey, 0, -1)
+  ).map((jobConfigString) => JSON.parse(jobConfigString) as GradingJobConfig);
+  return [transactionBuilder, { regularJobs, immediateJobs }];
+};
+
+const releaseAllJobsFromHoldingPen = async (
+  redisConnection: Redis,
+  transactionBuilder: RedisTransactionBuilder,
+  graderImageBuildReq: GraderImageBuildRequest,
+): Promise<RedisTransactionBuilder> => {
+  const [jobPenKey, immediateJobPenKey] = [
+    `Jobs.${graderImageBuildReq.dockerfileSHASum}`,
+    `ImmediateJobs.${graderImageBuildReq.dockerfileSHASum}`,
+  ];
+  await releaseJobsFromHoldingPen(
+    redisConnection,
+    transactionBuilder,
+    jobPenKey,
+    false,
+  );
+  await releaseJobsFromHoldingPen(
+    redisConnection,
+    transactionBuilder,
+    immediateJobPenKey,
+    true,
+  );
+  return deleteHoldingPenKey(transactionBuilder, graderImageBuildReq);
+};
+
+const releaseJobsFromHoldingPen = async (
+  redisConnection: Redis,
+  transactionBuilder: RedisTransactionBuilder,
+  jobPenKey: string,
+  areImmediateJobs: boolean,
+): Promise<RedisTransactionBuilder> => {
+  const jobConfigs: Array<GradingJobConfig> = (
+    await redisConnection.lrange(jobPenKey, 0, -1)
+  ).map((configString) => JSON.parse(configString) as GradingJobConfig);
+  await Promise.all(
+    jobConfigs.map((jobConfig) =>
+      createOrUpdateJob(
+        redisConnection,
+        transactionBuilder,
+        jobConfig,
+        generateQueueKey(jobConfig.key, jobConfig.response_url),
+        Date.now(),
+        areImmediateJobs,
+      ),
+    ),
+  );
+  return transactionBuilder;
+};
+
+const graderImageBuildInProgress = async (
+  redisConnection: Redis,
+  { grader_image_sha }: GradingJobConfig,
+): Promise<boolean> => {
+  return Boolean(await redisConnection.exists(grader_image_sha));
 };
 
 const createOrUpdateJob = async (
@@ -91,6 +189,23 @@ const createOrUpdateJob = async (
     await updateJob(redisConnection, transactionBuilder, jobConfig, orcaKey);
   }
   return transactionBuilder;
+};
+
+const placeJobInHoldingPen = async (
+  transactionBuilder: RedisTransactionBuilder,
+  jobConfig: GradingJobConfig,
+  isImmediateJob: boolean,
+): Promise<RedisTransactionBuilder> => {
+  const jobConfigString = JSON.stringify(jobConfig);
+  return isImmediateJob
+    ? transactionBuilder.RPUSH(
+        `ImmediateJobs.${jobConfig.grader_image_sha}`,
+        jobConfigString,
+      )
+    : transactionBuilder.RPUSH(
+        `Jobs.${jobConfig.grader_image_sha}`,
+        jobConfigString,
+      );
 };
 
 const deleteJob = async (
@@ -366,4 +481,10 @@ export default {
   createOrUpdateJob,
   deleteJob,
   moveJob,
+  createHoldingPenKey,
+  deleteHoldingPenKey,
+  clearHoldingPen,
+  releaseAllJobsFromHoldingPen,
+  graderImageBuildInProgress,
+  placeJobInHoldingPen,
 };

@@ -1,4 +1,4 @@
 export interface GraderImageBuildRequest {
-  dockerfileContent: string;
+  dockerfileContents: string;
   dockerfileSHASum: string;
 }

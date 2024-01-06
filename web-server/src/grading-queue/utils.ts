@@ -16,13 +16,13 @@ export const getRedisConnection = (): Redis => {
 };
 
 export const runOperationWithLock = async <T>(
-  operation: () => Promise<T>,
-  redisConnection: Redis,
+  operation: (redisConnection: Redis) => Promise<T>,
 ): Promise<Awaited<T>> => {
+  const redisConnection = getRedisConnection();
   const redlock = new Redlock([redisConnection]);
   const lock = await redlock.acquire(["GradingQueue"], LOCK_AQUISITION_TIME);
   try {
-    return await operation();
+    return await operation(redisConnection);
   } finally {
     await lock.release();
     await redisConnection.quit();

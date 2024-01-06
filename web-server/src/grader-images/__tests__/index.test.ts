@@ -1,11 +1,11 @@
 import { existsSync, rmSync } from "fs";
-import { DOCKER_IMAGE_FILE_LOCATION, createGraderImage } from "..";
+import { DOCKER_IMAGE_FILE_LOCATION, createAndStoreGraderImage } from "..";
 import { GraderImageBuildRequest } from "../types";
 import path from "path";
 
 describe("grader image functionality", () => {
   const graderImageBuildReq: GraderImageBuildRequest = {
-    dockerfileContent: `FROM hello-world
+    dockerfileContents: `FROM hello-world
     `,
     dockerfileSHASum: "generated-sha-sum",
   };
@@ -22,7 +22,7 @@ describe("grader image functionality", () => {
   });
 
   it("successfully creates a grader image", async () => {
-    await createGraderImage(graderImageBuildReq);
+    await createAndStoreGraderImage(graderImageBuildReq);
     expect(
       existsSync(
         path.join(
@@ -35,7 +35,7 @@ describe("grader image functionality", () => {
       existsSync(
         path.join(
           path.join(
-            DOCKER_IMAGE_FILE_LOCATION,
+            graderImagePath,
             `${graderImageBuildReq.dockerfileSHASum}.tgz`,
           ),
         ),
