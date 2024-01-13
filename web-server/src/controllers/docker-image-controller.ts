@@ -1,10 +1,7 @@
 import { Request, Response } from "express";
 import validations from "../validations";
 import { errorResponse } from "./utils";
-import {
-  getRedisConnection,
-  runOperationWithLock,
-} from "../grading-queue/utils";
+import { runOperationWithLock } from "../grading-queue/utils";
 import operations from "../grading-queue/operations";
 import { RedisTransactionBuilder } from "../grading-queue/transactions";
 import {
@@ -55,32 +52,4 @@ export const cleanUpUnusedGraderImages = async (
         `Encountered the following issue when attempting to clean up images: ${err.message}`,
       ]),
     );
-};
-
-const processBuildRequest = async (buildReq: GraderImageBuildRequest) => {
-  let imageBuiltSuccessfully = false;
-  try {
-    await createAndStoreGraderImage(buildReq);
-    imageBuiltSuccessfully = true;
-    await runOperationWithLock(async (redisConnection) => {
-      const tb = new RedisTransactionBuilder(redisConnection);
-      await operations.releaseAllJobsFromHoldingPen(
-        redisConnection,
-        tb,
-        buildReq,
-      );
-      const executor = await tb.build();
-      await executor.execute();
-    });
-  } catch (error) {
-    if (!imageBuiltSuccessfully) {
-      await runOperationWithLock(async (redisConnection) => {
-        const tb = new RedisTransactionBuilder(redisConnection);
-        await operations.clearHoldingPen(redisConnection, tb, buildReq);
-        await operations.deleteHoldingPenKey(tb, buildReq);
-        const executor = await tb.build();
-        await executor.execute();
-      });
-    }
-  }
 };

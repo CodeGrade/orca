@@ -5,6 +5,9 @@ import { existsSync, writeFile } from "fs";
 import { mkdir, readdir, rm, stat } from "fs/promises";
 import { stderr } from "process";
 import { GradingJobConfig } from "../grading-queue/types";
+import operations from "../grading-queue/operations";
+import { runOperationWithLock } from "../grading-queue/utils";
+import { RedisTransactionBuilder } from "../grading-queue/transactions";
 
 export const DOCKER_IMAGE_FILE_LOCATION = path.join(
   __dirname,
@@ -12,6 +15,36 @@ export const DOCKER_IMAGE_FILE_LOCATION = path.join(
   "images",
 ); // web-server/images
 const UPPER_LIMIT_OF_TIME_SINCE_IMAGE_USE = 1000 * 60 * 60 * 24 * 7 * 2; // 2 Weeks in ms
+
+export const processBuildRequest = async (
+  buildReq: GraderImageBuildRequest,
+) => {
+  let imageBuiltSuccessfully = false;
+  try {
+    await createAndStoreGraderImage(buildReq);
+    imageBuiltSuccessfully = true;
+    await runOperationWithLock(async (redisConnection) => {
+      const tb = new RedisTransactionBuilder(redisConnection);
+      await operations.releaseAllJobsFromHoldingPen(
+        redisConnection,
+        tb,
+        buildReq,
+      );
+      const executor = await tb.build();
+      await executor.execute();
+    });
+  } catch (error) {
+    if (!imageBuiltSuccessfully) {
+      await runOperationWithLock(async (redisConnection) => {
+        const tb = new RedisTransactionBuilder(redisConnection);
+        await operations.clearHoldingPen(redisConnection, tb, buildReq);
+        await operations.deleteHoldingPenKey(tb, buildReq);
+        const executor = await tb.build();
+        await executor.execute();
+      });
+    }
+  }
+};
 
 export const removeStaleImageFiles = async (): Promise<Array<string>> => {
   const dockerImageFiles = await readdir(DOCKER_IMAGE_FILE_LOCATION);
