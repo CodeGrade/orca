@@ -2,7 +2,7 @@ import Redis from "ioredis";
 import { getConfig } from "../config";
 import Redlock from "redlock";
 
-const LOCK_AQUISITION_TIME = 10 * 1_000; // 10s in ms
+const LOCK_AQUISITION_TIME = 5 * 1_000; // 10s in ms
 
 export const getRedisConnection = (): Redis => {
   return new Redis(getConfig().redis);
@@ -16,8 +16,8 @@ export const runOperationWithLock = async <T>(
   try {
     return await operation(redisConnection);
   } finally {
-    lock.release();
-    redisConnection.quit();
+    await lock.release();
+    await redisConnection.quit();
   }
 };
 

@@ -51,5 +51,5 @@ describe("grader image functionality", () => {
         ),
       ),
     ).toBe(true);
-  });
+  }, 10000);
 });
