@@ -1,0 +1,15 @@
+{
+  "include": ["src/**/*"],
+  "exclude": ["dist", "node_modules"],
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "esModuleInterop": true
+  },
+  "references": [
+    {
+      "path": "../common"
+    }
+  ]
+}

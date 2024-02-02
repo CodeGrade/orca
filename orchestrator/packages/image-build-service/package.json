@@ -1,0 +1,16 @@
+{
+  "name": "@codegrade-orca/image-build-service",
+  "license": "MIT",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tsc --build",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@codegrade-orca/common": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.16",
+    "typescript": "^5.3.3"
+  }
+}
