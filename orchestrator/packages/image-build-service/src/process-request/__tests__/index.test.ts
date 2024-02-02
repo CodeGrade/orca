@@ -1,4 +1,4 @@
-import { existsSync, rmSync } from "fs";
+import { existsSync, mkdirSync, rmSync } from "fs";
 import { createAndStoreGraderImage } from "..";
 import path from "path";
 import { getConfig, GraderImageBuildRequest } from "@codegrade-orca/common";
@@ -11,6 +11,12 @@ describe("grader image functionality", () => {
     `,
     dockerfileSHASum: "generated-sha-sum",
   };
+
+  beforeAll(() => {
+    if (!existsSync(CONFIG.dockerImageFolder)) {
+      mkdirSync(CONFIG.dockerImageFolder);
+    }
+  });
 
   afterAll(() => {
     rmSync(
