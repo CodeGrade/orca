@@ -8,12 +8,12 @@ services:
       - orca-testing
 
   web-server:
-    image: orca-web-server
+    image: orca-orchestrator
     ports:
       - "4000:4000"
-    container_name: orca-web-server
+    container_name: orchestrator
     environment:
-      - REDIS_URL=redis://redis-queue:6379
+      - REDIS_HOST=redis-queue
     networks:
       - orca-testing
 
@@ -29,7 +29,7 @@ services:
     image: simple-server
     ports:
       - "9000:9000"
-    container_name: echo-server
+    container_name: simple-server
     networks:
       - orca-testing
 
