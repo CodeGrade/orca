@@ -1,7 +1,7 @@
 import subprocess
 from typing import List
 
-def does_image_exist(container_sha: str) -> bool:
+def does_image_exist_locally(container_sha: str) -> bool:
   program_args = [
       "docker", 
       "image", 

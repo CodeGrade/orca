@@ -16,7 +16,7 @@ from orca_grader.executor.builder.docker_grading_job_executor_builder import Doc
 from orca_grader.executor.builder.grading_job_executor_builder import GradingJobExecutorBuilder
 from orca_grader.job_retrieval.local.local_grading_job_retriever import LocalGradingJobRetriever
 from orca_grader.job_retrieval.redis.grading_job_retriever import RedisGradingJobRetriever
-from orca_grader.docker_utils.images.utils import does_image_exist
+from orca_grader.docker_utils.images.utils import does_image_exist_locally
 from orca_grader.docker_utils.images.image_loading import retrieve_image_tgz_from_url, load_image_from_tgz
 from orca_grader.job_termination.nonblocking_thread_executor import NonBlockingThreadPoolExecutor
 from orca_grader.queue_diagnostics import log_diagnostics
@@ -58,20 +58,27 @@ def run_local_job(job_path: str, no_container: bool, container_command: Optional
   clean_up_unused_images()
 
 def run_grading_job(json_job_string: str, no_container: bool, container_command: Optional[List[str]]):
-  if not can_execute_job(json_job_string):
-    push_results_with_exception(json_job_string, InvalidGradingJobJSONException())
-    return
-  if no_container:
-    handle_grading_job(json_job_string)
-    return
-  container_sha = get_container_sha(json_job_string)
-  if not does_image_exist(container_sha):
-    retrieve_image_tgz_from_url(container_sha)
-    load_image_from_tgz("{0}.tgz".format(container_sha))
-  if container_command:
-    handle_grading_job(json_job_string, container_sha, container_command)
-  else:
-    handle_grading_job(json_job_string, container_sha)
+  try:
+    if not can_execute_job(json_job_string):
+      push_results_with_exception(json_job_string, InvalidGradingJobJSONException())
+      return
+    if no_container:
+      handle_grading_job(json_job_string)
+      return
+    container_sha = get_container_sha(json_job_string)
+    if not does_image_exist_locally(container_sha):
+      retrieve_image_tgz_from_url(container_sha)
+      load_image_from_tgz("{0}.tgz".format(container_sha))
+    if container_command:
+      handle_grading_job(json_job_string, container_sha, container_command)
+    else:
+      handle_grading_job(json_job_string, container_sha)
+  except Exception as e:
+    grading_job = json.dumps(json_job_string)
+    if "response_url" in grading_job:
+      push_results_with_exception(grading_job, e)
+    else:
+      print(e)
 
 def handle_grading_job(grading_job_json_str: str, container_sha: str | None = None, 
     container_cmd: List[str] | None = None):
@@ -89,18 +96,54 @@ def handle_grading_job(grading_job_json_str: str, container_sha: str | None = No
       os.environ["GRADING_JOB_FILE_NAME"] = file_name
       builder = GradingJobExecutorBuilder(file_name)
     executor = builder.build()
-    try:
-      result = executor.execute()
-      if result and result.stdout:
-        print(result.stdout.decode())
-    except Exception as e:
-      push_results_with_exception(grading_job_json_str, e)
+    result = executor.execute()
+    if result and result.stdout:
+      print(result.stdout.decode())
 
 def can_execute_job(job_json_string: str) -> bool:
   try:
     return is_valid_grading_job_json(json.loads(job_json_string))
   except json.JSONDecodeError:
     return False
+
+def run_local_job(job_path: str, no_container: bool, container_command: Optional[List[str]]):
+  retriever = LocalGradingJobRetriever(job_path)
+  job_string = retriever.retrieve_grading_job()
+  run_grading_job(job_string, no_container, container_command)
+  clean_up_unused_images()
+
+def process_redis_jobs(redis_url: str, no_container: bool, container_command: List[str] | None):
+  retriever = RedisGradingJobRetriever(redis_url)
+  with GracefulKiller() as killer:
+    with NonBlockingThreadPoolExecutor(max_workers=2) as futures_executor:
+      stop_future = futures_executor.submit(killer.wait_for_stop_signal)
+      while True:
+        job_string, timestamp = retriever.retrieve_grading_job()
+        job_future = futures_executor.submit(run_grading_job, job_string, no_container, container_command)
+        done, not_done = concurrent.futures.wait([stop_future, job_future], return_when="FIRST_COMPLETED")
+        # States of job and stop future after wait
+        # 1. Stop future done, job_future not done.
+        # 2. Stop future not done, job future done.
+        # 3. Stop future done, job future done.
+        if stop_future in done and job_future in not_done:
+          reenqueue_job(json.loads(job_string), timestamp, get_redis_client(redis_url))
+
+        if job_future in done:
+          if type(job_future.exception()) == InvalidWorkerStateException:
+            exit(1)
+          handle_completed_grading_job(job_string, redis_url)
+          
+        if stop_future in done:
+          break
+
+def reenqueue_job(grading_job_json: GradingJobJSON,
+                  original_timestamp: int,
+                  client: redis.Redis) -> None:
+  if not client.exists(grading_job_json['key']):
+    client.set(grading_job_json['orca_key'], json.dumps(grading_job_json))
+  client.zadd('Reservations',
+              {f'immediate.{grading_job_json["orca_key"]}': 
+               original_timestamp})
 
 def handle_completed_grading_job(job_string: str, redis_url: str):
   if APP_CONFIG.enable_diagnostics:
