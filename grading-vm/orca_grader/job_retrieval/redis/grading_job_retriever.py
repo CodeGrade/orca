@@ -51,8 +51,8 @@ class RedisGradingJobRetriever(GradingJobRetriever):
     if (reservation_info[0] == 'immediate'): 
       _, job_key = reservation_info
     else:
-      collation_type, collation_id, _ = reservation_info
-      self.__remove_nonce_for_collation(collation_type, collation_id, timestamp)
+      collation_type, collation_id, nonce = reservation_info
+      self.__remove_nonce_for_collation(collation_type, collation_id, nonce)
       job_key = self.__get_job_key_from_collation(collation_type, collation_id)
     return job_key, timestamp
   
@@ -67,9 +67,7 @@ class RedisGradingJobRetriever(GradingJobRetriever):
     print(next_job_key)
     return next_job_key
   
-  def __remove_nonce_for_collation(self, collation_type: str, collation_id: str, nonce: int) -> None:
-    print(self.__redis_client.smembers(f"Nonces.{collation_type}.{collation_id}"))
-    print(nonce)
+  def __remove_nonce_for_collation(self, collation_type: str, collation_id: str, nonce: str) -> None:
     num_nonces_removed = self.__redis_client.srem(f"Nonces.{collation_type}.{collation_id}", str(nonce))
     if num_nonces_removed != 1:
       self.__rollback_retrieval()
