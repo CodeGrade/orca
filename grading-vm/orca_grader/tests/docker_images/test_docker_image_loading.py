@@ -18,13 +18,8 @@ class TestDockerImageLoading(unittest.TestCase):
     return super().setUpClass()
   
   def test_image_download_and_loading(self):
-    retrieve_image_tgz_from_url("hello-world")
+    retrieve_image_tgz_from_url("hello-world", "http://localhost:9000/images/hello-world.tgz")
     self.assertTrue(path.exists("hello-world.tgz"))
     load_image_from_tgz("hello-world.tgz")
     self.assertTrue(does_image_exist_locally("hello-world"))
     self.assertFalse(path.exists("hello-world.tgz"))
-  
-  # @classmethod
-  # def tearDownClass(cls) -> None:
-  #   _remove_example_contianer()
-  #   return super().tearDownClass()
