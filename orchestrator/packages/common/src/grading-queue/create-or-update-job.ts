@@ -31,7 +31,7 @@ export const createOrUpdateJobTransaction = async (
       orcaKey,
       isImmediateJob,
     );
-  } else if (keyMatchesImmediateJob && isImmediateJob) {
+  } else if (keyMatchesRegularJob && isImmediateJob) {
     deleteNonImmediateJob(
       redisConnection,
       transactionBuilder,
