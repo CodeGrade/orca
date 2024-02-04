@@ -5,8 +5,7 @@ import {
   getConfig,
   runOperationWithLock,
 } from "@codegrade-orca/common";
-import { execFile, ExecFileException } from "child_process";
-import { existsSync, writeFile } from "fs";
+import { existsSync } from "fs";
 import { readdir, rm, stat } from "fs/promises";
 import { deleteGraderImageKeyTransaction } from "../grading-queue/delete-image-key";
 import {
@@ -14,6 +13,7 @@ import {
   getHoldingPenJobs,
   releaseHoldingPenJobsTransaction,
 } from "../grading-queue/handle-holding-pen";
+import { createAndStoreGraderImage } from "./image-creation";
 
 const CONFIG = getConfig();
 
@@ -37,8 +37,10 @@ export const processBuildRequest = async (
         holdingPenJobs,
         buildReq.dockerfileSHASum,
       );
+      const executor = await tb.build();
+      await executor.execute();
     });
-  } catch {
+  } catch (err) {
     await runOperationWithLock(async (redisConnection) => {
       const tb = new RedisTransactionBuilder(redisConnection);
       deleteGraderImageKeyTransaction(tb, buildReq.dockerfileSHASum);
@@ -75,86 +77,4 @@ export const removeStaleImageFiles = async (): Promise<Array<string>> => {
     }),
   );
   return imagesRemoved;
-};
-
-export const createAndStoreGraderImage = (
-  buildRequest: GraderImageBuildRequest,
-) => {
-  // TODO: validate dockerfileContent
-  return writeDockerfileContentsToFile(buildRequest)
-    .then((_) => buildImage(buildRequest))
-    .then((_) =>
-      rm(
-        path.join(
-          CONFIG.dockerImageFolder,
-          `${buildRequest.dockerfileSHASum}.Dockerfile`,
-        ),
-      ),
-    )
-    .then((_) => saveImageToTgz(buildRequest.dockerfileSHASum));
-};
-
-const writeDockerfileContentsToFile = ({
-  dockerfileContents: dockerfileContent,
-  dockerfileSHASum,
-}: GraderImageBuildRequest): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const dockerfilePath = path.join(
-      CONFIG.dockerImageFolder,
-      `${dockerfileSHASum}.Dockerfile`,
-    );
-    writeFile(dockerfilePath, dockerfileContent, (err) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(dockerfilePath);
-      }
-    });
-  });
-};
-
-const buildImage = ({
-  dockerfileSHASum,
-}: GraderImageBuildRequest): Promise<void> => {
-  return new Promise<void>((resolve, reject) => {
-    execFile(
-      "docker",
-      [
-        "build",
-        "-t",
-        dockerfileSHASum,
-        "-f",
-        path.join(CONFIG.dockerImageFolder, `${dockerfileSHASum}.Dockerfile`),
-        ".",
-      ],
-      (err, _stdout, _stderr) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      },
-    );
-  });
-};
-
-const saveImageToTgz = (imageName: string): Promise<void> => {
-  return new Promise<void>((resolve, reject) => {
-    execFile(
-      "docker",
-      [
-        "save",
-        "-o",
-        path.join(CONFIG.dockerImageFolder, `${imageName}.tgz`),
-        imageName,
-      ],
-      (err, _stdout, _stderr) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      },
-    );
-  });
 };

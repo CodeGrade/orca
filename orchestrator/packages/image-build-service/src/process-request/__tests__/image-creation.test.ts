@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, rmSync } from "fs";
-import { createAndStoreGraderImage } from "..";
 import path from "path";
 import { getConfig, GraderImageBuildRequest } from "@codegrade-orca/common";
+import { createAndStoreGraderImage } from "../image-creation";
 
 const CONFIG = getConfig();
 

@@ -7,15 +7,17 @@ services:
     networks:
       - orca-testing
 
-  web-server:
+  orchestrator:
     image: orca-orchestrator
+    container_name: orchestrator
     ports:
       - "4000:4000"
-    container_name: orchestrator
     environment:
       - REDIS_HOST=redis-queue
     networks:
       - orca-testing
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
   echo-server:
     image: echo-server

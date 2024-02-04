@@ -1,6 +1,6 @@
 import { RedisTransactionBuilder } from "@codegrade-orca/common";
 
-export const deleteGraderImageKeyTransaction = async (
+export const deleteGraderImageKeyTransaction = (
   transactionBuilder: RedisTransactionBuilder,
   graderImageSHA: string,
-) => transactionBuilder.DEL(graderImageSHA);
+): RedisTransactionBuilder => transactionBuilder.DEL(graderImageSHA);
