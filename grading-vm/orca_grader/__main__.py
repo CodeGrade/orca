@@ -5,6 +5,7 @@ import os
 import time
 from typing import List, Optional
 import tempfile
+import redis
 from orca_grader.job_termination.redis.reenqueue import reenqueue_job
 from orca_grader.redis_utils import get_redis_client
 from orca_grader.common.services.push_results import push_results_with_exception
@@ -118,18 +119,37 @@ def process_redis_jobs(redis_url: str, no_container: bool, container_command: Li
     with NonBlockingThreadPoolExecutor(max_workers=2) as futures_executor:
       stop_future = futures_executor.submit(killer.wait_for_stop_signal)
       while True:
-        job_string, timestamp = retriever.retrieve_grading_job()
-        job_future = futures_executor.submit(run_grading_job, job_string, no_container, container_command)
-        done, not_done = concurrent.futures.wait([stop_future, job_future], return_when="FIRST_COMPLETED")
+        job_retrieval_future = futures_executor.submit(retriever.retrieve_grading_job)
+        done, not_done = concurrent.futures.wait([stop_future, job_retrieval_future], return_when="FIRST_COMPLETED")
+
+        job_string, timestamp = None, None
+
+        if stop_future in done and job_retrieval_future in done:
+          if job_retrieval_future.exception() is None:
+            job_string, timestamp = job_retrieval_future.result()
+            reenqueue_job(json.loads(job_string), timestamp)
+
+        if job_retrieval_future in done:
+          if job_retrieval_future.exception():
+            print(job_retrieval_future.exception())
+            continue
+          else:
+            job_string, timestamp = job_retrieval_future.result()
+        
+        if stop_future in done:
+          break
+
+        job_execution_future = futures_executor.submit(run_grading_job, job_string, no_container, container_command)
+        done, not_done = concurrent.futures.wait([stop_future, job_execution_future], return_when="FIRST_COMPLETED")
         # States of job and stop future after wait
         # 1. Stop future done, job_future not done.
         # 2. Stop future not done, job future done.
         # 3. Stop future done, job future done.
-        if stop_future in done and job_future in not_done:
+        if stop_future in done and job_execution_future in not_done:
           reenqueue_job(json.loads(job_string), timestamp, get_redis_client(redis_url))
 
-        if job_future in done:
-          if type(job_future.exception()) == InvalidWorkerStateException:
+        if job_execution_future in done:
+          if type(job_execution_future.exception()) == InvalidWorkerStateException:
             exit(1)
           handle_completed_grading_job(job_string, redis_url)
           
