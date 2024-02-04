@@ -14,7 +14,7 @@ Orca is a grading job ecosystem to be used in tandem with Bottlenose, a web appl
 Orca expects the following tools with these versions:
 
 - Redis 7.0 (Grading Queue)
-- Node 16.15.0 (Web Server and Client)
+- Node 20.11.0 (Web Server and Client)
 - Python 3.10.6 (Grading VM)
 
 ## Local Development
