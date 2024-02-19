@@ -15,7 +15,11 @@ export interface HoldingPenJobs {
 export const clearHoldingPenTransaction = (
   transactionBuilder: RedisTransactionBuilder,
   graderImageSHA: string,
-): RedisTransactionBuilder => transactionBuilder.DEL(graderImageSHA);
+): RedisTransactionBuilder =>
+  transactionBuilder
+    .DEL(graderImageSHA)
+    .DEL(`${graderImageSHA}.jobs`)
+    .DEL(`${graderImageSHA}.immediateJobs`);
 
 export const releaseHoldingPenJobsTransaction = async (
   redisConnection: Redis,
@@ -23,7 +27,6 @@ export const releaseHoldingPenJobsTransaction = async (
   holdingPenJobs: HoldingPenJobs,
   graderImageSHA: string,
 ): Promise<RedisTransactionBuilder> => {
-  deleteGraderImageKeyTransaction(transactionBuilder, graderImageSHA);
   const numImmediateJobs = holdingPenJobs.immediateJobs.length;
   await Promise.all(
     [...holdingPenJobs.immediateJobs, ...holdingPenJobs.standardJobs].map(
@@ -38,6 +41,10 @@ export const releaseHoldingPenJobsTransaction = async (
         );
       },
     ),
+  );
+  deleteGraderImageKeyTransaction(transactionBuilder, graderImageSHA);
+  [`${graderImageSHA}.jobs`, `${graderImageSHA}.immediateJobs`].forEach((k) =>
+    transactionBuilder.DEL(k),
   );
   return transactionBuilder;
 };

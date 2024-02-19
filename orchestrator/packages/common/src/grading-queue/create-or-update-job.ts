@@ -32,7 +32,7 @@ export const createOrUpdateJobTransaction = async (
       isImmediateJob,
     );
   } else if (keyMatchesRegularJob && isImmediateJob) {
-    deleteNonImmediateJob(
+    await deleteNonImmediateJob(
       redisConnection,
       transactionBuilder,
       orcaKey,
@@ -105,7 +105,7 @@ const createJob = (
 ): RedisTransactionBuilder => {
   const { priority, collation } = jobConfig;
   const releaseTime = arrivalTime + priority;
-  const nextTask = collationToString(collation);
+  const collationString = collationToString(collation);
   const gradingJob: GradingJob = {
     ...jobConfig,
     created_at: arrivalTime,
@@ -114,9 +114,9 @@ const createJob = (
   };
   const nonce = randomUUID();
   return transactionBuilder
-    .LPUSH(`SubmitterInfo.${nextTask}`, orcaKey)
-    .ZADD("Reservations", `${nextTask}.${nonce}`, releaseTime)
-    .SADD(`Nonces.${nextTask}`, nonce)
+    .LPUSH(`SubmitterInfo.${collationString}`, orcaKey)
+    .ZADD("Reservations", `${collationString}.${nonce}`, releaseTime)
+    .SADD(`Nonces.${collationString}`, nonce)
     .SET(orcaKey, JSON.stringify(gradingJob));
 };
 
@@ -127,7 +127,10 @@ const deleteNonImmediateJob = async (
   collation: Collation,
 ): Promise<RedisTransactionBuilder> => {
   const nonceToDelete = await getNonceToDelete(redisConnection, collation);
+  console.log(nonceToDelete);
   const collationString = collationToString(collation);
+  console.log(`Nonces.${collationToString}`);
+  console.log(collationString);
   return transactionBuilder
     .SREM(`Nonces.${collationToString}`, nonceToDelete)
     .ZREM("Reservations", `${collationString}.${nonceToDelete}`)
@@ -146,7 +149,7 @@ const getNonceToDelete = async (
   const reservationScores = (
     await redisConnection.zmscore(
       "Reservations",
-      nonces.map((n) => `${n}.${collationString}`),
+      nonces.map((n) => `${collationString}.${n}`),
     )
   ).map((v) => toInteger(v));
   if (!isNumberArray(reservationScores)) {
@@ -155,7 +158,10 @@ const getNonceToDelete = async (
     );
   }
   const scoreToIndex: Record<number, number> = reservationScores.reduce(
-    (prev, curr, i) => (prev[curr] = i),
+    (prev, curr, i) => {
+      prev[curr] = i;
+      return prev;
+    },
     {},
   );
   return nonces[scoreToIndex[reservationScores.sort()[0]]];

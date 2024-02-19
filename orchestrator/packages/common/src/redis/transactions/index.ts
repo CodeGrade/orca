@@ -135,17 +135,15 @@ export class RedisTransactionBuilder {
   public DEL(key: string): RedisTransactionBuilder {
     this.buildSteps.push(async () => {
       this.transactionMultiCommand.del(key);
-      const expectedReply =
-        OPERATION_TO_EXPECTED_REPLY[OperationsWithRollback.DEL];
+      // We only care about the previous value if we can run a GET operation
+      // against the given key.
+      const previousValue =
+        (await this.redisConnection.type(key)) === "string" &&
+        (await this.redisConnection.get(key));
+      const expectedReply = previousValue ? 1 : 0;
       this.expectedReplies.push(expectedReply);
-      const previousValue = await this.redisConnection.get(key);
-      if (!previousValue) {
-        throw new RedisTransactionBuilderException(
-          `Cannot DELete key ${key} as there is no value for it.`,
-        );
-      }
       this.rollbackSteps.push((actualReply, rollbackMultiCommand) => {
-        return expectedReply === actualReply
+        return expectedReply === actualReply && previousValue
           ? rollbackMultiCommand.set(key, previousValue)
           : rollbackMultiCommand;
       });

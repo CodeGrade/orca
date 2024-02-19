@@ -111,13 +111,13 @@ export const createOrUpdateImmediateJob = async (
     await mutations.createOrUpdateJob(gradingJobConfig, Date.now(), true);
     return res.status(200).json({ message: "OK" });
   } catch (error) {
+    console.error(error);
     if (error instanceof GradingQueueOperationError) {
       return errorResponse(res, 400, [error.message]);
     }
     return errorResponse(res, 500, [
-      `An error occurred while trying to create an 
-    immediate job or update an existing one for 
-    ${gradingJobConfig.collation.type} with ID ${gradingJobConfig.collation.id}.`,
+      "An error occurred while trying to create an immediate job or update an " +
+        `existing one for ${gradingJobConfig.collation.type} with ID ${gradingJobConfig.collation.id}.`,
     ]);
   }
 };
