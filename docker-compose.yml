@@ -18,6 +18,7 @@ services:
       - orca-testing
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./orchestrator/packages:/usr/packages
 
   echo-server:
     image: echo-server

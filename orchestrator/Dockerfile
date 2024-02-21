@@ -24,4 +24,4 @@ RUN yarn workspaces run build
 
 EXPOSE 4000
 
-CMD ["yarn", "start"]
+CMD ["yarn", "start:dev"]

@@ -1,7 +1,5 @@
 import {
   GraderImageBuildRequest,
-  GradingQueueOperationError,
-  RedisTransactionBuilder,
   runOperationWithLock,
   toMilliseconds,
 } from "@codegrade-orca/common";
@@ -10,14 +8,20 @@ import { processBuildRequest, removeStaleImageFiles } from "./process-request";
 const LOOP_SLEEP_TIME = 10; // Seconds
 
 const main = async () => {
+  console.info("Build service initialized.");
   while (true) {
-    const nextBuildReq = await getNextBuildRequest();
-    if (!nextBuildReq) {
-      sleep(LOOP_SLEEP_TIME);
-      continue;
+    try {
+      const nextBuildReq = await getNextBuildRequest();
+      if (!nextBuildReq) {
+        await sleep(LOOP_SLEEP_TIME);
+        continue;
+      }
+      await processBuildRequest(nextBuildReq);
+      await removeStaleImageFiles();
+    } catch (err) {
+      console.error(err);
+      await sleep(LOOP_SLEEP_TIME);
     }
-    await processBuildRequest(nextBuildReq);
-    await removeStaleImageFiles();
   }
 };
 
