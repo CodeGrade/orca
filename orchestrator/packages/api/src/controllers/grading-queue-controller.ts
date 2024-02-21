@@ -11,12 +11,15 @@ import getAllGradingJobs from "../grading-queue/queries/get-grading-jobs";
 import {
   GradingJob,
   GradingQueueOperationError,
+  createServiceLogger,
   filterGradingJobs,
   getFilterInfo,
   getGradingQueueStats,
   validations,
 } from "@codegrade-orca/common";
 import mutations from "../grading-queue/mutations";
+
+const LOGGER = createServiceLogger('grading-queue-controller');
 
 export const getGradingJobs = async (req: Request, res: Response) => {
   if (
@@ -89,6 +92,7 @@ export const getGradingJobs = async (req: Request, res: Response) => {
       filter_info: filterInfo,
     });
   } catch (err) {
+    LOGGER.error(err);
     if (err instanceof GradingQueueOperationError) {
       return errorResponse(res, 400, [err.message]);
     }
@@ -111,7 +115,7 @@ export const createOrUpdateImmediateJob = async (
     await mutations.createOrUpdateJob(gradingJobConfig, Date.now(), true);
     return res.status(200).json({ message: "OK" });
   } catch (error) {
-    console.error(error);
+    LOGGER.error(error);
     if (error instanceof GradingQueueOperationError) {
       return errorResponse(res, 400, [error.message]);
     }
@@ -133,6 +137,7 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
     await mutations.createOrUpdateJob(gradingJobConfig, Date.now(), false);
     return res.status(200).json({ message: "OK" });
   } catch (err) {
+    LOGGER.error(err);
     if (err instanceof GradingQueueOperationError) {
       return errorResponse(res, 400, [err.message]);
     } else {
@@ -152,8 +157,9 @@ export const moveJob = async (req: Request, res: Response) => {
     await mutations.moveJob(req.body);
     return res.status(200).json("OK");
   } catch (err) {
+    LOGGER.error(err);
     if (err instanceof GradingQueueOperationError) {
-      return errorResponse(res, 500, [err.message]);
+      return errorResponse(res, 400, [err.message]);
     }
     return errorResponse(res, 500, [
       `An error occurred while trying to move job with key ${req.body.orcaKey}.`,
@@ -169,6 +175,7 @@ export const deleteJob = async (req: Request, res: Response) => {
     await mutations.deleteJob(req.body);
     return res.status(200).json({ message: "OK" });
   } catch (err) {
+    LOGGER.error(err);
     if (err instanceof GradingQueueOperationError) {
       return errorResponse(res, 500, [err.message]);
     } else {

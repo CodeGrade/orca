@@ -5,13 +5,14 @@ export interface OrchestratorConfig {
   redis: RedisOptions;
   api: OrchestratorAPIOptions;
   dockerImageFolder: string;
+  logFolder: string;
 }
 
 interface OrchestratorAPIOptions {
   port?: number;
 }
 
-export const getConfig = () => ({
+export const getConfig = (): OrchestratorConfig => ({
   redis: {
     host: process.env.REDIS_HOST || "localhost",
     port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 6379,
@@ -22,4 +23,5 @@ export const getConfig = () => ({
     port: process.env.API_PORT ? parseInt(process.env.API_PORT) : 8090,
   },
   dockerImageFolder: join(__dirname, "../../../", "images"),
+  logFolder: join(__dirname, "../../../", "logs")
 });

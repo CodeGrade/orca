@@ -1,14 +1,16 @@
 import {
   GraderImageBuildRequest,
+  createServiceLogger,
   runOperationWithLock,
   toMilliseconds,
 } from "@codegrade-orca/common";
 import { processBuildRequest, removeStaleImageFiles } from "./process-request";
 
+const LOGGER = createServiceLogger('image-builder-service');
 const LOOP_SLEEP_TIME = 10; // Seconds
 
 const main = async () => {
-  console.info("Build service initialized.");
+  LOGGER.info("Build service initialized.");
   while (true) {
     try {
       const nextBuildReq = await getNextBuildRequest();
@@ -19,7 +21,7 @@ const main = async () => {
       await processBuildRequest(nextBuildReq);
       await removeStaleImageFiles();
     } catch (err) {
-      console.error(err);
+      LOGGER.error(err);
       await sleep(LOOP_SLEEP_TIME);
     }
   }
