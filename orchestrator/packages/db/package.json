@@ -1,0 +1,15 @@
+{
+  "name": "@codegrade-orca/db",
+  "version": "1.0.0",
+  "description": "Database access and operations for the orchestrator component of Orca.",
+  "main": "dist/index.js",
+  "author": "Jackson Williams",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "prisma": "^5.11.0"
+  },
+  "dependencies": {
+    "@prisma/client": "5.11.0"
+  }
+}

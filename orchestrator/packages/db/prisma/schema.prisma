@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+model Reservation {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  releaseAt DateTime @default(now())
+
+  submitter Submitter? @relation(fields: [submitterID], references: [id])
+  submitterID Int?
+
+  job Job? @relation(fields: [jobID], references: [id])
+  jobID Int? @unique
+}
+
+enum CollationType {
+  USER
+  TEAM
+}
+
+model Submitter {
+  id Int @id @default(autoincrement())
+  clientURL String
+  collationType CollationType
+  collationID String
+
+  jobs Job[]
+  reservations Reservation[]
+
+  @@unique([clientURL, collationType, collationID])
+}
+
+model Job {
+  id Int @id @default(autoincrement())
+  clientURL String
+  clientKey String
+  config Json
+  createdAt DateTime @default(now())
+
+  submitter Submitter? @relation(fields: [submitterID], references: [id])
+  submitterID Int?
+
+  reservation Reservation?
+
+  @@unique([clientURL, clientKey])
+}
+
+model ImageBuildInfo {
+  dockerfileSHA String @id
+  dockerfileContent String
+
+  jobConfigs ImageJobConfig[]
+}
+
+model ImageJobConfig {
+  id Int @id @default(autoincrement())
+  jobConfig Json @unique
+
+  imageBuildInfo ImageBuildInfo @relation(fields: [imageBuildSHA], references: [dockerfileSHA])
+  imageBuildSHA String
+}

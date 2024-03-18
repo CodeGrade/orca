@@ -12,6 +12,9 @@ services:
     container_name: orchestrator
     ports:
       - "4000:4000"
+    env_file:
+      - path: ./orchestrator/.env
+        required: true
     environment:
       - REDIS_HOST=redis
     networks:
@@ -20,6 +23,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./orchestrator/packages:/usr/packages
     depends_on:
+      - postgres
       - redis
 
   echo-server:
@@ -35,6 +39,16 @@ services:
     ports:
       - "9000:9000"
     container_name: simple-server
+    networks:
+      - orca-testing
+
+  postgres:
+    image: postgres:10
+    ports:
+      - "5432:5432"
+    container_name: postgres
+    environment:
+      postgres_password: password
     networks:
       - orca-testing
 
