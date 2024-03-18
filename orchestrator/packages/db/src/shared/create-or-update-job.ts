@@ -2,6 +2,7 @@ import { CollationType, Prisma } from '@prisma/client';
 import { Collation, GradingJobConfig } from '@codegrade-orca/common';
 import prismaInstance from '../prisma-instance';
 import { immediateJobExists, submitterJobExists } from '../utils';
+import { GradingQueueOperationException } from '../exceptions';
 
 export const createOrUpdateJob = (jobConfig: GradingJobConfig, isImmediateJob: boolean) =>
   prismaInstance.$transaction(async (tx) => await createOrUpdateJobWithClient(jobConfig, isImmediateJob, tx));
@@ -74,7 +75,7 @@ const removeNonImmediateJob = async (collation: Collation, responseURL: string, 
   }
 
   if (jobToDeleteID === undefined || reservationToDeleteID === undefined) {
-    throw new Error(`Could not find matching reservation and job to delete for the following: ` +
+    throw new GradingQueueOperationException(`Could not find matching reservation and job to delete for the following: ` +
       `${{...collation, responseURL, jobKey}}`);
   }
 

@@ -2,6 +2,7 @@ import ld from 'lodash';
 import { GradingJob, GradingJobConfig } from '@codegrade-orca/common';
 import prismaInstance from '../prisma-instance';
 import { Prisma, Reservation } from '@prisma/client';
+import { GradingQueueOperationException } from '../exceptions';
 
 // TODO: Add ability to filter on metadata
 // TODO: Add queue stats to return
@@ -18,7 +19,7 @@ const getAllGradingJobs = (): Promise<Array<GradingJob>> => prismaInstance.$tran
   const [submitterReservations, immediateReservations] = ld.partition(reservations, (r) => r.submitterID !== null)
   const immediateGradingJobs = await Promise.all(immediateReservations.map((r) => {
     if (!r.job) {
-      throw new TypeError("A reservation without a submitter must have a job associated with it.");
+      throw new GradingQueueOperationException("A reservation without a submitter must have a job associated with it.");
     }
     return {...r.job.config as object as GradingJobConfig, release_at: r.releaseAt, created_at: r.createdAt} as GradingJob;
   }));

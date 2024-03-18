@@ -60,6 +60,8 @@ model Job {
 model ImageBuildInfo {
   dockerfileSHA String @id
   dockerfileContent String
+  inProgress Boolean @default(false)
+  createdAt DateTime @default(now())
 
   jobConfigs JobConfigAwaitingImage[]
 }
@@ -69,6 +71,7 @@ model JobConfigAwaitingImage {
   jobConfig Json
   clientKey String
   clientURL String
+  isImmediate Boolean @default(false)
 
   imageBuildInfo ImageBuildInfo @relation(fields: [imageBuildSHA], references: [dockerfileSHA])
   imageBuildSHA String
