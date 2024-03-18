@@ -61,13 +61,17 @@ model ImageBuildInfo {
   dockerfileSHA String @id
   dockerfileContent String
 
-  jobConfigs ImageJobConfig[]
+  jobConfigs JobConfigAwaitingImage[]
 }
 
-model ImageJobConfig {
+model JobConfigAwaitingImage {
   id Int @id @default(autoincrement())
-  jobConfig Json @unique
+  jobConfig Json
+  clientKey String
+  clientURL String
 
   imageBuildInfo ImageBuildInfo @relation(fields: [imageBuildSHA], references: [dockerfileSHA])
   imageBuildSHA String
+
+  @@unique([clientKey, clientURL])
 }

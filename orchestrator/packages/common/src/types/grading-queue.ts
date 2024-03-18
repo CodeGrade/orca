@@ -87,16 +87,8 @@ export interface GradingQueueStats {
 export type MoveJobAction = "release" | "delay";
 
 export interface MoveJobRequest {
-  nonce: string;
-  orcaKey: string;
+  jobID: number;
   moveAction: MoveJobAction;
-  collation: Collation;
-}
-
-export interface DeleteJobRequest {
-  orcaKey: string;
-  nonce?: string;
-  collation?: Collation;
 }
 
 export interface FilterInfo {

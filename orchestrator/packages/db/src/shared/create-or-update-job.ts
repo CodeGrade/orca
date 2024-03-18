@@ -1,4 +1,4 @@
-import { CollationType, Prisma, Reservation } from '@prisma/client';
+import { CollationType, Prisma } from '@prisma/client';
 import { Collation, GradingJobConfig } from '@codegrade-orca/common';
 import prismaInstance from '../prisma-instance';
 import { immediateJobExists, submitterJobExists } from '../utils';
@@ -9,7 +9,7 @@ export const createOrUpdateJob = (jobConfig: GradingJobConfig, isImmediateJob: b
 export const createOrUpdateJobWithClient = async (jobConfig: GradingJobConfig, isImmediateJob: boolean, tx: Prisma.TransactionClient) => {
   const existingImmediateJob = await immediateJobExists(jobConfig.key, jobConfig.response_url, tx);
   const existingSubmitterJob =
-    await submitterJobExists(jobConfig.collation.type, jobConfig.collation.id, jobConfig.key, jobConfig.response_url, tx);
+    await submitterJobExists(jobConfig.key, jobConfig.response_url, tx);
   if ((existingImmediateJob &&  isImmediateJob) || existingSubmitterJob) {
     await tx.job.update({
       where: {
