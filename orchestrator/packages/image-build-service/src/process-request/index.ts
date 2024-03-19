@@ -1,18 +1,11 @@
 import path from "path";
 import {
   GraderImageBuildRequest,
-  RedisTransactionBuilder,
   getConfig,
-  runOperationWithLock,
 } from "@codegrade-orca/common";
+import { } from "@codegrade-orca/db";
 import { existsSync } from "fs";
 import { readdir, rm, stat } from "fs/promises";
-import { deleteGraderImageKeyTransaction } from "../grading-queue/delete-image-key";
-import {
-  clearHoldingPenTransaction,
-  getHoldingPenJobs,
-  releaseHoldingPenJobsTransaction,
-} from "../grading-queue/handle-holding-pen";
 import { createAndStoreGraderImage } from "./image-creation";
 
 const CONFIG = getConfig();
@@ -24,31 +17,8 @@ export const processBuildRequest = async (
 ) => {
   try {
     await createAndStoreGraderImage(buildReq);
-    await runOperationWithLock(async (redisConnection) => {
-      const holdingPenJobs = await getHoldingPenJobs(
-        redisConnection,
-        buildReq.dockerfileSHASum,
-      );
-      const tb = new RedisTransactionBuilder(redisConnection);
-      deleteGraderImageKeyTransaction(tb, buildReq.dockerfileSHASum);
-      await releaseHoldingPenJobsTransaction(
-        redisConnection,
-        tb,
-        holdingPenJobs,
-        buildReq.dockerfileSHASum,
-      );
-      const executor = await tb.build();
-      await executor.execute();
-    });
+    await
   } catch (err) {
-    await runOperationWithLock(async (redisConnection) => {
-      const tb = new RedisTransactionBuilder(redisConnection);
-      deleteGraderImageKeyTransaction(tb, buildReq.dockerfileSHASum);
-      clearHoldingPenTransaction(tb, buildReq.dockerfileSHASum);
-      // TODO: Get all jobs and send a "cancelled" API request to Bottlenose.
-      const executor = await tb.build();
-      await executor.execute();
-    });
     const imageTGZPath = path.join(
       CONFIG.dockerImageFolder,
       `${buildReq.dockerfileSHASum}.tgz`,
