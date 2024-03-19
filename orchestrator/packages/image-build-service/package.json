@@ -9,10 +9,7 @@
     "dev": "nodemon src/index.ts"
   },
   "dependencies": {
-    "@codegrade-orca/common": "^1.0.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20.11.16",
-    "typescript": "^5.3.3"
+    "@codegrade-orca/common": "^1.0.0",
+    "@codegrade-orca/db": "^1.0.0"
   }
 }
