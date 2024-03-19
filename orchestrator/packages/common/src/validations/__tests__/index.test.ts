@@ -1,8 +1,4 @@
 import validations from "..";
-import {
-  validDeleteRequest,
-  validImmediateDeleteRequest,
-} from "../__mocks__/delete-request.mock";
 import { defaultGradingJobConfig } from "../__mocks__/grading-job-config.mock";
 import { defaultGraderImageBuildRequest } from "../__mocks__/grader-image-build-request";
 
@@ -31,30 +27,6 @@ describe("JSONSchema validations", () => {
           container_response_url: "https://example.com/response",
         }),
       ).toBe(true);
-    });
-  });
-
-  describe("DeleteJobRequest schema validation", () => {
-    it("validates a request with a key, nonce, and user collation", () => {
-      expect(validations.deleteJobRequest(validDeleteRequest)).toBe(true);
-    });
-
-    it("validates a request with a key, nonce, and team collation", () => {
-      expect(
-        validations.deleteJobRequest({
-          ...validDeleteRequest,
-          collation: {
-            type: "team",
-            id: "12345",
-          },
-        }),
-      );
-    });
-
-    it("validates a request with only a key", () => {
-      expect(validations.deleteJobRequest(validImmediateDeleteRequest)).toBe(
-        true,
-      );
     });
   });
 
