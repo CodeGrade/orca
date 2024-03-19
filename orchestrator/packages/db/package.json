@@ -6,6 +6,10 @@
   "author": "Jackson Williams",
   "license": "MIT",
   "private": true,
+  "scripts": {
+    "build": "tsc --build",
+    "check": "tsc --noEmit"
+  },
   "devDependencies": {
     "prisma": "^5.11.0"
   },
