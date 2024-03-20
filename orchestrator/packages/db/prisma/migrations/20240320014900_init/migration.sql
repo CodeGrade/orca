@@ -4,6 +4,7 @@ CREATE TYPE "CollationType" AS ENUM ('USER', 'TEAM');
 -- CreateTable
 CREATE TABLE "Reservation" (
     "id" SERIAL NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "releaseAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "submitterID" INTEGER,
     "jobID" INTEGER,
@@ -27,7 +28,7 @@ CREATE TABLE "Job" (
     "clientURL" TEXT NOT NULL,
     "clientKey" TEXT NOT NULL,
     "config" JSONB NOT NULL,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "submitterID" INTEGER,
 
     CONSTRAINT "Job_pkey" PRIMARY KEY ("id")
@@ -37,24 +38,35 @@ CREATE TABLE "Job" (
 CREATE TABLE "ImageBuildInfo" (
     "dockerfileSHA" TEXT NOT NULL,
     "dockerfileContent" TEXT NOT NULL,
+    "inProgress" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "ImageBuildInfo_pkey" PRIMARY KEY ("dockerfileSHA")
 );
 
 -- CreateTable
-CREATE TABLE "ImageJobConfig" (
+CREATE TABLE "JobConfigAwaitingImage" (
     "id" SERIAL NOT NULL,
     "jobConfig" JSONB NOT NULL,
+    "clientKey" TEXT NOT NULL,
+    "clientURL" TEXT NOT NULL,
+    "isImmediate" BOOLEAN NOT NULL DEFAULT false,
     "imageBuildSHA" TEXT NOT NULL,
 
-    CONSTRAINT "ImageJobConfig_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "JobConfigAwaitingImage_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Reservation_jobID_key" ON "Reservation"("jobID");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ImageJobConfig_jobConfig_key" ON "ImageJobConfig"("jobConfig");
+CREATE UNIQUE INDEX "Submitter_clientURL_collationType_collationID_key" ON "Submitter"("clientURL", "collationType", "collationID");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Job_clientURL_clientKey_key" ON "Job"("clientURL", "clientKey");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "JobConfigAwaitingImage_clientKey_clientURL_key" ON "JobConfigAwaitingImage"("clientKey", "clientURL");
 
 -- AddForeignKey
 ALTER TABLE "Reservation" ADD CONSTRAINT "Reservation_submitterID_fkey" FOREIGN KEY ("submitterID") REFERENCES "Submitter"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -66,4 +78,4 @@ ALTER TABLE "Reservation" ADD CONSTRAINT "Reservation_jobID_fkey" FOREIGN KEY ("
 ALTER TABLE "Job" ADD CONSTRAINT "Job_submitterID_fkey" FOREIGN KEY ("submitterID") REFERENCES "Submitter"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ImageJobConfig" ADD CONSTRAINT "ImageJobConfig_imageBuildSHA_fkey" FOREIGN KEY ("imageBuildSHA") REFERENCES "ImageBuildInfo"("dockerfileSHA") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "JobConfigAwaitingImage" ADD CONSTRAINT "JobConfigAwaitingImage_imageBuildSHA_fkey" FOREIGN KEY ("imageBuildSHA") REFERENCES "ImageBuildInfo"("dockerfileSHA") ON DELETE CASCADE ON UPDATE CASCADE;

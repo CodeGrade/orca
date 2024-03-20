@@ -55,6 +55,7 @@ export interface GradingJobConfig {
 interface AdditionalJobData {
   release_at: Date;
   created_at: Date;
+  queue_id: number;
 }
 
 export type GradingJob = GradingJobConfig & AdditionalJobData;

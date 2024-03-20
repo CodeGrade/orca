@@ -6,7 +6,7 @@
     "build": "tsc --build",
     "check": "tsc --noEmit",
     "start": "node dist/index.js",
-    "dev": "nodemon src/index.ts"
+    "dev": "nodemon --exec ts-node --require tsconfig-paths/register src/index.ts"
   },
   "dependencies": {
     "@codegrade-orca/common": "^1.0.0",

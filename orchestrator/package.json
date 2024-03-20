@@ -1,7 +1,6 @@
 {
   "name": "@codegrade/orca-orchestrator",
   "workspaces": [
-    "packages/common",
     "packages/*"
   ],
   "version": "1.0.0",
@@ -14,11 +13,7 @@
     "image-builder:dev": "yarn workspace @codegrade-orca/image-build-service dev",
     "start": "concurrently --kill-others-on-fail \"yarn server\" \"yarn image-builder\"",
     "start:dev": "concurrently --kill-others-on-fail \"yarn server:dev\" \"yarn image-builder:dev\"",
-    "test": "jest",
-    "test:server": "",
-    "test:image-build-service": "",
-    "test:grading-queue": "",
-    "test:common": ""
+    "test": "jest"
   },
   "dependencies": {
     "concurrently": "^8.2.2",
@@ -32,6 +27,7 @@
     "nodemon": "^3.0.3",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.3.3"
   }
 }

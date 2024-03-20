@@ -1,13 +1,6 @@
 version: "3"
 
 services:
-
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
-    container_name: grading-queue
-
   orchestrator:
     build: .
     image: orca-orchestrator:latest
@@ -15,14 +8,14 @@ services:
       - "4000:4000"
     depends_on:
       - postgres
-      - redis
     links:
       - postgres
-      - redis
     environment:
       POSTGRES_URL: postgresql://postgres:password@postgres
     container_name: orca-orchestrator
-    command: yarn start
+    volumes:
+      - ./packages:/usr/packages
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: always
 
   postgres:
@@ -32,4 +25,9 @@ services:
     container_name: postgres
     environment:
       POSTGRES_PASSWORD: password
+    volumes:
+      - db-data:/var/lib/postgresql/data
 
+volumes:
+  db-data:
+    external: true

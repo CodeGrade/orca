@@ -1,11 +1,28 @@
 import { CollationType, Prisma } from '@prisma/client';
-import { Collation, GradingJobConfig } from '@codegrade-orca/common';
+import { Collation, GradingJobConfig, imageWithSHAExists } from '@codegrade-orca/common';
 import prismaInstance from '../prisma-instance';
 import { immediateJobExists, submitterJobExists } from '../utils';
 import { GradingQueueOperationException } from '../exceptions';
 
-export const createOrUpdateJob = (jobConfig: GradingJobConfig, isImmediateJob: boolean) =>
-  prismaInstance.$transaction(async (tx) => await createOrUpdateJobWithClient(jobConfig, isImmediateJob, tx));
+export const createOrUpdateJob = (jobConfig: GradingJobConfig, isImmediateJob: boolean) =>{
+  return prismaInstance.$transaction(async (tx) => {
+    const imageBuilding = (await tx.imageBuildInfo.count({
+      where: {
+        dockerfileSHA: jobConfig.grader_image_sha
+      }
+    })) > 0;
+
+    if (!imageBuilding && !imageWithSHAExists(jobConfig.grader_image_sha)) {
+      throw new GradingQueueOperationException(`No image exists or is being build with SHA sum ${jobConfig.grader_image_sha}`);
+    }
+
+    if (imageBuilding) {
+      await placeJobInHoldingPen(jobConfig, tx)
+    } else {
+      await createOrUpdateJobWithClient(jobConfig, isImmediateJob, tx);
+    }
+  });
+};
 
 export const createOrUpdateJobWithClient = async (jobConfig: GradingJobConfig, isImmediateJob: boolean, tx: Prisma.TransactionClient) => {
   const existingImmediateJob = await immediateJobExists(jobConfig.key, jobConfig.response_url, tx);
@@ -37,6 +54,16 @@ export const createOrUpdateJobWithClient = async (jobConfig: GradingJobConfig, i
   }
 }
 
+const placeJobInHoldingPen = async (jobConfig: GradingJobConfig, tx: Prisma.TransactionClient) => {
+  await tx.jobConfigAwaitingImage.create({
+    data: {
+      jobConfig: jobConfig as object,
+      clientKey: jobConfig.key,
+      clientURL: jobConfig.response_url,
+      imageBuildSHA: jobConfig.grader_image_sha
+    }
+  });
+}
 
 const removeNonImmediateJob = async (collation: Collation, responseURL: string, jobKey: string, tx: Prisma.TransactionClient) => {
   const reservations = await tx.reservation.findMany({

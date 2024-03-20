@@ -17,19 +17,19 @@ const getAllGradingJobs = (): Promise<Array<GradingJob>> => prismaInstance.$tran
     }
   })
   const [submitterReservations, immediateReservations] = ld.partition(reservations, (r) => r.submitterID !== null)
-  const immediateGradingJobs = await Promise.all(immediateReservations.map((r) => {
+  const immediateGradingJobs = immediateReservations.map((r) => {
     if (!r.job) {
       throw new GradingQueueOperationException("A reservation without a submitter must have a job associated with it.");
     }
-    return {...r.job.config as object as GradingJobConfig, release_at: r.releaseAt, created_at: r.createdAt} as GradingJob;
-  }));
+    return { ...r.job.config as object as GradingJobConfig, release_at: r.releaseAt, created_at: r.createdAt, queue_id: r.jobID } as GradingJob;
+  });
 
   const submitterGradingJobs = await matchSubmittersToJobs(tx, submitterReservations);
 
   return [...submitterGradingJobs, ...immediateGradingJobs].sort((j) => j.release_at.getTime());
 });
 
-const matchSubmittersToJobs = async (tx: Prisma.TransactionClient, reservations: Array<Reservation>): Promise<Array<GradingJob>>  => {
+const matchSubmittersToJobs = async (tx: Prisma.TransactionClient, reservations: Array<Reservation>): Promise<Array<GradingJob>> => {
   const submitterToReservations: Record<number, Array<Reservation>> = {};
   reservations.forEach((r) => {
     if (r.submitterID in submitterToReservations) {
@@ -47,7 +47,13 @@ const matchSubmittersToJobs = async (tx: Prisma.TransactionClient, reservations:
         createdAt: 'desc'
       }
     });
-    return reservations.map((r, i) => ({...jobs[i].config as object  as GradingJobConfig, release_at: r.releaseAt} as GradingJob));
+    return reservations.map((r, i) => ({
+      ...jobs[i].config as object as GradingJobConfig,
+      release_at: r.releaseAt,
+      created_at: r.createdAt,
+      queue_id: jobs[i].id
+    } as GradingJob
+    ));
   })).then((arr) => arr.flat());
 }
 

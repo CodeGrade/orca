@@ -25,7 +25,7 @@ export const getGradingJobs = async (req: Request, res: Response) => {
   if (
     !req.query.limit ||
     !req.query.offset ||
-    !validateOffsetAndLimit(req.query.offset, req.query.limit)
+    !validateOffsetAndLimit(req.query.offset as string, req.query.limit as string)
   ) {
     return errorResponse(res, 400, [
       "Must send a valid offset and a limit with this request.",
@@ -34,8 +34,8 @@ export const getGradingJobs = async (req: Request, res: Response) => {
 
   // Get Pagination Data
   const [offset, limit] = formatOffsetAndLimit(
-    req.query.offset,
-    req.query.limit,
+    req.query.offset as string,
+    req.query.limit as string,
   );
 
   try {
@@ -92,6 +92,7 @@ export const getGradingJobs = async (req: Request, res: Response) => {
       filter_info: filterInfo,
     });
   } catch (err) {
+    console.error(err);
     if (err instanceof GradingQueueOperationException) {
       return errorResponse(res, 400, [err.message]);
     }
@@ -120,7 +121,7 @@ export const createOrUpdateImmediateJob = async (
     }
     return errorResponse(res, 500, [
       "An error occurred while trying to create an immediate job or update an " +
-        `existing one for ${gradingJobConfig.collation.type} with ID ${gradingJobConfig.collation.id}.`,
+      `existing one for ${gradingJobConfig.collation.type} with ID ${gradingJobConfig.collation.id}.`,
     ]);
   }
 };
@@ -139,7 +140,7 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
       return errorResponse(res, 400, [err.message]);
     } else {
       return errorResponse(res, 500, [
-        `The following error was encountered while trying to create out update the job for the given config: ${err.message}`,
+        `The following error was encountered while trying to create out update the job for the given config: ${(err as Error).message}`,
       ]);
     }
   }
@@ -147,10 +148,10 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
 
 export const moveJob = async (_req: Request, res: Response) => {
   return errorResponse(res, 500, ["Functionality to move a job remains to be implemented. " +
-  "Please contact williams.jack@northeastern.edu for more info."]);
+    "Please contact williams.jack@northeastern.edu for more info."]);
   // if (!validations.moveJobRequest(req.body)) {
-    // errorResponse(res, 400, ["Invalid move request."]);
-    // return;
+  // errorResponse(res, 400, ["Invalid move request."]);
+  // return;
   // }
 };
 

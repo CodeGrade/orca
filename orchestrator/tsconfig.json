@@ -13,6 +13,12 @@
     "incremental": true,
     "skipLibCheck": true,
 
-    "removeComments": true
+    "removeComments": true,
+    "paths": {
+      "@codegrade-orca/common": ["./packages/common/index.ts"],
+      "@codegrade-orca/db": ["./packages/db/index.ts"],
+      "@codegrade-orca/image-build-service": ["./packages/image-build-service/index.ts"],
+      "@codegrade-orca/api": ["./packages/api/index.ts"]
+    }
   }
 }

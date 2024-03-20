@@ -73,7 +73,7 @@ model JobConfigAwaitingImage {
   clientURL String
   isImmediate Boolean @default(false)
 
-  imageBuildInfo ImageBuildInfo @relation(fields: [imageBuildSHA], references: [dockerfileSHA])
+  imageBuildInfo ImageBuildInfo @relation(fields: [imageBuildSHA], references: [dockerfileSHA], onDelete: Cascade)
   imageBuildSHA String
 
   @@unique([clientKey, clientURL])

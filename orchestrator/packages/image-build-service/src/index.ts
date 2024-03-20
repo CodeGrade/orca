@@ -4,14 +4,14 @@ import {
 } from "@codegrade-orca/common";
 import { getNextImageBuild, handleCompletedImageBuild  } from "@codegrade-orca/db";
 import { createAndStoreGraderImage, removeStaleImageFiles } from "./process-request";
-import { cleanUpDockerFiles } from "./utils";
+import { cleanUpDockerFiles, removeImageFromDockerIfExists } from "./utils";
 
 const LOOP_SLEEP_TIME = 5; // Seconds
 
 const main = async () => {
   console.info("Build service initialized.");
   while (true) {
-    let currentDockerSHASum: string;
+    let currentDockerSHASum: string | undefined = undefined;
     try {
       const nextBuildReq = await getNextImageBuild();
 
@@ -21,11 +21,13 @@ const main = async () => {
       }
 
       currentDockerSHASum = nextBuildReq.dockerfileSHA;
+      console.info(`Attempting to build image with SHA ${nextBuildReq.dockerfileSHA}.`);
       await createAndStoreGraderImage({
         dockerfileSHASum: nextBuildReq.dockerfileSHA,
         dockerfileContents: nextBuildReq.dockerfileContent
       } as GraderImageBuildRequest);
       await handleCompletedImageBuild(nextBuildReq.dockerfileSHA, true);
+      console.info(`Successfully build image with SHA ${nextBuildReq.dockerfileSHA}.`);
     } catch (err) {
       if (currentDockerSHASum) {
         // TODO: Send GradingJobResults back to clients on build failure.
@@ -34,6 +36,9 @@ const main = async () => {
       }
       console.error(err);
     } finally {
+      if (currentDockerSHASum) {
+        await removeImageFromDockerIfExists(currentDockerSHASum);
+      }
       await removeStaleImageFiles();
     }
   }
