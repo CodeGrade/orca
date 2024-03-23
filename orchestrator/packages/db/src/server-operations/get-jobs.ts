@@ -1,7 +1,7 @@
-import ld from 'lodash';
+import ld, { uniq } from 'lodash';
 import { GradingJob, GradingJobConfig } from '@codegrade-orca/common';
 import prismaInstance from '../prisma-instance';
-import { Prisma, Reservation } from '@prisma/client';
+import { Job, Prisma, Reservation } from '@prisma/client';
 import { GradingQueueOperationException } from '../exceptions';
 
 // TODO: Add ability to filter on metadata
@@ -26,35 +26,49 @@ const getAllGradingJobs = (): Promise<Array<GradingJob>> => prismaInstance.$tran
 
   const submitterGradingJobs = await matchSubmittersToJobs(tx, submitterReservations);
 
-  return [...submitterGradingJobs, ...immediateGradingJobs].sort((j) => j.release_at.getTime());
+  return [...submitterGradingJobs, ...immediateGradingJobs].sort((j1, j2) => j1.release_at.getTime() - j2.release_at.getTime());
 });
 
 const matchSubmittersToJobs = async (tx: Prisma.TransactionClient, reservations: Array<Reservation>): Promise<Array<GradingJob>> => {
-  const submitterToReservations: Record<number, Array<Reservation>> = {};
-  reservations.forEach((r) => {
-    if (r.submitterID in submitterToReservations) {
-      submitterToReservations[r.submitterID].push(r);
-    } else {
-      submitterToReservations[r.submitterID] = [r];
+  const submitterIDs = uniq(reservations.map((r) => r.submitterID));
+  const submitterJobs = await tx.job.findMany({
+    where: {
+      submitterID: {
+        in: submitterIDs
+      }
+    },
+    orderBy: {
+      createdAt: 'desc'
     }
   });
-  return await Promise.all(Object.entries(submitterToReservations).map(async ([submitterID, reservations]) => {
-    const jobs = await tx.job.findMany({
-      where: {
-        submitterID: parseInt(submitterID)
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-    return reservations.map((r, i) => ({
-      ...jobs[i].config as object as GradingJobConfig,
+
+  const submitterToReservations: Record<number, Array<Reservation>> = reservations.reduce((dict, r) => {
+    if (r.submitterID in dict) {
+      dict[r.submitterID].push(r);
+    } else {
+      dict[r.submitterID] = [r];
+    }
+    return dict;
+  }, {});
+  const submitterToJobs: Record<number, Array<Job>> = submitterJobs.reduce((dict, j) => {
+    if (j.submitterID in dict) {
+      dict[j.submitterID].push(j);
+    } else {
+      dict[j.submitterID] = [j];
+    }
+    return dict;
+  }, {});
+
+  return Object.keys(submitterToReservations).map((idString) => {
+    const id = parseInt(idString);
+    return submitterToReservations[id].map((r, i) => ({
+      ...submitterToJobs[id][i].config as object as GradingJobConfig,
       release_at: r.releaseAt,
       created_at: r.createdAt,
-      queue_id: jobs[i].id
-    } as GradingJob
-    ));
-  })).then((arr) => arr.flat());
+      queue_id: submitterToJobs[id][i].id
+    } as GradingJob));
+  }).flat();
+
 }
 
 export default getAllGradingJobs;
