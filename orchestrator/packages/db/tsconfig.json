@@ -6,7 +6,8 @@
     "outDir": "dist",
     "rootDir": "src",
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "strictNullChecks": true
   },
   "references": [
     {

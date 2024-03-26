@@ -11,6 +11,7 @@
     "check": "tsc --noEmit"
   },
   "devDependencies": {
+    "jest-mock-extended": "^3.0.5",
     "prisma": "^5.11.0"
   },
   "dependencies": {
