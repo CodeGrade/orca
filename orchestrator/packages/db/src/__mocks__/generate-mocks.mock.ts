@@ -20,7 +20,9 @@ export const generateMockQueueInfo = (config: GradingJobConfig, isImmediateJob: 
       id,
       jobID: id,
       createdAt: new Date(),
-      releaseAt: new Date(Date.now() + toMilliseconds(id * 100)),
+      releaseAt: isImmediateJob ?
+        new Date() :
+        new Date(Date.now() + toMilliseconds(id * 100)),
       submitterID: isImmediateJob ? null : id
     },
     job: {
