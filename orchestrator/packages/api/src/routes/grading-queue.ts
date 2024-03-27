@@ -14,6 +14,6 @@ gradingQueueRouter.get("/grading_queue", getGradingJobs);
 gradingQueueRouter.put("/grading_queue", createOrUpdateJob);
 gradingQueueRouter.put("/grading_queue/immediate", createOrUpdateImmediateJob);
 gradingQueueRouter.put("/grading_queue/move", moveJob);
-gradingQueueRouter.delete("/grading_queue", deleteJob);
+gradingQueueRouter.delete("/grading_queue/:jobID", deleteJob);
 
 export default gradingQueueRouter;

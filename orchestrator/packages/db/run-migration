@@ -1,0 +1,21 @@
+#!/bin/bash
+
+if [[ "$#" -ne 1 ]]; then
+  echo "Please pass a *single* argument for migration name."
+  exit 1
+fi
+
+migration_name="$1"
+container_name='postgres-migration'
+
+docker run --rm -p 5432:5432 -v db-data:/var/lib/postgresql/data \
+  -e POSTGRES_PASSWORD=password --name "$container_name" -d postgres:10 > /dev/null
+
+if [[ $? -ne 0  ]]; then
+  echo "Postgres container failed to start. Aborting."
+  exit 1
+fi
+
+export POSTGRES_URL=postgresql://postgres:password@localhost
+npx prisma migrate dev --name $1
+docker stop "$container_name" > /dev/null

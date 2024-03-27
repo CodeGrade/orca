@@ -4,14 +4,14 @@ import {
   PaginationInfo,
 } from "@codegrade-orca/common";
 
-export const validateOffsetAndLimit = (offset, limit): boolean => {
-  if (isNaN(limit) || isNaN(offset)) return false;
+export const validateOffsetAndLimit = (offset: string, limit: string): boolean => {
   const offset_num: number = parseInt(offset);
   const limit_num: number = parseInt(limit);
+  if (isNaN(limit_num) || isNaN(offset_num)) return false;
   return offset_num >= 0 && limit_num > 0 && limit_num <= 50;
 };
 
-export const formatOffsetAndLimit = (offset, limit): [number, number] => {
+export const formatOffsetAndLimit = (offset: string, limit: string): [number, number] => {
   return [parseInt(offset), parseInt(limit)];
 };
 

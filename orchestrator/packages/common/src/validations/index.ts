@@ -4,10 +4,8 @@ import {
   gradingJobConfigSchema,
   gradingJobConfigSubSchemas,
 } from "./schemas/grading-job-config";
-import { deleteJobRequestSchema } from "./schemas/delete-job-request";
 import { moveJobRequestSchema } from "./schemas/move-job-request";
 import {
-  DeleteJobRequest,
   GradingJobConfig,
   MoveJobRequest,
 } from "../types/grading-queue";
@@ -22,7 +20,6 @@ ajv = gradingJobConfigSubSchemas.reduce(
 
 export default {
   gradingJobConfig: ajv.compile<GradingJobConfig>(gradingJobConfigSchema),
-  deleteJobRequest: ajv.compile<DeleteJobRequest>(deleteJobRequestSchema),
   moveJobRequest: ajv.compile<MoveJobRequest>(moveJobRequestSchema),
   graderImageBuildRequest: ajv.compile<GraderImageBuildRequest>(
     graderImageBuildRequestSchema,
