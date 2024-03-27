@@ -146,6 +146,8 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
   }
 };
 
+// TODO: Delaying a job is difficult given the way
+// we order jobs by date as of now (3/22).
 export const moveJob = async (_req: Request, res: Response) => {
   return errorResponse(res, 500, ["Functionality to move a job remains to be implemented. " +
     "Please contact williams.jack@northeastern.edu for more info."]);

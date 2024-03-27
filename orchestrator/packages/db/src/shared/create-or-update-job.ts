@@ -1,8 +1,13 @@
-import { CollationType, Prisma } from '@prisma/client';
-import { Collation, GradingJobConfig, imageWithSHAExists } from '@codegrade-orca/common';
+import { CollationType, Job, Prisma } from '@prisma/client';
+import { Collation, GradingJobConfig, imageWithSHAExists, toMilliseconds } from '@codegrade-orca/common';
 import prismaInstance from '../prisma-instance';
-import { immediateJobExists, submitterJobExists } from '../utils';
+import { getAssociatedReservation, immediateJobExists, retireReservationAndJob, submitterJobExists } from '../utils';
 import { GradingQueueOperationException } from '../exceptions';
+
+// TODO: Don't delete Submitters, Reservations, or Jobs. Mark them as completed
+// Rails has Scopes, see what Prisma has.
+// QUESTION: Should we implement this through parallel tables? Consider the
+// effect of this on uniqueness constraints.
 
 export const createOrUpdateJob = (jobConfig: GradingJobConfig, isImmediateJob: boolean) =>{
   return prismaInstance.$transaction(async (tx) => {
@@ -44,7 +49,16 @@ export const createOrUpdateJobWithClient = async (jobConfig: GradingJobConfig, i
   }
 
   if (existingSubmitterJob && isImmediateJob) {
-    await removeNonImmediateJob(jobConfig.collation, jobConfig.response_url, jobConfig.key, tx);
+    const currentJob = await tx.job.findUnique({
+      where: {
+        clientURL_clientKey: {
+          clientKey: jobConfig.key,
+          clientURL: jobConfig.response_url
+        }
+      }
+    }) as Job;
+    const associatedReservation = await getAssociatedReservation(currentJob, tx);
+    await retireReservationAndJob(currentJob, associatedReservation, tx);
   }
 
   if (isImmediateJob) {
@@ -64,68 +78,6 @@ const placeJobInHoldingPen = async (jobConfig: GradingJobConfig, tx: Prisma.Tran
     }
   });
 }
-
-const removeNonImmediateJob = async (collation: Collation, responseURL: string, jobKey: string, tx: Prisma.TransactionClient) => {
-  const reservations = await tx.reservation.findMany({
-    where: {
-      submitter: {
-        collationID: collation.id,
-        collationType: collation.type.toUpperCase() as CollationType
-      }
-    },
-    orderBy: {
-      releaseAt: 'asc'
-    }
-  });
-  const jobs = await tx.job.findMany({
-    where: {
-      submitter: {
-        collationID: collation.id,
-        collationType: collation.type.toUpperCase() as CollationType
-      }
-    },
-    orderBy: {
-      createdAt: 'desc'
-    }
-  });
-  const submitterJobCount = jobs.length;
-  let jobToDeleteID: number;
-  let reservationToDeleteID: number;
-
-  for (let i = 0; i < reservations.length; ++i) {
-    const [job, reservation] = [jobs[i], reservations[i]];
-    if (job.clientKey == jobKey && job.clientURL == responseURL) {
-      jobToDeleteID = job.id;
-      reservationToDeleteID = reservation.id;
-      break;
-    }
-  }
-
-  if (jobToDeleteID === undefined || reservationToDeleteID === undefined) {
-    throw new GradingQueueOperationException(`Could not find matching reservation and job to delete for the following: ` +
-      `${{...collation, responseURL, jobKey}}`);
-  }
-
-  await tx.reservation.delete({
-    where: { id: reservationToDeleteID }
-  });
-  await tx.job.delete({
-    where: { id: jobToDeleteID }
-  });
-
-  // i.e., The job we just deleted was the only one left.
-  if (submitterJobCount === 1) {
-    await tx.submitter.delete({
-      where: {
-        clientURL_collationType_collationID: {
-          clientURL: responseURL,
-          collationType: collation.type.toUpperCase() as CollationType,
-          collationID: collation.id
-        }
-      }
-    });
-  }
-};
 
 const createImmediate = async (jobConfig: GradingJobConfig, tx: Prisma.TransactionClient) => {
   const createdJob = await tx.job.create({
@@ -170,7 +122,8 @@ const createSubmitterJob = async (jobConfig: GradingJobConfig, tx: Prisma.Transa
 
   await tx.reservation.create({
     data: {
-      releaseAt: new Date(Date.now() + jobConfig.priority),
+      // TODO: Add seconds to the prioirty in docs
+      releaseAt: new Date(Date.now() + toMilliseconds(jobConfig.priority)),
       submitterID: submitter.id,
     }
   });
