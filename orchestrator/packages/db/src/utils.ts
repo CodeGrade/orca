@@ -1,7 +1,6 @@
 import { Prisma, Reservation, Job } from "@prisma/client"
 import prismaInstance from "./prisma-instance"
 import { GradingJobConfig } from "@codegrade-orca/common";
-import { parseInt } from "lodash";
 
 export const submitterJobExists = async (jobKey: string, responseURL: string, tx?: Prisma.TransactionClient) => {
   const client = tx ?? prismaInstance;
@@ -30,7 +29,7 @@ export const immediateJobExists = async (jobKey: string, responseURL: string, tx
 
 export const getAssociatedReservation = async (job: Job, tx: Prisma.TransactionClient): Promise<Reservation> => {
   if (job.submitterID === null) {
-    return await tx.reservation.findUnique({ where: { jobID: job.id } }) as Reservation;
+    return (await tx.reservation.findUnique({ where: { jobID: job.id } }))!;
   }
 
   const { rowNumber: rowNumberBigInt } = (
@@ -38,20 +37,26 @@ export const getAssociatedReservation = async (job: Job, tx: Prisma.TransactionC
       Prisma.sql(
         [jobRowIndexQuery(job.config as object as GradingJobConfig, job.submitterID)]
       )
-    ) as [{ rowNumber: BigInt }]
+    ) as [{ rowNumber: bigint }]
   )[0];
-  const skip = parseInt(rowNumberBigInt.toString()) - 1;
-  const reservation = (await tx.reservation.findMany({
+  // TODO: Confirm this is actually a bigint so that we don't need
+  // to do unnecessary hacky conversions.
+  const skip = Number(rowNumberBigInt) - 1;
+  const reservation = (await tx.reservation.findFirstOrThrow({
     where: {
       submitterID: job.submitterID
     },
     skip,
     take: 1
-  }) as [Reservation])[0];
+  }))!;
   return reservation;
 };
 
 const jobRowIndexQuery = (jobConfig: GradingJobConfig, submitterID: number) => {
+  // NOTE: The inner table SELECTs all jobs for a given submitter.
+  // We want the row number computed among all of _those_ specific rows.
+  // We then pick the particular row with the given clientKey and clientURL and
+  // return its row number. Therefore, we need two separate WHERE clauses.
   return `SELECT row_number() OVER (ORDER BY t."createdAt" DESC) as "rowNumber"
           FROM (
             SELECT *

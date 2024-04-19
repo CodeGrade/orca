@@ -19,7 +19,6 @@ import {
   getAllGradingJobs,
   GradingQueueOperationException
 } from "@codegrade-orca/db";
-import { isNaN } from "lodash";
 
 export const getGradingJobs = async (req: Request, res: Response) => {
   if (

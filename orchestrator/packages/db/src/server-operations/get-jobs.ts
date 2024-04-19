@@ -1,8 +1,6 @@
-import { groupBy, uniq } from 'lodash';
 import { GradingJob, GradingJobConfig } from '@codegrade-orca/common';
 import prismaInstance from '../prisma-instance';
 import { Job, Reservation } from '@prisma/client';
-import { Record } from '@prisma/client/runtime/library';
 
 // TODO: Add ability to filter on metadata
 // TODO: Add queue stats to return
@@ -16,22 +14,22 @@ const getAllGradingJobs = (): Promise<Array<GradingJob>> => prismaInstance.$tran
       releaseAt: 'asc'
     }
   })
-  const submitterIDs = uniq(reservations.map((r) => r.submitterID).filter((id) => id !== null) as number[]);
+  const submitterIDs = new Set(reservations.map((r) => r.submitterID).filter((id) => id !== null) as number[]);
   const submitterJobs = await tx.job.findMany({
     where: {
       submitterID: {
-        in: submitterIDs
+        in: Array.from(submitterIDs)
       }
     },
     orderBy: {
       createdAt: 'desc'
     }
   });
-  const submitterIDToJobs: Record<number, Array<Job>> = groupBy(submitterJobs, 'submitterID');
+  const submitterIDToJobs: Map<number, Array<Job>> = Map.groupBy(submitterJobs, (j: Job) => j.submitterID!);
   return reservations.map((r) =>
     r.submitterID === null ?
-      combineJobAndReservation(r, r.job as Job) :
-      combineJobAndReservation(r, submitterIDToJobs[r.submitterID].shift() as Job));
+      combineJobAndReservation(r, r.job!) :
+      combineJobAndReservation(r, submitterIDToJobs.get(r.submitterID)!.shift()!));
 });
 
 const combineJobAndReservation = (r: Reservation, j: Job): GradingJob => ({

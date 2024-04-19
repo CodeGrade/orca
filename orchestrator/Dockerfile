@@ -1,4 +1,4 @@
-FROM node:20.11.0-bullseye-slim
+FROM node:21.0.0-bullseye-slim
 
 WORKDIR /usr
 

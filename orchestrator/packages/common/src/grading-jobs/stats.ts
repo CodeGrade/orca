@@ -1,4 +1,3 @@
-import { pick } from "lodash";
 import {
   TimeStats,
   GradingQueueStats,
@@ -18,7 +17,6 @@ export const getGradingQueueStats = (
   let timeSinceReleasedArr: number[] = [];
   const now: number = new Date().getTime();
   gradingJobs.map((gradingJob: GradingJob) => {
-    console.log(pick(gradingJob, ["release_at", "created_at"]));
     const releaseTime: number = gradingJob.release_at.getTime();
     const released: boolean = releaseTime < now;
     if (released) {

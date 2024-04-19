@@ -1,7 +1,6 @@
 import { GradingJobConfig } from '@codegrade-orca/common';
 import prismaInstance from '../prisma-instance';
 import { createOrUpdateJobWithClient } from '../shared/create-or-update-job';
-import { pick } from 'lodash';
 import { ImageBuildInfo, JobConfigAwaitingImage } from '@prisma/client';
 
 
@@ -29,7 +28,7 @@ const handleCompletedImageBuild = (dockerfileSHASum: string, wasSuccessful: bool
       );
     } else {
       jobInfoForCancellation = imageBuildInfo.jobConfigs.map(
-        (c) => pick(c, ['response_url', 'key']) as CancelJobInfo
+        ({clientKey, clientURL}) => ({response_url: clientURL, key: clientKey})
       );
     }
     await tx.imageBuildInfo.delete({
