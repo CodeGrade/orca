@@ -62,7 +62,7 @@ export const createOrUpdateJobWithClient = async (jobConfig: GradingJobConfig, i
   }
 
   if (isImmediateJob) {
-    await createImmediate(jobConfig, tx);
+    await createImmediateJob(jobConfig, tx);
   } else {
     await createSubmitterJob(jobConfig, tx);
   }
@@ -79,7 +79,7 @@ const placeJobInHoldingPen = async (jobConfig: GradingJobConfig, tx: Prisma.Tran
   });
 }
 
-const createImmediate = async (jobConfig: GradingJobConfig, tx: Prisma.TransactionClient) => {
+const createImmediateJob = async (jobConfig: GradingJobConfig, tx: Prisma.TransactionClient) => {
   const createdJob = await tx.job.create({
     data: {
       clientKey: jobConfig.key,

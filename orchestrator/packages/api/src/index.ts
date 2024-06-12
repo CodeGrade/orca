@@ -15,6 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/v1", gradingQueueRouter, dockerImagesRouter);
+app.use("/status", (_req, res) => res.json({"message": "ok"}));
 app.use("/images", express.static(CONFIG.dockerImageFolder));
 
 app.listen(PORT, () => {
