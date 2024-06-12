@@ -36,8 +36,8 @@
     "grader_image_sha": {
       "type": "string"
     },
-    "orca_key": {
-      "type": "string"
+    "queue_id": {
+      "type": "number"
     }
   },
   "required": [
@@ -49,6 +49,6 @@
     "script",
     "response_url",
     "grader_image_sha",
-    "orca_key"
+    "queue_id"
   ]
 }

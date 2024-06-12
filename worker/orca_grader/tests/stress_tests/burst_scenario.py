@@ -1,5 +1,4 @@
 import json
-import redis
 from orca_grader.redis_utils import get_redis_client
 from orca_grader.config import APP_CONFIG
 from orca_grader.tests.scripts.seed_test_db import add_job_to_queue
@@ -16,7 +15,7 @@ def enqueue_job(sub_metadatum: SubmissionMetadatum, job_key: str, client: redis.
   formattable_job["priority"] = 0
   formattable_job["collation"]["id"] = str(sub_metadatum["user_id"])
   formattable_job["response_url"] = "http://echo-server:9001/job-output"
-  formattable_job["orca_key"] = job_key + '_key'
+  formattable_job["queue_id"] = 1
   add_job_to_queue(client, formattable_job)
 
 if __name__ == '__main__':
