@@ -1,0 +1,20 @@
+{
+  "name": "@codegrade-orca/db",
+  "version": "1.0.0",
+  "description": "Database access and operations for the orchestrator component of Orca.",
+  "main": "dist/index.js",
+  "author": "Jackson Williams",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "build": "tsc --build",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "jest-mock-extended": "^3.0.5",
+    "prisma": "^5.11.0"
+  },
+  "dependencies": {
+    "@prisma/client": "5.11.0"
+  }
+}

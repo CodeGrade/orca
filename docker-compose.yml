@@ -1,26 +1,23 @@
 services:
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
-    container_name: redis
-    networks:
-      - orca-testing
 
   orchestrator:
-    image: orca-orchestrator
-    container_name: orchestrator
+    build: orchestrator/
+    image: orca-orchestrator:latest
     ports:
       - "4000:4000"
+    depends_on:
+      - postgres
+    links:
+      - postgres
     environment:
-      - REDIS_HOST=redis
+      POSTGRES_URL: postgresql://postgres:password@postgres
+    container_name: orchestrator
+    volumes:
+      - ./orchestrator/packages:/usr/packages
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - orca-testing
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./orchestrator/packages:/usr/packages
-    depends_on:
-      - redis
+    restart: always
 
   echo-server:
     image: echo-server
@@ -37,6 +34,22 @@ services:
     container_name: simple-server
     networks:
       - orca-testing
+
+  postgres:
+    image: postgres:10
+    ports:
+      - "5432:5432"
+    container_name: postgres
+    environment:
+      POSTGRES_PASSWORD: password
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - orca-testing
+
+volumes:
+  db-data:
+    external: true
 
 networks:
   orca-testing:

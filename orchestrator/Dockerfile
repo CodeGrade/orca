@@ -1,4 +1,4 @@
-FROM node:20.11.0-bullseye-slim
+FROM node:21.0.0-bullseye-slim
 
 WORKDIR /usr
 
@@ -17,11 +17,12 @@ RUN echo \
 RUN apt-get update
 RUN apt-get install docker-ce -y
 
-COPY . .
+COPY package.json .
+COPY tsconfig.json .
 
 RUN yarn install
 RUN yarn workspaces run build
 
 EXPOSE 4000
 
-CMD ["yarn", "start:dev"]
+CMD yarn install && yarn start:dev

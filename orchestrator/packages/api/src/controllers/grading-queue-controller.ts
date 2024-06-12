@@ -6,23 +6,25 @@ import {
 } from "../utils/pagination";
 import { validateFilterRequest } from "../utils/validate";
 import { errorResponse } from "./utils";
-import { GradingJobRequestError } from "./exceptions";
-import getAllGradingJobs from "../grading-queue/queries/get-grading-jobs";
 import {
   GradingJob,
-  GradingQueueOperationError,
   filterGradingJobs,
   getFilterInfo,
   getGradingQueueStats,
   validations,
 } from "@codegrade-orca/common";
-import mutations from "../grading-queue/mutations";
+import {
+  deleteJob as deleteJobInQueue,
+  createOrUpdateJob as putJobInQueue,
+  getAllGradingJobs,
+  GradingQueueOperationException
+} from "@codegrade-orca/db";
 
 export const getGradingJobs = async (req: Request, res: Response) => {
   if (
     !req.query.limit ||
     !req.query.offset ||
-    !validateOffsetAndLimit(req.query.offset, req.query.limit)
+    !validateOffsetAndLimit(req.query.offset as string, req.query.limit as string)
   ) {
     return errorResponse(res, 400, [
       "Must send a valid offset and a limit with this request.",
@@ -31,8 +33,8 @@ export const getGradingJobs = async (req: Request, res: Response) => {
 
   // Get Pagination Data
   const [offset, limit] = formatOffsetAndLimit(
-    req.query.offset,
-    req.query.limit,
+    req.query.offset as string,
+    req.query.limit as string,
   );
 
   try {
@@ -89,7 +91,8 @@ export const getGradingJobs = async (req: Request, res: Response) => {
       filter_info: filterInfo,
     });
   } catch (err) {
-    if (err instanceof GradingQueueOperationError) {
+    console.error(err);
+    if (err instanceof GradingQueueOperationException) {
       return errorResponse(res, 400, [err.message]);
     }
     return errorResponse(res, 500, [
@@ -108,16 +111,16 @@ export const createOrUpdateImmediateJob = async (
   const gradingJobConfig = req.body;
 
   try {
-    await mutations.createOrUpdateJob(gradingJobConfig, Date.now(), true);
+    await putJobInQueue(req.body, true);
     return res.status(200).json({ message: "OK" });
   } catch (error) {
     console.error(error);
-    if (error instanceof GradingQueueOperationError) {
+    if (error instanceof GradingQueueOperationException) {
       return errorResponse(res, 400, [error.message]);
     }
     return errorResponse(res, 500, [
       "An error occurred while trying to create an immediate job or update an " +
-        `existing one for ${gradingJobConfig.collation.type} with ID ${gradingJobConfig.collation.id}.`,
+      `existing one for ${gradingJobConfig.collation.type} with ID ${gradingJobConfig.collation.id}.`,
     ]);
   }
 };
@@ -127,50 +130,44 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
     return errorResponse(res, 400, ["The given grading job was invalid."]);
   }
 
-  const gradingJobConfig = req.body;
-
   try {
-    await mutations.createOrUpdateJob(gradingJobConfig, Date.now(), false);
+    await putJobInQueue(req.body, false);
     return res.status(200).json({ message: "OK" });
   } catch (err) {
-    if (err instanceof GradingQueueOperationError) {
+    console.error(err);
+    if (err instanceof GradingQueueOperationException) {
       return errorResponse(res, 400, [err.message]);
     } else {
       return errorResponse(res, 500, [
-        `The following error was encountered while trying to create out update the job for the given config: ${err.message}`,
+        `The following error was encountered while trying to create out update the job for the given config: ${(err as Error).message}`,
       ]);
     }
   }
 };
 
-export const moveJob = async (req: Request, res: Response) => {
-  if (!validations.moveJobRequest(req.body)) {
-    errorResponse(res, 400, ["Invalid move request."]);
-    return;
-  }
-  try {
-    await mutations.moveJob(req.body);
-    return res.status(200).json("OK");
-  } catch (err) {
-    if (err instanceof GradingQueueOperationError) {
-      return errorResponse(res, 500, [err.message]);
-    }
-    return errorResponse(res, 500, [
-      `An error occurred while trying to move job with key ${req.body.orcaKey}.`,
-    ]);
-  }
+// TODO: Delaying a job is difficult given the way
+// we order jobs by date as of now (3/22).
+export const moveJob = async (_req: Request, res: Response) => {
+  return errorResponse(res, 500, ["Functionality to move a job remains to be implemented. " +
+    "Please contact williams.jack@northeastern.edu for more info."]);
+  // if (!validations.moveJobRequest(req.body)) {
+  // errorResponse(res, 400, ["Invalid move request."]);
+  // return;
+  // }
 };
 
 export const deleteJob = async (req: Request, res: Response) => {
-  if (!validations.deleteJobRequest(req.body)) {
-    return errorResponse(res, 400, ["Invalid delete request."]);
-  }
+  const { jobID: rawJobID } = req.params;
   try {
-    await mutations.deleteJob(req.body);
+    const jobID = parseInt(rawJobID);
+    if (isNaN(jobID)) {
+      return errorResponse(res, 400, ["Given job ID is not a number."]);
+    }
+    await deleteJobInQueue(jobID);
     return res.status(200).json({ message: "OK" });
   } catch (err) {
-    if (err instanceof GradingQueueOperationError) {
-      return errorResponse(res, 500, [err.message]);
+    if (err instanceof GradingQueueOperationException) {
+      return errorResponse(res, 400, [err.message]);
     } else {
       return errorResponse(res, 500, [
         `Something went wrong when trying to delete job with key ${req.body.orcaKey}.`,

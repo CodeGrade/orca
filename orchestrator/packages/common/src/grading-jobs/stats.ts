@@ -17,14 +17,14 @@ export const getGradingQueueStats = (
   let timeSinceReleasedArr: number[] = [];
   const now: number = new Date().getTime();
   gradingJobs.map((gradingJob: GradingJob) => {
-    const releaseTime: number = gradingJob.release_at;
+    const releaseTime: number = gradingJob.release_at.getTime();
     const released: boolean = releaseTime < now;
     if (released) {
       // released_wait_times.push(getTimeInQueue(grading_job.timestamp)); // Total Wait time of released job
       const timeSinceReleased = now - releaseTime;
       timeSinceReleasedArr.push(timeSinceReleased);
     }
-    return waitTimes.push(getTimeInQueue(gradingJob.created_at));
+    return waitTimes.push(getTimeInQueue(gradingJob.created_at.getTime()));
   });
 
   // Wait times are in milliseconds

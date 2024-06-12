@@ -1,0 +1,54 @@
+{
+  "type": "object",
+  "properties": {
+    "key": { "type": "string" },
+    "collation": {
+      "$ref": "collation_schema.json"
+    },
+    "metadata_table": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "files": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "code_file_schema.json"
+      }
+    },
+    "priority": { "type": "integer" },
+    "script": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "bash_grading_script_command_schema.json" },
+          { "$ref": "conditional_grading_script_comamnd_schema.json" }
+        ]
+      }
+    },
+    "response_url": {
+      "type": "string"
+    },
+    "container_response_url": {
+      "type": "string"
+    },
+    "grader_image_sha": {
+      "type": "string"
+    },
+    "queue_id": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "key",
+    "collation",
+    "metadata_table",
+    "files",
+    "priority",
+    "script",
+    "response_url",
+    "grader_image_sha",
+    "queue_id"
+  ]
+}

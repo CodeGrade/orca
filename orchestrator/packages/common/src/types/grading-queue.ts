@@ -53,10 +53,9 @@ export interface GradingJobConfig {
 }
 
 interface AdditionalJobData {
-  release_at: number;
-  created_at: number;
-  orca_key: string;
-  nonce?: string;
+  release_at: Date;
+  created_at: Date;
+  queue_id: number;
 }
 
 export type GradingJob = GradingJobConfig & AdditionalJobData;
@@ -89,16 +88,8 @@ export interface GradingQueueStats {
 export type MoveJobAction = "release" | "delay";
 
 export interface MoveJobRequest {
-  nonce: string;
-  orcaKey: string;
+  jobID: number;
   moveAction: MoveJobAction;
-  collation: Collation;
-}
-
-export interface DeleteJobRequest {
-  orcaKey: string;
-  nonce?: string;
-  collation?: Collation;
 }
 
 export interface FilterInfo {
