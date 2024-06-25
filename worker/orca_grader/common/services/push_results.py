@@ -2,6 +2,7 @@ import random
 import time
 import requests
 from requests import HTTPError
+from typing import Dict, Optional
 from orca_grader.common.grading_job.grading_job_result import GradingJobResult
 from orca_grader.common.services.exceptions import PushResultsFailureException
 from orca_grader.common.types.grading_job_json_types import GradingJobJSON
@@ -11,16 +12,18 @@ _MAX_RETRIES = 5
 # TODO: Update if POST data format changes, or simply remove this comment once solidifed.
 
 
-def push_results_to_response_url(job_result: GradingJobResult, key: str,
-                                 response_url: str) -> None:
-    result_as_json = job_result.to_json()
+def push_results_to_response_url(job_result: GradingJobResult,
+                                 key: str,
+                                 response_url: str,
+                                 interpolated_dirs: Optional[Dict[str, str]]) -> None:
+    result_as_json = job_result.to_json(interpolated_dirs=interpolated_dirs)
     result_as_json["key"] = key
     _send_results_with_exponential_backoff(result_as_json, response_url)
 
 
 def push_results_with_exception(grading_job: GradingJobJSON,
                                 e: Exception) -> None:
-    output = GradingJobResult([], [e])
+    output = GradingJobResult([], [e]).to_json()
     key, response_url = grading_job["key"], grading_job["response_url"]
     push_results_to_response_url(output, key, response_url)
 
