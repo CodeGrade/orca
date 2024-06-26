@@ -15,7 +15,7 @@ _MAX_RETRIES = 5
 def push_results_to_response_url(job_result: GradingJobResult,
                                  key: str,
                                  response_url: str,
-                                 interpolated_dirs: Optional[Dict[str, str]]) -> None:
+                                 interpolated_dirs: Optional[Dict[str, str]] = None) -> None:
     result_as_json = job_result.to_json(interpolated_dirs=interpolated_dirs)
     result_as_json["key"] = key
     _send_results_with_exponential_backoff(result_as_json, response_url)

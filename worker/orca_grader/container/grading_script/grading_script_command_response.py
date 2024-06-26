@@ -1,6 +1,5 @@
 from typing import Dict, List, Optional
 
-
 def __replace_paths_in_str(s: str, interpolated_dirs: Dict[str, str]) -> str:
     result = s
     for k, v in interpolated_dirs.items():
