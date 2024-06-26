@@ -1,10 +1,13 @@
 from typing import Dict, List, Optional
 
 
-def __replace_paths_in_str(s: str, interpolated_dirs: Dict[str, str]) -> str:
-    result = s
+def replace_paths_in_str(str_or_list: str | List[str], interpolated_dirs: Dict[str, str]) -> str:
+    result = str_or_list
     for k, v in interpolated_dirs.items():
-        result = s.replace(k, v)
+        if type(result) is str:
+            result = str_or_list.replace(k, v)
+        else:
+            result = [s.replace(k, v) for s in result]
     return result
 
 
@@ -50,9 +53,9 @@ class GradingScriptCommandResponse:
     # TODO: Replace with more accurate type.
     def to_json(self, interpolated_dirs: Optional[Dict[str, str]] = None) -> Dict[str, any]:
         ans = {
-            "cmd":  __replace_paths_in_str(self.__cmd, interpolated_dirs) if interpolated_dirs is not None else self.__cmd,
-            "stdout": self.__stdout_output if interpolated_dirs is None else __replace_paths_in_str(self.__stdout_output, interpolated_dirs),
-            "stderr": self.__stderr_output if interpolated_dirs is None else __replace_paths_in_str(self.__stderr_output, interpolated_dirs),
+            "cmd": self.__cmd if interpolated_dirs is None else replace_paths_in_str(self.__cmd, interpolated_dirs),
+            "stdout": self.__stdout_output if interpolated_dirs is None else replace_paths_in_str(self.__stdout_output, interpolated_dirs),
+            "stderr": self.__stderr_output if interpolated_dirs is None else replace_paths_in_str(self.__stderr_output, interpolated_dirs),
             "is_error": self.__is_error,
             "did_timeout": self.__timed_out,
             "status_code": self.__status_code
