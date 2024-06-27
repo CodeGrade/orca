@@ -15,7 +15,7 @@ A couple items to cover for both the clarity and brevity of this document:
 
 When a student submits an assignment to a client utilizing Orca, the client will submit a `GradingJobConfig` to the Orchestrator. The Orchestrator will enqueue the job and inform the client.
 
-```mermaidjs
+```mermaid
 sequenceDiagram
     actor S as Student
     participant B as Bottlenose
@@ -45,13 +45,14 @@ sequenceDiagram
 Eventually, the job will be picked up by a single worker out of a pool of VMs actively grading jobs.
 
 **TODO: Add image download step from worker**
+
 The worker then spins up a Docker container to grade the job, and given that the grading script is able to be compiled and executed, the container will send grading results back to the client before being shut down.
 
 ## Building a Grader Image
 
 Before clients can create a grading job, Orca mandates that there is either an existing Docker image for grading in its file system or one in the process of being built.
 
-```mermaidjs
+```mermaid
 sequenceDiagram
     participant B as Bottlenose
     participant O as Orchestrator
@@ -63,7 +64,7 @@ Attempting to submit a job to the queue without an image will return a `400 Bad 
 
 Clients can submit an `ImageBuildRequest` to Orca via its `/buildImage` endpoint.
 
-```mermaidjs
+```mermaid
 sequenceDiagram
     participant B as Bottlenose
     participant O as Orchestrator
@@ -89,7 +90,7 @@ sequenceDiagram
 
 While an image is being built, it is possible to hit the `/gradingJob` endpoint with a `GradingJobConfig`. Orca will handle this request by placing the job in a "holding pen," where that job and any other jobs in the same holding pen will eventually be enqueued _after_ the image has been successfully built. Like jobs that have been enqueued, jobs in the holding pen may be updated.
 
-```mermaidjs
+```mermaid
 sequenceDiagram
     participant B as Bottlenose
     participant O as Orchestrator
