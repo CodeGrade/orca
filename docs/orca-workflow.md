@@ -24,10 +24,10 @@ sequenceDiagram
     participant W as Worker
     S->>+B: PUT /submissions/create
     B-->>-S: HTTPS 200 OK
-    B->>+O: PUT /gradingJob
-    O-->>-B: HTTPS 200 OK
+    B->>+O: PUT /gradingJob GradingJobConfig
     O->>+Q: createGradingJob(GradingJobConfig)
     Q-->>-O: void
+    O-->>-B: HTTPS 200 OK
     W->>+Q: getNextJob()
     Q-->>-W: GradingJob
     create participant C as Container
@@ -47,6 +47,8 @@ Eventually, the job will be picked up by a single worker out of a pool of VMs ac
 **TODO: Add image download step from worker**
 
 The worker then spins up a Docker container to grade the job, and given that the grading script is able to be compiled and executed, the container will send grading results back to the client before being shut down.
+
+**TODO: Add line about getting files. Use loop for GET reqs for files.**
 
 ## Building a Grader Image
 
