@@ -15,9 +15,11 @@ _MAX_RETRIES = 5
 def push_results_to_response_url(job_result: GradingJobResult,
                                  key: str,
                                  response_url: str,
-                                 interpolated_dirs: Optional[Dict[str, str]] = None) -> None:
-    result_as_json = job_result.to_json(interpolated_dirs=interpolated_dirs)
-    result_as_json["key"] = key
+                                 interpolated_dirs: Dict[str, str]) -> None:
+    result_as_json = {
+        **job_result.to_json(interpolated_dirs=interpolated_dirs),
+        "key": key
+    }
     _send_results_with_exponential_backoff(result_as_json, response_url)
 
 
@@ -25,7 +27,7 @@ def push_results_with_exception(grading_job: GradingJobJSON,
                                 e: Exception) -> None:
     output = GradingJobResult([], [e]).to_json()
     key, response_url = grading_job["key"], grading_job["response_url"]
-    push_results_to_response_url(output, key, response_url)
+    push_results_to_response_url(output, key, response_url, {})
 
 
 def _send_results_with_exponential_backoff(payload: dict, response_url: str, n: int = 1):

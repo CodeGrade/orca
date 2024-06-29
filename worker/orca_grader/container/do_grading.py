@@ -83,5 +83,6 @@ if __name__ == "__main__":
                                      grading_job["key"],
                                      grading_job["container_response_url"]
                                      if "container_response_url" in grading_job else
-                                     grading_job["response_url"])
+                                     grading_job["response_url"],
+                                     interpolated_dirs={})
     # cleanup(secret) # useful for execution with no container, but generally optional

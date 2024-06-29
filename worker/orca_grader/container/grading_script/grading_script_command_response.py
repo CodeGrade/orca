@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 
 def replace_paths_in_str(str_or_list: str | List[str], interpolated_dirs: Dict[str, str]) -> str:
@@ -14,13 +14,8 @@ def replace_paths_in_str(str_or_list: str | List[str], interpolated_dirs: Dict[s
 class GradingScriptCommandResponse:
     """
     Response from the execution of a command when running a grading script.
-    Users can query if the response was an error, the output from the command,
-    the next place to go (i.e., next command | \"output\" | \"abort\"), and the
-    original command that was executed.
-
-    Possibilities:
-      - isError() == true && (next == "abort" || next == "<int>")
-      - isError() == false && (next == "output" || next == "<int>")
+    Exposes methods to query if the response was an error, the output from the command,
+    and the original command that was executed.
     """
 
     def __init__(self, is_error: bool, cmd: List[str] | str, status_code: int,
@@ -51,8 +46,8 @@ class GradingScriptCommandResponse:
         return self.__timed_out
 
     # TODO: Replace with more accurate type.
-    def to_json(self, interpolated_dirs: Optional[Dict[str, str]] = None) -> Dict[str, any]:
-        ans = {
+    def to_json(self, interpolated_dirs: Dict[str, str]) -> Dict[str, any]:
+        return {
             "cmd": self.__cmd if interpolated_dirs is None else replace_paths_in_str(self.__cmd, interpolated_dirs),
             "stdout": self.__stdout_output if interpolated_dirs is None else replace_paths_in_str(self.__stdout_output, interpolated_dirs),
             "stderr": self.__stderr_output if interpolated_dirs is None else replace_paths_in_str(self.__stderr_output, interpolated_dirs),
@@ -60,4 +55,3 @@ class GradingScriptCommandResponse:
             "did_timeout": self.__timed_out,
             "status_code": self.__status_code
         }
-        return ans

@@ -21,7 +21,7 @@ class GradingJobResult:
     def get_execution_errors(self) -> List[Exception]:
         return self.__execution_errors
 
-    def to_json(self, interpolated_dirs: Optional[Dict[str, str]] = None) -> GradingJobOutputJSON:
+    def to_json(self, interpolated_dirs: Dict[str, str]) -> GradingJobOutputJSON:
         result = dict()
         json_responses = list(
             map(
