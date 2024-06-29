@@ -57,6 +57,7 @@ def process_jobs_from_db(no_container: bool,
                     if job_retrieval_future.exception():
                         # TODO: replace with log statement.
                         print(job_retrieval_future.exception())
+                        time.sleep(1)
                         continue
                     grading_job = job_retrieval_future.result()
                     if grading_job is None:
