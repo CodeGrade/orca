@@ -27,7 +27,7 @@ class TestGradingJobResult(TestCase):
 
     def test_result_without_interpolated_dirs(self):
         result = GradingJobResult(command_responses=self.__responses)
-        second_response = result.to_json()["shell_responses"][1]["stdout"]
+        second_response = result.to_json(interpolated_dirs={})["shell_responses"][1]["stdout"]
         self.assertFalse("$BUILD" in second_response)
 
     def test_result_with_interpolated_dirs(self):
