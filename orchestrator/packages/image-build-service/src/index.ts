@@ -1,5 +1,6 @@
 import {
   GraderImageBuildRequest,
+  isImageBuildFailure,
   toMilliseconds,
 } from "@codegrade-orca/common";
 import { getNextImageBuild, handleCompletedImageBuild } from "@codegrade-orca/db";
@@ -30,13 +31,14 @@ const main = async () => {
       await handleCompletedImageBuild(nextBuildReq.dockerfileSHA, true);
       console.info(`Successfully build image with SHA ${nextBuildReq.dockerfileSHA}.`);
     } catch (err) {
-      if (currentDockerSHASum) {
+      if (isImageBuildFailure(err) && currentDockerSHASum) {
         const cancelledJobInfoList = await handleCompletedImageBuild(currentDockerSHASum, false);
         if (cancelledJobInfoList !== null) {
           await Promise.all(cancelledJobInfoList.map((cancelInfo) => {
             notifyClientOfServiceFailure(
               cancelInfo,
-              `Failed to build image with SHA sum ${currentDockerSHASum} for this job.`
+              `Failed to build image with SHA sum ${currentDockerSHASum} for this job.`,
+              err
             ).catch((notifyError) => console.error(notifyError)); // At this point we can't really do anything, but we should at least log out what happened.
           }));
         }
