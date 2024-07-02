@@ -1,4 +1,5 @@
-import { getConfig } from "@codegrade-orca/common";
+import { GraderImageBuildResult, ImageBuildFailure, getConfig } from "@codegrade-orca/common";
+import { CancelJobInfo } from "@codegrade-orca/db/dist/image-builder-operations/handle-completed-image-build";
 import { execFile } from "child_process";
 import { existsSync, rmSync } from "fs";
 import path from "path";
@@ -35,13 +36,31 @@ const deleteImage = (dockerfileSHASum: string): Promise<void> => {
 
 const imageExistsInDocker = (dockerfileSHASum: string): Promise<boolean> => {
   return new Promise<boolean>((resolve, reject) => {
-    execFile("docker", ["image", "ls", "--format", "{{.Repository}}:{{.Tag}}"],(err, stdout, _stderr) => {
-        if (err) {
-          reject(err);
-        } else {
-          const images = stdout.split("\n");
-          resolve(images.includes(`${dockerfileSHASum}:latest`));
-        }
+    execFile("docker", ["image", "ls", "--format", "{{.Repository}}:{{.Tag}}"], (err, stdout, _stderr) => {
+      if (err) {
+        reject(err);
+      } else {
+        const images = stdout.split("\n");
+        resolve(images.includes(`${dockerfileSHASum}:latest`));
+      }
     });
   });
 };
+
+export const notifyClientOfServiceFailure = async (cancelInfo: CancelJobInfo, dockerfileSHASum: string, buildFailure: ImageBuildFailure) => {
+  const result: GraderImageBuildResult = {
+    type: "GraderImageBuildResult",
+    build_logs: buildFailure.logs,
+    dockerfile_sha_sum: dockerfileSHASum,
+    was_successful: false,
+    server_exception: buildFailure.error.message
+  };
+  await fetch(cancelInfo.response_url, {
+    method: "POST",
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ ...result, key: cancelInfo.key })
+  });
+}
