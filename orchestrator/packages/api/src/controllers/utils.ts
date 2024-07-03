@@ -11,6 +11,7 @@ export const errorResponse = (
 
 export const notifyClientOfCancelledJob = async (jobConfig: GradingJobConfig) => {
   const result: GradingJobResult = {
+    type: "GradingJobResult",
     shell_responses: [],
     errors: ["Job cancelled by a course professor or Orca admin."]
   };
