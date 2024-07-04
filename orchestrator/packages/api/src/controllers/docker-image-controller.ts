@@ -3,7 +3,8 @@ import { errorResponse } from "./utils";
 import {
   validations,
 } from "@codegrade-orca/common";
-import { GradingQueueOperationException, enqueueImageBuild } from "@codegrade-orca/db";
+import { GradingQueueOperationException, enqueueImageBuild, imageIsBeingBuilt } from "@codegrade-orca/db";
+import { graderImageExists } from "../utils/grader-images";
 
 export const createGraderImage = async (req: Request, res: Response) => {
   if (!validations.graderImageBuildRequest(req.body)) {
@@ -25,3 +26,13 @@ export const createGraderImage = async (req: Request, res: Response) => {
     }
   }
 };
+
+export const getImageBuildStatus = async (req: Request, res: Response) => {
+  const { dockerfileSHA } = req.params;
+  if (graderImageExists(dockerfileSHA)) {
+    res.json(`Image ${dockerfileSHA} is ready to be used for gradng.`);
+  } else if (await imageIsBeingBuilt(dockerfileSHA)) {
+  } else {
+    res.json(`No image ${dockerfileSHA} exists on the server.`);
+  }
+}
