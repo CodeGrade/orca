@@ -17,7 +17,8 @@ import {
   deleteJob as deleteJobInQueue,
   createOrUpdateJob as putJobInQueue,
   getAllGradingJobs,
-  GradingQueueOperationException
+  GradingQueueOperationException,
+  getJobQueueStatus
 } from "@codegrade-orca/db";
 
 export const getGradingJobs = async (req: Request, res: Response) => {
@@ -175,3 +176,22 @@ export const deleteJob = async (req: Request, res: Response) => {
     }
   }
 };
+
+export const getJobStatus = async (req: Request, res: Response) => {
+  const { key, response_url } = req.body;
+  const jobQueueStatus = await getJobQueueStatus(key, response_url);
+  if (!jobQueueStatus) {
+    return res.json("We could not find the job you're looking for. Please contact a professor or admin.");
+  }
+  const { reservation, numReservationsAhead } = jobQueueStatus;
+  const now = new Date();
+  if (now > reservation.releaseAt) {
+    const minutesUntilRelease = Math.floor((now.getTime() - reservation.releaseAt.getTime()) / 60_000);
+    return res.json(`Your job will be released in ${minutesUntilRelease ? (minutesUntilRelease.toString() + " minutes.") : "less than a minute."}`);
+  } else if (numReservationsAhead === 0) {
+    return res.json("Your job is next up to be graded.");
+  } else {
+    return res.json(`Your job will be graded after the next ${numReservationsAhead} jobs.`);
+  }
+}
+
