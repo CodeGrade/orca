@@ -32,6 +32,7 @@ export const getImageBuildStatus = async (req: Request, res: Response) => {
   if (graderImageExists(dockerfileSHA)) {
     res.json(`Image ${dockerfileSHA} is ready to be used for gradng.`);
   } else if (await imageIsBeingBuilt(dockerfileSHA)) {
+    res.json(`Image ${dockerfileSHA} is in the process of being built.`);
   } else {
     res.json(`No image ${dockerfileSHA} exists on the server.`);
   }
