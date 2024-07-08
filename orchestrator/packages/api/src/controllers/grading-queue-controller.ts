@@ -184,14 +184,14 @@ export const getJobStatus = async (req: Request, res: Response) => {
     return res.json("We could not find the job you're looking for. Please contact a professor or admin.");
   }
   const { reservation, numReservationsAhead } = jobQueueStatus;
+  // TODO: We should really create a reservationReleased function and not do
+  // this computation here, whenever the abstraction becomes relevant.
   const now = new Date();
   if (now > reservation.releaseAt) {
     const minutesUntilRelease = Math.floor((now.getTime() - reservation.releaseAt.getTime()) / 60_000);
     return res.json(`Your job will be released in ${minutesUntilRelease ? (minutesUntilRelease.toString() + " minutes.") : "less than a minute."}`);
-  } else if (numReservationsAhead === 0) {
-    return res.json("Your job is next up to be graded.");
   } else {
-    return res.json(`Your job will be graded after the next ${numReservationsAhead} jobs.`);
+    return res.json(`Your job is number ${numReservationsAhead + 1} in the queue.`);
   }
 }
 
