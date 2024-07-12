@@ -20,6 +20,7 @@ import {
   GradingQueueOperationException,
   getJobQueueStatus
 } from "@codegrade-orca/db";
+import { describeReleaseTiming, reservationWaitingOnRelease } from "../utils/helpers";
 
 export const getGradingJobs = async (req: Request, res: Response) => {
   if (
@@ -184,12 +185,8 @@ export const getJobStatus = async (req: Request, res: Response) => {
     return res.json("We could not find the job you're looking for. Please contact a professor or admin.");
   }
   const { reservation, numReservationsAhead } = jobQueueStatus;
-  // TODO: We should really create a reservationReleased function and not do
-  // this computation here, whenever the abstraction becomes relevant.
-  const now = new Date();
-  if (now > reservation.releaseAt) {
-    const minutesUntilRelease = Math.floor((now.getTime() - reservation.releaseAt.getTime()) / 60_000);
-    return res.json(`Your job will be released in ${minutesUntilRelease ? (minutesUntilRelease.toString() + " minutes.") : "less than a minute."}`);
+  if (reservationWaitingOnRelease(reservation.releaseAt)) {
+    return res.json(describeReleaseTiming(reservation.releaseAt));
   } else {
     return res.json(`Your job is number ${numReservationsAhead + 1} in the queue.`);
   }
