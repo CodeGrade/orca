@@ -1,4 +1,4 @@
-import { GraderImageBuildResult, ImageBuildFailure, getConfig } from "@codegrade-orca/common";
+import { GraderImageBuildRequest, GraderImageBuildResult, GradingJobResult, ImageBuildFailure, getConfig } from "@codegrade-orca/common";
 import { CancelJobInfo } from "@codegrade-orca/db/dist/image-builder-operations/handle-completed-image-build";
 import { execFile } from "child_process";
 import { existsSync, rmSync } from "fs";
@@ -47,13 +47,10 @@ const imageExistsInDocker = (dockerfileSHASum: string): Promise<boolean> => {
   });
 };
 
-export const notifyClientOfServiceFailure = async (cancelInfo: CancelJobInfo, dockerfileSHASum: string, buildFailure: ImageBuildFailure) => {
-  const result: GraderImageBuildResult = {
-    type: "GraderImageBuildResult",
-    build_logs: buildFailure.logs,
-    dockerfile_sha_sum: dockerfileSHASum,
-    was_successful: false,
-    server_exception: buildFailure.error.message
+export const sendJobResultForBuildFail = async (cancelInfo: CancelJobInfo) => {
+  const result: GradingJobResult = {
+    shell_responses: [],
+    errors: ["The grader image for this job failed to build. Please contact a Professor or Admin."]
   };
   await fetch(cancelInfo.response_url, {
     method: "POST",
@@ -62,5 +59,22 @@ export const notifyClientOfServiceFailure = async (cancelInfo: CancelJobInfo, do
       "Content-Type": "application/json"
     },
     body: JSON.stringify({ ...result, key: cancelInfo.key })
+  });
+}
+
+export const notifyClientOfBuildFail = async (buildFailure: ImageBuildFailure, originalReq: GraderImageBuildRequest)  => {
+  const result: GraderImageBuildResult = {
+    build_logs: buildFailure.logs,
+    server_exception: buildFailure.error.toString(),
+    was_successful: false,
+    dockerfile_sha_sum: originalReq.dockerfileSHASum
+  };
+  await fetch(originalReq.responseURL, {
+    method: "POST",
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(result)
   });
 }

@@ -38,6 +38,7 @@ CREATE TABLE "Job" (
 CREATE TABLE "ImageBuildInfo" (
     "dockerfileSHA" TEXT NOT NULL,
     "dockerfileContent" TEXT NOT NULL,
+    "responseURL" TEXT NOT NULL,
     "inProgress" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 

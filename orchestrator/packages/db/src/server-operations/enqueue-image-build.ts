@@ -1,12 +1,13 @@
 import { GraderImageBuildRequest } from '@codegrade-orca/common';
 import prismaInstance from '../prisma-instance';
 
-const enqueueImageBuild = ({ dockerfileSHASum, dockerfileContents }: GraderImageBuildRequest): Promise<boolean> => {
+const enqueueImageBuild = ({ dockerfileSHASum, dockerfileContents, responseURL }: GraderImageBuildRequest): Promise<boolean> => {
   return prismaInstance.$transaction(async (tx) => {
     const buildInfoAlreadyExists = (await tx.imageBuildInfo.count({
       where: {
         dockerfileSHA: dockerfileSHASum,
-        dockerfileContent: dockerfileContents
+        dockerfileContent: dockerfileContents,
+        responseURL
       }
     })) > 0;
     if (buildInfoAlreadyExists) {
@@ -15,7 +16,8 @@ const enqueueImageBuild = ({ dockerfileSHASum, dockerfileContents }: GraderImage
       await tx.imageBuildInfo.create({
         data: {
           dockerfileSHA: dockerfileSHASum,
-          dockerfileContent: dockerfileContents
+          dockerfileContent: dockerfileContents,
+          responseURL
         }
       });
       return true;

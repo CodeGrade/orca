@@ -1,18 +1,18 @@
 import {
-  GraderImageBuildRequest,
+    GraderImageBuildRequest,
   isImageBuildFailure,
   toMilliseconds,
 } from "@codegrade-orca/common";
 import { getNextImageBuild, handleCompletedImageBuild } from "@codegrade-orca/db";
 import { createAndStoreGraderImage, removeStaleImageFiles } from "./process-request";
-import { cleanUpDockerFiles, notifyClientOfServiceFailure, removeImageFromDockerIfExists } from "./utils";
+import { cleanUpDockerFiles, sendJobResultForBuildFail, removeImageFromDockerIfExists, notifyClientOfBuildFail } from "./utils";
 
 const LOOP_SLEEP_TIME = 5; // Seconds
 
 const main = async () => {
   console.info("Build service initialized.");
   while (true) {
-    let currentDockerSHASum: string | undefined = undefined;
+    let infoAsBuildReq: GraderImageBuildRequest | undefined = undefined;
     try {
       const nextBuildReq = await getNextImageBuild();
 
@@ -21,33 +21,33 @@ const main = async () => {
         continue;
       }
 
-      currentDockerSHASum = nextBuildReq.dockerfileSHA;
       console.info(`Attempting to build image with SHA ${nextBuildReq.dockerfileSHA}.`);
-      await createAndStoreGraderImage({
+      infoAsBuildReq = {
         dockerfileSHASum: nextBuildReq.dockerfileSHA,
-        dockerfileContents: nextBuildReq.dockerfileContent
-      } as GraderImageBuildRequest);
+        dockerfileContents: nextBuildReq.dockerfileContent,
+        responseURL: nextBuildReq.responseURL
+      };
+      await createAndStoreGraderImage(infoAsBuildReq);
 
       await handleCompletedImageBuild(nextBuildReq.dockerfileSHA, true);
       console.info(`Successfully build image with SHA ${nextBuildReq.dockerfileSHA}.`);
     } catch (err) {
-      if (isImageBuildFailure(err) && currentDockerSHASum) {
-        const cancelledJobInfoList = await handleCompletedImageBuild(currentDockerSHASum, false);
+      if (isImageBuildFailure(err) && infoAsBuildReq) {
+        const cancelledJobInfoList = await handleCompletedImageBuild(infoAsBuildReq.dockerfileSHASum, false);
         if (cancelledJobInfoList !== null) {
           await Promise.all(cancelledJobInfoList.map((cancelInfo) => {
-            notifyClientOfServiceFailure(
+            sendJobResultForBuildFail(
               cancelInfo,
-              `Failed to build image with SHA sum ${currentDockerSHASum} for this job.`,
-              err
             ).catch((notifyError) => console.error(notifyError)); // At this point we can't really do anything, but we should at least log out what happened.
           }));
         }
-        await cleanUpDockerFiles(currentDockerSHASum);
+        await notifyClientOfBuildFail(err, infoAsBuildReq).catch((notifyError) => console.error(notifyError));
+        await cleanUpDockerFiles(infoAsBuildReq.dockerfileSHASum);
       }
       console.error(err);
     } finally {
-      if (currentDockerSHASum) {
-        await removeImageFromDockerIfExists(currentDockerSHASum);
+      if (infoAsBuildReq) {
+        await removeImageFromDockerIfExists(infoAsBuildReq.dockerfileSHASum);
       }
       await removeStaleImageFiles();
     }
