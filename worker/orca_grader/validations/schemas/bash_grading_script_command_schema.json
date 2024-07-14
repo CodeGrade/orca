@@ -19,16 +19,30 @@
       "oneOf": [
         { "type": "string" },
         { "type": "number" },
-        { "$ref": "bash_grading_script_command_schema.json" },
-        { "$ref": "conditional_grading_script_comamnd_schema.json" }
+        {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "$ref": "bash_grading_script_command_schema.json" },
+              { "$ref": "conditional_grading_script_comamnd_schema.json" }
+            ]
+          }
+        }
       ]
     },
     "on_fail": {
       "oneOf": [
         { "type": "string" },
         { "type": "number" },
-        { "$ref": "bash_grading_script_command_schema.json" },
-        { "$ref": "conditional_grading_script_comamnd_schema.json" }
+        {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "$ref": "bash_grading_script_command_schema.json" },
+              { "$ref": "conditional_grading_script_comamnd_schema.json" }
+            ]
+          }
+        }
       ]
     },
     "timeout": { "type": "number" },

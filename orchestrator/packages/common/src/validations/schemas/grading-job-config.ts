@@ -56,7 +56,10 @@ const conditionalGradingScriptCommand = {
     on_true: {
       anyOf: [
         {
-          $ref: "https://orca-schemas.com/grading-job-config/grading-script-command",
+          type: "array",
+          items: {
+            $ref: "https://orca-schemas.com/grading-job-config/grading-script-command",
+          }
         },
         { type: "string" },
         { type: "number" },
@@ -65,7 +68,10 @@ const conditionalGradingScriptCommand = {
     on_false: {
       anyOf: [
         {
-          $ref: "https://orca-schemas.com/grading-job-config/grading-script-command",
+          type: "array",
+          items: {
+            $ref: "https://orca-schemas.com/grading-job-config/grading-script-command",
+          }
         },
         { type: "string" },
         { type: "number" },
