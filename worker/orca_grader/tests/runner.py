@@ -84,9 +84,9 @@ def __clean_up_fixture_file_server():
 
 if __name__ == '__main__':
     try:
-        sys.stderr.write("Spinning up local file server for testing...")
+        sys.stderr.write("Spinning up local file server for testing...\n")
         __start_up_fixture_file_server()
-        sys.stderr.write("Local file server started.")
+        sys.stderr.write("Local file server started.\n")
     except subprocess.CalledProcessError as called_proc_err:
         sys.stderr.write("Could not start up local file server for testing.\n")
         exit(1)
