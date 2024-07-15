@@ -7,9 +7,9 @@ const CONFIG = getConfig();
 
 describe("grader image functionality", () => {
   const graderImageBuildReq: GraderImageBuildRequest = {
-    dockerfileContents: `FROM hello-world
-    `,
+    dockerfileContents: `FROM hello-world`,
     dockerfileSHASum: "generated-sha-sum",
+    responseURL: "http://example.com/response"
   };
 
   beforeAll(() => {
