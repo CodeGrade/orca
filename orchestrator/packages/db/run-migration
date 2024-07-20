@@ -18,6 +18,6 @@ if [[ $? -ne 0  ]]; then
   exit 1
 fi
 
-export POSTGRES_URL=postgresql://postgres:password@localhost
+export POSTGRES_URL=postgresql://postgres:password@localhost:5434
 npx prisma migrate dev --name $1
 docker stop "$container_name" > /dev/null

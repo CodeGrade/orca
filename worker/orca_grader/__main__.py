@@ -57,6 +57,7 @@ def process_jobs_from_db(no_container: bool,
                     if job_retrieval_future.exception():
                         # TODO: replace with log statement.
                         print(job_retrieval_future.exception())
+                        time.sleep(1)
                         continue
                     grading_job = job_retrieval_future.result()
                     if grading_job is None:
@@ -149,9 +150,9 @@ def handle_grading_job(grading_job: GradingJobJSON, container_sha: str | None = 
         result = executor.execute()
         if result and result.stdout:
             # TODO: make this a log statement of some sort.
-            print(result.stderr.decode())
-        elif result and result.stderr:
             print(result.stdout.decode())
+        elif result and result.stderr:
+            print(result.stderr.decode())
 
 
 def can_execute_job(grading_job: GradingJobJSON) -> bool:

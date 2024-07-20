@@ -44,12 +44,14 @@ def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobResul
         output = GradingJobResult(command_responses, [preprocess_e])
     except Exception as e:
         output = GradingJobResult(command_responses, [e])
-    print(output.to_json())
+    print(output.to_json(interpolated_dirs=interpolated_dirs))
+    reverse_interpolated_dirs = {v: k for k, v in interpolated_dirs.items()}
     push_results_to_response_url(output,
                                  grading_job_json["key"],
-                                 grading_job_json["container_response_url"] if
-                                 "container_response_url" in grading_job_json else
-                                 grading_job_json["response_url"])
+                                 grading_job_json["container_response_url"]
+                                 if "container_response_url" in grading_job_json else
+                                 grading_job_json["response_url"],
+                                 interpolated_dirs=reverse_interpolated_dirs)
     return output
 
 
@@ -79,7 +81,8 @@ if __name__ == "__main__":
         output = GradingJobResult([], [e.with_traceback(None)])
         push_results_to_response_url(output,
                                      grading_job["key"],
-                                     grading_job["container_response_url"] if
-                                     "container_response_url" in grading_job else
-                                     grading_job["response_url"])
+                                     grading_job["container_response_url"]
+                                     if "container_response_url" in grading_job else
+                                     grading_job["response_url"],
+                                     interpolated_dirs={})
     # cleanup(secret) # useful for execution with no container, but generally optional
