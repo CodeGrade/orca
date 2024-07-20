@@ -60,11 +60,14 @@ model Job {
 model ImageBuildInfo {
   dockerfileSHA String @id
   dockerfileContent String
+  buildKey String
   responseURL String
   inProgress Boolean @default(false)
   createdAt DateTime @default(now())
 
   jobConfigs JobConfigAwaitingImage[]
+
+  @@unique([buildKey, responseURL])
 }
 
 model JobConfigAwaitingImage {

@@ -7,9 +7,10 @@ const CONFIG = getConfig();
 
 describe("grader image functionality", () => {
   const graderImageBuildReq: GraderImageBuildRequest = {
-    dockerfileContents: `FROM hello-world`,
-    dockerfileSHASum: "generated-sha-sum",
-    responseURL: "http://example.com/response"
+    dockerfile_contents: `FROM hello-world`,
+    dockerfile_sha_sum: "generated-sha-sum",
+    response_url: "http://example.com/response",
+    build_key: "{\"grader_id\": 1}"
   };
 
   beforeAll(() => {
@@ -22,7 +23,7 @@ describe("grader image functionality", () => {
     rmSync(
       path.join(
         CONFIG.dockerImageFolder,
-        `${graderImageBuildReq.dockerfileSHASum}.tgz`,
+        `${graderImageBuildReq.dockerfile_sha_sum}.tgz`,
       ),
       {
         force: true,
@@ -37,7 +38,7 @@ describe("grader image functionality", () => {
       existsSync(
         path.join(
           CONFIG.dockerImageFolder,
-          `${graderImageBuildReq.dockerfileSHASum}.Dockerfile`,
+          `${graderImageBuildReq.dockerfile_sha_sum}.Dockerfile`,
         ),
       ),
     ).toBe(false);
@@ -46,7 +47,7 @@ describe("grader image functionality", () => {
         path.join(
           path.join(
             CONFIG.dockerImageFolder,
-            `${graderImageBuildReq.dockerfileSHASum}.tgz`,
+            `${graderImageBuildReq.dockerfile_sha_sum}.tgz`,
           ),
         ),
       ),

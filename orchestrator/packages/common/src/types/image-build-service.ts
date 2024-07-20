@@ -1,32 +1,27 @@
 export interface GraderImageBuildResult {
-  build_logs: Array<ImageBuildLog>,
-  was_successful: boolean
-  server_exception?: string,
-  dockerfile_sha_sum: string
+  was_successful: boolean,
+  logs: Array<ImageBuildLog>
 }
-
-export interface ImageBuildFailure {
-  error: Error,
-  logs: Array<ImageBuildLog>,
-};
 
 export type ImageBuildStep = "Write request contents to Dockerfile." |
   "Run docker build on Dockerfile." |
   "Save image to .tgz file." |
-  "Remove residual Dockerfile.";
+  "Remove Dockerfile.";
 
 export interface ImageBuildLog {
   step: ImageBuildStep,
-  cmd?: string | Array<string>,
-  stderr: string
+  output?: string,
+  error?: string
 }
 
-export const isImageBuildFailure = (object: unknown): object is ImageBuildFailure => {
-  return !!object && typeof object === "object" && "error" in object && "logs" in object;
+export const isImageBuildResult = (o: unknown): o is GraderImageBuildResult => {
+  if (typeof o !== "object" || o === null) return false;
+  return Object.keys(o).length == 2 && ["was_successful", "logs"].every((k) => k in o);
 }
 
 export interface GraderImageBuildRequest {
-  dockerfileContents: string;
-  dockerfileSHASum: string;
-  responseURL: string;
+  dockerfile_contents: string,
+  dockerfile_sha_sum: string,
+  response_url: string,
+  build_key: string,
 }

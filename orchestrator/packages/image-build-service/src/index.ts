@@ -1,7 +1,7 @@
 import {
-    GraderImageBuildRequest,
-  isImageBuildFailure,
+  GraderImageBuildRequest,
   toMilliseconds,
+  isImageBuildResult
 } from "@codegrade-orca/common";
 import { getNextImageBuild, handleCompletedImageBuild } from "@codegrade-orca/db";
 import { createAndStoreGraderImage, removeStaleImageFiles } from "./process-request";
@@ -23,17 +23,17 @@ const main = async () => {
 
       console.info(`Attempting to build image with SHA ${nextBuildReq.dockerfileSHA}.`);
       infoAsBuildReq = {
-        dockerfileSHASum: nextBuildReq.dockerfileSHA,
-        dockerfileContents: nextBuildReq.dockerfileContent,
-        responseURL: nextBuildReq.responseURL
+        dockerfile_sha_sum: nextBuildReq.dockerfileSHA,
+        dockerfile_contents: nextBuildReq.dockerfileContent,
+        response_url: nextBuildReq.responseURL,
+        build_key: nextBuildReq.buildKey
       };
       await createAndStoreGraderImage(infoAsBuildReq);
-
       await handleCompletedImageBuild(nextBuildReq.dockerfileSHA, true);
       console.info(`Successfully build image with SHA ${nextBuildReq.dockerfileSHA}.`);
     } catch (err) {
-      if (isImageBuildFailure(err) && infoAsBuildReq) {
-        const cancelledJobInfoList = await handleCompletedImageBuild(infoAsBuildReq.dockerfileSHASum, false);
+      if (isImageBuildResult(err) && infoAsBuildReq) {
+        const cancelledJobInfoList = await handleCompletedImageBuild(infoAsBuildReq.dockerfile_sha_sum, false);
         if (cancelledJobInfoList !== null) {
           await Promise.all(cancelledJobInfoList.map((cancelInfo) => {
             sendJobResultForBuildFail(
@@ -42,12 +42,12 @@ const main = async () => {
           }));
         }
         await notifyClientOfBuildFail(err, infoAsBuildReq).catch((notifyError) => console.error(notifyError));
-        await cleanUpDockerFiles(infoAsBuildReq.dockerfileSHASum);
+        await cleanUpDockerFiles(infoAsBuildReq.dockerfile_sha_sum);
       }
       console.error(err);
     } finally {
       if (infoAsBuildReq) {
-        await removeImageFromDockerIfExists(infoAsBuildReq.dockerfileSHASum);
+        await removeImageFromDockerIfExists(infoAsBuildReq.dockerfile_sha_sum);
       }
       await removeStaleImageFiles();
     }

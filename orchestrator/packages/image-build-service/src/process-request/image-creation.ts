@@ -1,4 +1,4 @@
-import { GraderImageBuildRequest, ImageBuildFailure, ImageBuildLog, getConfig } from "@codegrade-orca/common";
+import { GraderImageBuildRequest, GraderImageBuildResult, ImageBuildLog, ImageBuildStep, getConfig } from "@codegrade-orca/common";
 import { execFile } from "child_process";
 import { writeFile, rm } from "fs";
 import path from "path";
@@ -7,68 +7,76 @@ const CONFIG = getConfig();
 
 export const createAndStoreGraderImage = (
   buildRequest: GraderImageBuildRequest,
-) => {
+): Promise<GraderImageBuildResult> => {
   const buildLogs: Array<ImageBuildLog> = [];
   return writeDockerfileContentsToFile(buildRequest, buildLogs)
     .then((_) => buildImage(buildRequest, buildLogs))
     .then((_) =>
       removeDockerfileAfterBuild(
-        path.join(CONFIG.dockerImageFolder, `${buildRequest.dockerfileSHASum}.Dockerfile`),
+        path.join(CONFIG.dockerImageFolder, `${buildRequest.dockerfile_sha_sum}.Dockerfile`),
         buildLogs
       ))
-    .then((_) => saveImageToTgz(buildRequest.dockerfileSHASum, buildLogs));
+    .then((_) => saveImageToTgz(buildRequest.dockerfile_sha_sum, buildLogs))
+    .then((_) => ({ logs: buildLogs, was_successful: true }));
 };
 
-const writeDockerfileContentsToFile = ({ dockerfileContents, dockerfileSHASum }: GraderImageBuildRequest, buildLogs: Array<ImageBuildLog>): Promise<string> => {
+const writeDockerfileContentsToFile = ({ dockerfile_contents, dockerfile_sha_sum }: GraderImageBuildRequest, buildLogs: Array<ImageBuildLog>): Promise<void> => {
   return new Promise((resolve, reject) => {
     const dockerfilePath = path.join(
       CONFIG.dockerImageFolder,
-      `${dockerfileSHASum}.Dockerfile`,
+      `${dockerfile_sha_sum}.Dockerfile`,
     );
-    writeFile(dockerfilePath, dockerfileContents, (err) => {
-      buildLogs.push({
-        step: "Write request contents to Dockerfile.",
-        stderr: ""
-      });
+    writeFile(dockerfilePath, dockerfile_contents, (err) => {
+      const step: ImageBuildStep = "Write request contents to Dockerfile.";
       if (err) {
-        const buildFailure: ImageBuildFailure = {
+        buildLogs.push({
+          step,
+          error: err.toString(),
+        });
+        reject({
           logs: buildLogs,
-          error: err
-        };
-        reject(buildFailure);
+          was_successful: false,
+        });
       } else {
-        resolve(dockerfilePath);
+        buildLogs.push({
+          step,
+          output: "Contents written to Dockerfile."
+        });
+        resolve();
       }
     });
   });
 };
 
-const buildImage = ({ dockerfileSHASum }: GraderImageBuildRequest, buildLogs: Array<ImageBuildLog>): Promise<void> => {
+const buildImage = ({ dockerfile_sha_sum }: GraderImageBuildRequest, buildLogs: Array<ImageBuildLog>): Promise<void> => {
   const dockerBuildArgs = [
     "build",
     "-t",
-    dockerfileSHASum,
+    dockerfile_sha_sum,
     "-f",
-    path.join(CONFIG.dockerImageFolder, `${dockerfileSHASum}.Dockerfile`),
+    path.join(CONFIG.dockerImageFolder, `${dockerfile_sha_sum}.Dockerfile`),
     ".",
   ];
   return new Promise<void>((resolve, reject) => {
     execFile(
       "docker",
       dockerBuildArgs,
-      (err, _stdout, stderr) => {
-        buildLogs.push({
-          step: "Run docker build on Dockerfile.",
-          cmd: ["docker", ...dockerBuildArgs],
-          stderr
-        });
+      (err, stdout, stderr) => {
+        const step: ImageBuildStep = "Run docker build on Dockerfile.";
         if (err) {
-          const buildFailure: ImageBuildFailure = {
-            error: err,
+          buildLogs.push({
+            step,
+            error: stderr
+          });
+          reject({
+            was_successful: false,
             logs: buildLogs
-          };
-          reject(buildFailure);
+          });
         } else {
+          buildLogs.push({
+            step,
+            output: stdout
+          });
           resolve();
         }
       },
@@ -77,16 +85,14 @@ const buildImage = ({ dockerfileSHASum }: GraderImageBuildRequest, buildLogs: Ar
 };
 
 const removeDockerfileAfterBuild = (dockerfilePath: string, buildLogs: Array<ImageBuildLog>): Promise<void> => {
-  buildLogs.push({
-    stderr: "",
-    step: "Remove residual Dockerfile."
-  });
   return new Promise<void>((resolve, reject) => {
     rm(dockerfilePath, (err) => {
+      const step: ImageBuildStep = "Remove Dockerfile.";
       if (err) {
-        const buildFailure: ImageBuildFailure = { error: err, logs: buildLogs };
-        reject(buildFailure);
+        buildLogs.push({ step, error: err.toString() });
+        reject({ was_successful: false, logs: buildLogs });
       } else {
+        buildLogs.push({ step, output: "Successfully cleaned up Dockerfile." });
         resolve();
       }
     })
@@ -105,17 +111,12 @@ const saveImageToTgz = (imageName: string, buildLogs: Array<ImageBuildLog>): Pro
       "docker",
       dockerSaveCommandArgs,
       (err, _stdout, stderr) => {
+        const step: ImageBuildStep = "Save image to .tgz file.";
         if (err) {
-          const buildFailure: ImageBuildFailure = {
-            error: err,
-            logs: [...buildLogs, {
-              step: "Save image to .tgz file.",
-              cmd: ["docker", ...dockerSaveCommandArgs],
-              stderr
-            }],
-          };
-          reject(buildFailure);
+          buildLogs.push({ step, error: stderr });
+          reject({ was_successful: false, logs: buildLogs });
         } else {
+          buildLogs.push({ step, output: `Successfully saved image to ${imageName}.tgz.` });
           resolve();
         }
       },

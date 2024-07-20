@@ -2,8 +2,9 @@ export const graderImageBuildRequestSchema = {
   $id: "https://orca-schemas.com/grader-image-build-request",
   type: "object",
   properties: {
-    dockerfileContents: { type: "string" },
-    dockerfileSHASum: { type: "string" },
-    responseURL: { type: "string" }
+    dockerfile_contents: { type: "string" },
+    dockerfile_sha_sum: { type: "string" },
+    response_url: { type: "string" },
+    build_key: { type: "string" },
   },
 } as const;
