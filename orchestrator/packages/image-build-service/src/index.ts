@@ -5,7 +5,7 @@ import {
 } from "@codegrade-orca/common";
 import { getNextImageBuild, handleCompletedImageBuild } from "@codegrade-orca/db";
 import { createAndStoreGraderImage, removeStaleImageFiles } from "./process-request";
-import { cleanUpDockerFiles, sendJobResultForBuildFail, removeImageFromDockerIfExists, notifyClientOfBuildFail } from "./utils";
+import { cleanUpDockerFiles, sendJobResultForBuildFail, removeImageFromDockerIfExists, notifyClientOfBuildResult } from "./utils";
 
 const LOOP_SLEEP_TIME = 5; // Seconds
 
@@ -28,9 +28,10 @@ const main = async () => {
         response_url: nextBuildReq.responseURL,
         build_key: nextBuildReq.buildKey
       };
-      await createAndStoreGraderImage(infoAsBuildReq);
+      const result = await createAndStoreGraderImage(infoAsBuildReq);
       await handleCompletedImageBuild(nextBuildReq.dockerfileSHA, true);
-      console.info(`Successfully build image with SHA ${nextBuildReq.dockerfileSHA}.`);
+      await notifyClientOfBuildResult(result, infoAsBuildReq);
+      console.info(`Successfully built image with SHA ${nextBuildReq.dockerfileSHA}.`);
     } catch (err) {
       if (isImageBuildResult(err) && infoAsBuildReq) {
         const cancelledJobInfoList = await handleCompletedImageBuild(infoAsBuildReq.dockerfile_sha_sum, false);
@@ -41,7 +42,7 @@ const main = async () => {
             ).catch((notifyError) => console.error(notifyError)); // At this point we can't really do anything, but we should at least log out what happened.
           }));
         }
-        await notifyClientOfBuildFail(err, infoAsBuildReq).catch((notifyError) => console.error(notifyError));
+        await notifyClientOfBuildResult(err, infoAsBuildReq).catch((notifyError) => console.error(notifyError));
         await cleanUpDockerFiles(infoAsBuildReq.dockerfile_sha_sum);
       }
       console.error(err);

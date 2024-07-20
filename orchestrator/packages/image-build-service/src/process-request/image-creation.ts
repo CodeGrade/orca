@@ -73,9 +73,11 @@ const buildImage = ({ dockerfile_sha_sum }: GraderImageBuildRequest, buildLogs: 
             logs: buildLogs
           });
         } else {
+          // All docker build information, regardless of status code,
+          // is logged to STDERR.
           buildLogs.push({
             step,
-            output: stdout
+            output: stderr
           });
           resolve();
         }

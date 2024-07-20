@@ -62,7 +62,7 @@ export const sendJobResultForBuildFail = async (cancelInfo: CancelJobInfo) => {
   });
 }
 
-export const notifyClientOfBuildFail = async (buildFailure: GraderImageBuildResult, originalReq: GraderImageBuildRequest) => {
+export const notifyClientOfBuildResult = async (result: GraderImageBuildResult, originalReq: GraderImageBuildRequest) => {
   const { response_url, build_key } = originalReq;
   await fetch(response_url, {
     method: "POST",
@@ -71,7 +71,7 @@ export const notifyClientOfBuildFail = async (buildFailure: GraderImageBuildResu
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      ...buildFailure,
+      ...result,
       build_key
     })
   });
