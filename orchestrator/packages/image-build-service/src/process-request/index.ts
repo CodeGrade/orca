@@ -2,7 +2,6 @@ import path from "path";
 import {
   getConfig,
 } from "@codegrade-orca/common";
-import { } from "@codegrade-orca/db";
 import { readdir, rm, stat } from "fs/promises";
 
 const CONFIG = getConfig();

@@ -1,17 +1,18 @@
 import {
   GraderImageBuildRequest,
   toMilliseconds,
+  isImageBuildResult
 } from "@codegrade-orca/common";
-import { getNextImageBuild, handleCompletedImageBuild  } from "@codegrade-orca/db";
+import { getNextImageBuild, handleCompletedImageBuild } from "@codegrade-orca/db";
 import { createAndStoreGraderImage, removeStaleImageFiles } from "./process-request";
-import { cleanUpDockerFiles, removeImageFromDockerIfExists } from "./utils";
+import { cleanUpDockerFiles, sendJobResultForBuildFail, removeImageFromDockerIfExists, notifyClientOfBuildResult } from "./utils";
 
 const LOOP_SLEEP_TIME = 5; // Seconds
 
 const main = async () => {
   console.info("Build service initialized.");
   while (true) {
-    let currentDockerSHASum: string | undefined = undefined;
+    let infoAsBuildReq: GraderImageBuildRequest | undefined = undefined;
     try {
       const nextBuildReq = await getNextImageBuild();
 
@@ -20,24 +21,34 @@ const main = async () => {
         continue;
       }
 
-      currentDockerSHASum = nextBuildReq.dockerfileSHA;
       console.info(`Attempting to build image with SHA ${nextBuildReq.dockerfileSHA}.`);
-      await createAndStoreGraderImage({
-        dockerfileSHASum: nextBuildReq.dockerfileSHA,
-        dockerfileContents: nextBuildReq.dockerfileContent
-      } as GraderImageBuildRequest);
+      infoAsBuildReq = {
+        dockerfile_sha_sum: nextBuildReq.dockerfileSHA,
+        dockerfile_contents: nextBuildReq.dockerfileContent,
+        response_url: nextBuildReq.responseURL,
+        build_key: nextBuildReq.buildKey
+      };
+      const result = await createAndStoreGraderImage(infoAsBuildReq);
       await handleCompletedImageBuild(nextBuildReq.dockerfileSHA, true);
-      console.info(`Successfully build image with SHA ${nextBuildReq.dockerfileSHA}.`);
+      await notifyClientOfBuildResult(result, infoAsBuildReq);
+      console.info(`Successfully built image with SHA ${nextBuildReq.dockerfileSHA}.`);
     } catch (err) {
-      if (currentDockerSHASum) {
-        // TODO: Send GradingJobResults back to clients on build failure.
-        await handleCompletedImageBuild(currentDockerSHASum, false);
-        await cleanUpDockerFiles(currentDockerSHASum);
+      if (isImageBuildResult(err) && infoAsBuildReq) {
+        const cancelledJobInfoList = await handleCompletedImageBuild(infoAsBuildReq.dockerfile_sha_sum, false);
+        if (cancelledJobInfoList !== null) {
+          await Promise.all(cancelledJobInfoList.map((cancelInfo) => {
+            sendJobResultForBuildFail(
+              cancelInfo,
+            ).catch((notifyError) => console.error(notifyError)); // At this point we can't really do anything, but we should at least log out what happened.
+          }));
+        }
+        await notifyClientOfBuildResult(err, infoAsBuildReq).catch((notifyError) => console.error(notifyError));
+        await cleanUpDockerFiles(infoAsBuildReq.dockerfile_sha_sum);
       }
       console.error(err);
     } finally {
-      if (currentDockerSHASum) {
-        await removeImageFromDockerIfExists(currentDockerSHASum);
+      if (infoAsBuildReq) {
+        await removeImageFromDockerIfExists(infoAsBuildReq.dockerfile_sha_sum);
       }
       await removeStaleImageFiles();
     }

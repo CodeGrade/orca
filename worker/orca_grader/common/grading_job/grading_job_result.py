@@ -1,6 +1,7 @@
 from typing import Dict, List, Optional
 from orca_grader.container.grading_script.grading_script_command_response import GradingScriptCommandResponse
-from orca_grader.common.types.grading_job_json_types import GradingJobOutputJSON, GradingJobOutputJSON
+from orca_grader.common.types.grading_job_json_types import GradingJobResultJSON
+
 
 
 class GradingJobResult:
@@ -21,7 +22,7 @@ class GradingJobResult:
     def get_execution_errors(self) -> List[Exception]:
         return self.__execution_errors
 
-    def to_json(self, interpolated_dirs: Dict[str, str]) -> GradingJobOutputJSON:
+    def to_json(self, interpolated_dirs: Dict[str, str]) -> GradingJobResultJSON:
         result = dict()
         json_responses = list(
             map(
