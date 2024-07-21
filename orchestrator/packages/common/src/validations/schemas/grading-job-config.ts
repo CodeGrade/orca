@@ -18,7 +18,10 @@ const bashGradingScriptCommand = {
     on_complete: {
       anyOf: [
         {
-          $ref: "https://orca-schemas.com/grading-job-config/grading-script-command",
+          type: "array",
+          items: {
+            $ref: "https://orca-schemas.com/grading-job-config/grading-script-command",
+          }
         },
         { type: "string" },
         { type: "number" },
@@ -27,7 +30,10 @@ const bashGradingScriptCommand = {
     on_fail: {
       anyOf: [
         {
-          $ref: "https://orca-schemas.com/grading-job-config/grading-script-command",
+          type: "array",
+          items: {
+            $ref: "https://orca-schemas.com/grading-job-config/grading-script-command",
+          }
         },
         { type: "string" },
         { type: "number" },

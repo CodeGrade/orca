@@ -5,9 +5,10 @@ import {
   getPageFromGradingQueue as getPageFromGradingJobs,
 } from "../utils/pagination";
 import { validateFilterRequest } from "../utils/validate";
-import { errorResponse } from "./utils";
+import { errorResponse, notifyClientOfCancelledJob } from "./utils";
 import {
   GradingJob,
+  GradingJobConfig,
   filterGradingJobs,
   getFilterInfo,
   getGradingQueueStats,
@@ -165,7 +166,9 @@ export const deleteJob = async (req: Request, res: Response) => {
     if (isNaN(jobID)) {
       return errorResponse(res, 400, ["Given job ID is not a number."]);
     }
-    await deleteJobInQueue(jobID);
+    const deletedJob = await deleteJobInQueue(jobID);
+    const deletedJobConfig = deletedJob.config as object as GradingJobConfig;
+    await notifyClientOfCancelledJob(deletedJobConfig)
     return res.status(200).json({ message: "OK" });
   } catch (err) {
     if (err instanceof GradingQueueOperationException) {

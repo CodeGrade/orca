@@ -1,6 +1,8 @@
 import { GraderImageBuildRequest } from "@codegrade-orca/common";
 
 export const defaultGraderImageBuildRequest: GraderImageBuildRequest = {
-  dockerfileContents: `FROM hello-world:latest`,
-  dockerfileSHASum: "generated-sha-sum",
+  dockerfile_contents: `FROM hello-world:latest`,
+  dockerfile_sha_sum: "generated-sha-sum",
+  response_url: "http://example.com/response",
+  build_key: "{\"grader_id\": 1}"
 };

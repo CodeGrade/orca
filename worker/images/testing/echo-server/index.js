@@ -24,10 +24,10 @@ app.get("/job-output/:key", (req, res) => {
 });
 
 app.post("/job-output", (req, res) => {
-  const { key, output } = req.body;
+  const { key, build_key } = req.body;
   console.log(req.body);
-  if (key) {
-    responses[key] = req.body;
+  if (key || build_key) {
+    responses[key || build_key] = req.body;
     return res.sendStatus(200);
   }
   res.sendStatus(400);

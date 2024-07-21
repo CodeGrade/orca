@@ -1,4 +1,5 @@
-import { getConfig } from "@codegrade-orca/common";
+import { GraderImageBuildRequest, GraderImageBuildResult, GradingJobResult, getConfig } from "@codegrade-orca/common";
+import { CancelJobInfo } from "@codegrade-orca/db/dist/image-builder-operations/handle-completed-image-build";
 import { execFile } from "child_process";
 import { existsSync, rmSync } from "fs";
 import path from "path";
@@ -35,13 +36,43 @@ const deleteImage = (dockerfileSHASum: string): Promise<void> => {
 
 const imageExistsInDocker = (dockerfileSHASum: string): Promise<boolean> => {
   return new Promise<boolean>((resolve, reject) => {
-    execFile("docker", ["image", "ls", "--format", "{{.Repository}}:{{.Tag}}"],(err, stdout, _stderr) => {
-        if (err) {
-          reject(err);
-        } else {
-          const images = stdout.split("\n");
-          resolve(images.includes(`${dockerfileSHASum}:latest`));
-        }
+    execFile("docker", ["image", "ls", "--format", "{{.Repository}}:{{.Tag}}"], (err, stdout, _stderr) => {
+      if (err) {
+        reject(err);
+      } else {
+        const images = stdout.split("\n");
+        resolve(images.includes(`${dockerfileSHASum}:latest`));
+      }
     });
   });
 };
+
+export const sendJobResultForBuildFail = async (cancelInfo: CancelJobInfo) => {
+  const result: GradingJobResult = {
+    shell_responses: [],
+    errors: ["The grader image for this job failed to build. Please contact a Professor or Admin."]
+  };
+  await fetch(cancelInfo.response_url, {
+    method: "POST",
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ ...result, key: cancelInfo.key })
+  });
+}
+
+export const notifyClientOfBuildResult = async (result: GraderImageBuildResult, originalReq: GraderImageBuildRequest) => {
+  const { response_url, build_key } = originalReq;
+  await fetch(response_url, {
+    method: "POST",
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      ...result,
+      build_key
+    })
+  });
+}
