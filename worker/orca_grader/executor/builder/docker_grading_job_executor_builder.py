@@ -34,7 +34,7 @@ class DockerGradingJobExecutorBuilder(GradingJobExecutorBuilder):
         # TODO: How could we maintain a 'reference count' for a unique id?
         container_name = f"{self.__container_sha}_{int(time.time() * 100_000_000)}"
         program_sequence = ["docker", "run", "--rm", "--name", container_name]
-        program_sequence.extend(["--network", "orca-testing"])
+        program_sequence.extend(["--network", "host"])
         for name, value in self.__env_variable_mappings.items():
             program_sequence.append("-e")
             program_sequence.append(f'{name}={value}')

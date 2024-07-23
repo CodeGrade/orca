@@ -5,6 +5,7 @@ import os
 import time
 from typing import List, Optional
 import tempfile
+from subprocess import CalledProcessError
 from orca_grader.common.services.push_results import push_results_with_exception
 from orca_grader.common.types.grading_job_json_types import GradingJobJSON
 from orca_grader.config import APP_CONFIG
@@ -67,6 +68,8 @@ def process_jobs_from_db(no_container: bool,
                 if stop_future in done:
                     break
 
+                print(f"Pulled job with key {grading_job['key']} and url {grading_job['response_url']}")
+
                 job_execution_future = futures_executor.submit(
                     run_grading_job, grading_job, no_container, container_command)
                 done, not_done = concurrent.futures.wait(
@@ -81,6 +84,7 @@ def process_jobs_from_db(no_container: bool,
                 if job_execution_future in done:
                     if type(job_execution_future.exception()) == InvalidWorkerStateException:
                         exit(1)
+                    print("Job completed.")
                     clean_up_unused_images()
 
                 if stop_future in done:
@@ -107,6 +111,10 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
         else:
             handle_grading_job(grading_job, container_sha)
     except Exception as e:
+        print(e)
+        if type(e) == CalledProcessError:
+          print(e.stdout)
+          print(e.stderr)
         if "response_url" in grading_job:
             push_results_with_exception(grading_job, e)
         else:
@@ -151,7 +159,7 @@ def handle_grading_job(grading_job: GradingJobJSON, container_sha: str | None = 
         if result and result.stdout:
             # TODO: make this a log statement of some sort.
             print(result.stdout.decode())
-        elif result and result.stderr:
+        if result and result.stderr:
             print(result.stderr.decode())
 
 

@@ -4,7 +4,7 @@ import shutil
 import unittest
 from orca_grader.container.build_script.code_file.code_file_info import CodeFileInfo
 from orca_grader.container.build_script.code_file.processing.code_file_processor import CodeFileProcessor
-from orca_grader.container.build_script.code_file.sub_mime_types import SubmissionMIMEType
+from orca_grader.container.build_script.code_file.mime_types import MIMEType
 
 
 class TestCodeFileProcessor(unittest.TestCase):
@@ -14,8 +14,8 @@ class TestCodeFileProcessor(unittest.TestCase):
     code_files_json = {}
     with open("orca_grader/tests/fixtures/code_files/code_files.json", 'r') as code_files_fp:
       code_files_json = json.load(code_files_fp)
-    cls.__code_files = { 
-        k: CodeFileInfo(v["url"], SubmissionMIMEType(v["mime_type"]), k, v["should_replace_paths"])
+    cls.__code_files = {
+        k: CodeFileInfo(v["url"], MIMEType(v["mime_type"]), k, v["should_replace_paths"])
         for k, v in code_files_json.items()
         }
     cls.__secret = os.urandom(32).hex()
@@ -51,7 +51,7 @@ class TestCodeFileProcessor(unittest.TestCase):
   def test_file_with_replace(self):
     code_file = self.__code_files["basic-file-replace"]
     download_path, extract_path = self.__download_extract_paths["basic-file-replace"]
-    self.__processor.process_file(self.__code_files["basic-file-replace"], download_path, extract_path) 
+    self.__processor.process_file(self.__code_files["basic-file-replace"], download_path, extract_path)
     self.assertTrue(os.path.exists(os.path.join(download_path, code_file.get_file_name())))
     self.assertTrue(os.path.exists(os.path.join(extract_path, code_file.get_file_name())))
     with open(os.path.join(download_path, code_file.get_file_name()), 'r') as downloaded_fp:
@@ -81,7 +81,7 @@ class TestCodeFileProcessor(unittest.TestCase):
       self.assertEqual(unreplaced_fp.read(), self.__expected_basic_content)
     with open(os.path.join(extract_path, "basic-file-replace.txt"), 'r') as replaced_fp:
       self.assertEqual(replaced_fp.read(), self.__expected_replaced_changed)
-    
+
   def test_tar_file_replace(self):
     code_file = self.__code_files["tar-replace-paths"]
     download_path, extract_path = self.__download_extract_paths["tar-replace-paths"]
