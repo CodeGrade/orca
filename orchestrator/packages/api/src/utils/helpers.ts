@@ -5,7 +5,7 @@ export const filterNull = (arr: any[]): any[] => {
 };
 
 export const reservationWaitingOnRelease = (releaseAt: Date): boolean => {
-  return new Date().getTime() - releaseAt.getTime() > 0;
+  return releaseAt.getTime() - new Date().getTime() > 0;
 }
 
 export const describeReleaseTiming = (releaseAt: Date) => {

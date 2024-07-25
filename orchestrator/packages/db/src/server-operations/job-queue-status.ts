@@ -5,7 +5,7 @@ import { getAssociatedReservation } from "../utils";
 export interface JobQueueStatus {
   job: Job,
   reservation: Reservation,
-  numReservationsAhead: number
+  queuePosition: number
 }
 
 const getJobQueueStatus = async (key: string, responseURL: string): Promise<JobQueueStatus | null> =>
@@ -19,20 +19,17 @@ const getJobQueueStatus = async (key: string, responseURL: string): Promise<JobQ
     return {
       job,
       reservation,
-      numReservationsAhead: await getNumberReservationsAhead(reservation, tx)
+      queuePosition: await getPositionInQueue(reservation, tx)
     }
   });
 
-const getNumberReservationsAhead = async (reservation: Reservation, tx: Prisma.TransactionClient): Promise<number> => {
-  const rowNumberQuery = `SELECT ROW_NUMBER()
-    OVER ( ORDER BY release_at )
-    FROM "Reservation"
-    WHERE "id" = ${reservation.id};`
+const getPositionInQueue = async (reservation: Reservation, tx: Prisma.TransactionClient): Promise<number> => {
+  const rowNumberQuery = `SELECT ROW_NUMBER() OVER ( ORDER BY r."releaseAt" ) as "rowNumber"
+    FROM "Reservation" r WHERE r."id" = ${reservation.id};`
 
   const { rowNumber: rowNumberAsBigInt } = (await tx.$queryRaw(
     Prisma.sql([rowNumberQuery])
-  ) as [{ rowNumber: number }])[0];
-
+  ) as [{ rowNumber: bigint }])[0];
   return Number(rowNumberAsBigInt);
 }
 

@@ -187,11 +187,11 @@ export const getJobStatus = async (req: Request, res: Response) => {
   if (!jobQueueStatus) {
     return res.json("We could not find the job you're looking for. Please contact a professor or admin.");
   }
-  const { reservation, numReservationsAhead } = jobQueueStatus;
+  const { reservation, queuePosition } = jobQueueStatus;
   if (reservationWaitingOnRelease(reservation.releaseAt)) {
     return res.json(describeReleaseTiming(reservation.releaseAt));
   } else {
-    return res.json(`Your job is number ${numReservationsAhead + 1} in the queue.`);
+    return res.json(`Your job is number ${queuePosition} in the queue.`);
   }
 }
 
