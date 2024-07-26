@@ -5,6 +5,5 @@ export const graderImageBuildRequestSchema = {
     dockerfile_contents: { type: "string" },
     dockerfile_sha_sum: { type: "string" },
     response_url: { type: "string" },
-    build_key: { type: "string" },
   },
 } as const;
