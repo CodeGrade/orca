@@ -12,6 +12,10 @@ export const createGraderImage = async (req: Request, res: Response) => {
       "The request body to build a grader image is invalid.",
     ]);
   }
+  const { dockerfile_sha_sum } = req.body;
+  if (graderImageExists(dockerfile_sha_sum)) {
+    return res.status(200).json({ message: "This grader already exists on the server; no build needed." });
+  }
   try {
     await enqueueImageBuild(req.body);
     return res.status(200).json({ message: "OK" });
