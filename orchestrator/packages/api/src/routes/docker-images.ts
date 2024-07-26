@@ -4,6 +4,6 @@ import { createGraderImage, getImageBuildStatus } from "../controllers/docker-im
 const dockerImagesRouter = Router();
 
 dockerImagesRouter.post("/grader_images", createGraderImage);
-dockerImagesRouter.get("/image_build_status/:dockerfileSHA", getImageBuildStatus);
+dockerImagesRouter.get("/grader_images/status/:dockerfileSHA", getImageBuildStatus);
 
 export default dockerImagesRouter;
