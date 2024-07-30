@@ -52,7 +52,7 @@ const buildImage = ({ dockerfile_sha_sum }: GraderImageBuildRequest, buildLogs: 
   const dockerBuildArgs = [
     "build",
     "-t",
-    dockerfile_sha_sum,
+    `grader-${dockerfile_sha_sum}`,
     "-f",
     path.join(CONFIG.dockerImageFolder, `${dockerfile_sha_sum}.Dockerfile`),
     ".",
@@ -61,7 +61,7 @@ const buildImage = ({ dockerfile_sha_sum }: GraderImageBuildRequest, buildLogs: 
     execFile(
       "docker",
       dockerBuildArgs,
-      (err, stdout, stderr) => {
+      (err, _stdout, stderr) => {
         const step: ImageBuildStep = "Run docker build on Dockerfile.";
         if (err) {
           buildLogs.push({
@@ -101,12 +101,12 @@ const removeDockerfileAfterBuild = (dockerfilePath: string, buildLogs: Array<Ima
   });
 };
 
-const saveImageToTgz = (imageName: string, buildLogs: Array<ImageBuildLog>): Promise<void> => {
+const saveImageToTgz = (shaSum: string, buildLogs: Array<ImageBuildLog>): Promise<void> => {
   const dockerSaveCommandArgs = [
     "save",
     "-o",
-    path.join(CONFIG.dockerImageFolder, `${imageName}.tgz`),
-    imageName,
+    path.join(CONFIG.dockerImageFolder, `${shaSum}.tgz`),
+    `grader-${shaSum}`,
   ];
   return new Promise<void>((resolve, reject) => {
     execFile(
@@ -118,7 +118,7 @@ const saveImageToTgz = (imageName: string, buildLogs: Array<ImageBuildLog>): Pro
           buildLogs.push({ step, error: stderr });
           reject({ was_successful: false, logs: buildLogs });
         } else {
-          buildLogs.push({ step, output: `Successfully saved image to ${imageName}.tgz.` });
+          buildLogs.push({ step, output: `Successfully saved image to ${shaSum}.tgz.` });
           resolve();
         }
       },
