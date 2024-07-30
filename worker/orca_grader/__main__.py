@@ -97,9 +97,10 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
         if no_container:
             return handle_grading_job(grading_job)
         container_sha = grading_job["grader_image_sha"]
-        if not does_image_exist_locally(container_sha):
+        if not does_image_exist_locally(f"grader-{container_sha}"):
             retrieve_image_tgz_from_url(
-                container_sha, f"{APP_CONFIG.orca_web_server_host}/images/{container_sha}.tgz")
+                container_sha, f"{APP_CONFIG.orca_web_server_host}/images/{container_sha}.tgz"
+            )
             load_image_from_tgz("{0}.tgz".format(container_sha))
         if container_command:
             handle_grading_job(
