@@ -19,7 +19,7 @@ import {
   createOrUpdateJob as putJobInQueue,
   getAllGradingJobs,
   GradingQueueOperationException,
-  getJobQueueStatus
+  getJobStatus
 } from "@codegrade-orca/db";
 import { describeReleaseTiming, reservationWaitingOnRelease } from "../utils/helpers";
 
@@ -114,8 +114,9 @@ export const createOrUpdateImmediateJob = async (
   const gradingJobConfig = req.body;
 
   try {
-    await putJobInQueue(req.body, true);
-    return res.status(200).json({ message: "OK" });
+    // TODO: Return job id from db operation and in response obj
+    const jobID = await putJobInQueue(req.body, true);
+    return res.status(200).json({ message: "OK", jobID });
   } catch (error) {
     console.error(error);
     if (error instanceof GradingQueueOperationException) {
@@ -134,8 +135,9 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
   }
 
   try {
-    await putJobInQueue(req.body, false);
-    return res.status(200).json({ message: "OK" });
+    // TODO: Return job id from db operation and in response obj
+    const jobID = await putJobInQueue(req.body, false);
+    return res.status(200).json({ message: "OK", jobID });
   } catch (err) {
     console.error(err);
     if (err instanceof GradingQueueOperationException) {
@@ -181,11 +183,16 @@ export const deleteJob = async (req: Request, res: Response) => {
   }
 };
 
-export const getJobStatus = async (req: Request, res: Response) => {
-  const { key, response_url } = req.body;
-  const jobQueueStatus = await getJobQueueStatus(key, response_url);
+export const jobStatus = async (req: Request, res: Response) => {
+  const jobID = parseInt(req.params.jobID);
+  if (isNaN(jobID)) {
+    return errorResponse(res, 400, [`The given job ID ${jobID} is not a number.`]);
+  }
+  const jobQueueStatus = await getJobStatus(jobID);
   if (!jobQueueStatus) {
     return res.json("We could not find the job you're looking for. Please contact a professor or admin.");
+  } else if (typeof jobQueueStatus === "string") {
+    return res.json(jobQueueStatus);
   }
   const { reservation, queuePosition } = jobQueueStatus;
   if (reservationWaitingOnRelease(reservation.releaseAt)) {

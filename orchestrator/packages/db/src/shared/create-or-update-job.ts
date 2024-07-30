@@ -1,5 +1,5 @@
 import { CollationType, Job, Prisma } from '@prisma/client';
-import { Collation, GradingJobConfig, imageWithSHAExists, toMilliseconds } from '@codegrade-orca/common';
+import { GradingJobConfig, imageWithSHAExists, toMilliseconds } from '@codegrade-orca/common';
 import prismaInstance from '../prisma-instance';
 import { getAssociatedReservation, immediateJobExists, retireReservationAndJob, submitterJobExists } from '../utils';
 import { GradingQueueOperationException } from '../exceptions';
@@ -9,7 +9,7 @@ import { GradingQueueOperationException } from '../exceptions';
 // QUESTION: Should we implement this through parallel tables? Consider the
 // effect of this on uniqueness constraints.
 
-export const createOrUpdateJob = (jobConfig: GradingJobConfig, isImmediateJob: boolean) =>{
+export const createOrUpdateJob = (jobConfig: GradingJobConfig, isImmediateJob: boolean) => {
   return prismaInstance.$transaction(async (tx) => {
     const imageBuilding = (await tx.imageBuildInfo.count({
       where: {
@@ -21,20 +21,16 @@ export const createOrUpdateJob = (jobConfig: GradingJobConfig, isImmediateJob: b
       throw new GradingQueueOperationException(`No image exists or is being build with SHA sum ${jobConfig.grader_image_sha}`);
     }
 
-    if (imageBuilding) {
-      await placeJobInHoldingPen(jobConfig, tx)
-    } else {
-      await createOrUpdateJobWithClient(jobConfig, isImmediateJob, tx);
-    }
+    return await (imageBuilding ? placeJobInHoldingPen(jobConfig, tx) : createOrUpdateJobWithClient(jobConfig, isImmediateJob, tx));
   });
 };
 
-export const createOrUpdateJobWithClient = async (jobConfig: GradingJobConfig, isImmediateJob: boolean, tx: Prisma.TransactionClient) => {
+export const createOrUpdateJobWithClient = async (jobConfig: GradingJobConfig, isImmediateJob: boolean, tx: Prisma.TransactionClient): Promise<number> => {
   const existingImmediateJob = await immediateJobExists(jobConfig.key, jobConfig.response_url, tx);
   const existingSubmitterJob =
     await submitterJobExists(jobConfig.key, jobConfig.response_url, tx);
-  if ((existingImmediateJob &&  isImmediateJob) || existingSubmitterJob) {
-    await tx.job.update({
+  if ((existingImmediateJob && isImmediateJob) || existingSubmitterJob) {
+    const { id } = await tx.job.update({
       where: {
         clientURL_clientKey: {
           clientKey: jobConfig.key,
@@ -45,7 +41,7 @@ export const createOrUpdateJobWithClient = async (jobConfig: GradingJobConfig, i
         config: jobConfig as object
       }
     });
-    return;
+    return id;
   }
 
   if (existingSubmitterJob && isImmediateJob) {
@@ -61,15 +57,11 @@ export const createOrUpdateJobWithClient = async (jobConfig: GradingJobConfig, i
     await retireReservationAndJob(currentJob, associatedReservation, tx);
   }
 
-  if (isImmediateJob) {
-    await createImmediateJob(jobConfig, tx);
-  } else {
-    await createSubmitterJob(jobConfig, tx);
-  }
+  return await (isImmediateJob ? createImmediateJob(jobConfig, tx) : createSubmitterJob(jobConfig, tx));
 }
 
-const placeJobInHoldingPen = async (jobConfig: GradingJobConfig, tx: Prisma.TransactionClient) => {
-  await tx.jobConfigAwaitingImage.create({
+const placeJobInHoldingPen = async (jobConfig: GradingJobConfig, tx: Prisma.TransactionClient): Promise<number> => {
+  const { id } = await tx.jobConfigAwaitingImage.create({
     data: {
       jobConfig: jobConfig as object,
       clientKey: jobConfig.key,
@@ -77,10 +69,11 @@ const placeJobInHoldingPen = async (jobConfig: GradingJobConfig, tx: Prisma.Tran
       imageBuildSHA: jobConfig.grader_image_sha
     }
   });
+  return id;
 }
 
 const createImmediateJob = async (jobConfig: GradingJobConfig, tx: Prisma.TransactionClient) => {
-  const createdJob = await tx.job.create({
+  const { id } = await tx.job.create({
     data: {
       clientKey: jobConfig.key,
       clientURL: jobConfig.response_url,
@@ -89,12 +82,13 @@ const createImmediateJob = async (jobConfig: GradingJobConfig, tx: Prisma.Transa
   });
   await tx.reservation.create({
     data: {
-      jobID: createdJob.id
+      jobID: id
     }
   });
+  return id;
 };
 
-const createSubmitterJob = async (jobConfig: GradingJobConfig, tx: Prisma.TransactionClient) => {
+const createSubmitterJob = async (jobConfig: GradingJobConfig, tx: Prisma.TransactionClient): Promise<number> => {
   const submitter = await tx.submitter.upsert({
     where: {
       clientURL_collationType_collationID: {
@@ -111,7 +105,7 @@ const createSubmitterJob = async (jobConfig: GradingJobConfig, tx: Prisma.Transa
     }
   });
 
-  await tx.job.create({
+  const { id } = await tx.job.create({
     data: {
       clientURL: jobConfig.response_url,
       clientKey: jobConfig.key,
@@ -127,4 +121,6 @@ const createSubmitterJob = async (jobConfig: GradingJobConfig, tx: Prisma.Transa
       submitterID: submitter.id,
     }
   });
+
+  return id;
 };
