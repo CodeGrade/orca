@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 import traceback
+from pathlib import Path
 from typing import Dict, List, TextIO
 from orca_grader.common.services.push_results import push_results_to_response_url
 from orca_grader.container.build_script.preprocess.preprocessor import GradingScriptPreprocessor
@@ -16,10 +17,16 @@ from orca_grader.common.types.grading_job_json_types import (
     GradingJobJSON,
     GradingScriptCommandJSON
 )
+from orca_grader.container.fs_tree import tree
 
 
 def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobResult:
     command_responses: List[GradingScriptCommandResponse] = []
+    interpolated_dirs = {
+        "$DOWNLOADED": f"{secret}/downloaded",
+        "$EXTRACTED": f"{secret}/extracted",
+        "$BUILD": f"{secret}/build"
+    }
     # The following exceptions are used to encapsulate things "expected to go wrong":
     # - InvalidGradingJobJSONException*: Thrown when job JSON doesn't match schema (see validations/).
     # - PreprocessingException: Thrown when a GradingJob's script is not valid.
@@ -30,15 +37,15 @@ def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobResul
     try:
         code_files = produce_code_files_dictionary(grading_job_json["files"])
         commands: List[GradingScriptCommandJSON] = grading_job_json["script"]
-        interpolated_dirs = {
-            "$DOWNLOADED": f"{secret}/downloaded",
-            "$EXTRACTED": f"{secret}/extracted",
-            "$BUILD": f"{secret}/build"
-        }
         code_file_processor = CodeFileProcessor(interpolated_dirs)
         preprocessor = GradingScriptPreprocessor(secret, commands, code_files,
                                                  code_file_processor)
         script: GradingScriptCommand = preprocessor.preprocess_job()
+        print("****Directories and their files:****")
+        for actual_dir in interpolated_dirs.values():
+            print(f"{actual_dir}:")
+            for line in tree(Path(actual_dir)):
+                print(line)
         output: GradingJobResult = script.execute(command_responses)
     except PreprocessingException as preprocess_e:
         output = GradingJobResult(command_responses, [preprocess_e])

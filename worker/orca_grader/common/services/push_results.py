@@ -20,12 +20,13 @@ def push_results_to_response_url(job_result: GradingJobResult,
         **job_result.to_json(interpolated_dirs=interpolated_dirs),
         "key": key
     }
+    print(result_as_json)
     _send_results_with_exponential_backoff(result_as_json, response_url)
 
 
 def push_results_with_exception(grading_job: GradingJobJSON,
                                 e: Exception) -> None:
-    output = GradingJobResult([], [e]).to_json()
+    output = GradingJobResult([], [e])
     key, response_url = grading_job["key"], grading_job["response_url"]
     push_results_to_response_url(output, key, response_url, {})
 
