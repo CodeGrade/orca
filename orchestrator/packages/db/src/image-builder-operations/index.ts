@@ -3,3 +3,4 @@ import handleCompletedImageBuild from "./handle-completed-image-build";
 
 export { getNextImageBuild };
 export { handleCompletedImageBuild };
+export * from "./image-build-status";

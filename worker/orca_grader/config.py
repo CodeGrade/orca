@@ -12,7 +12,7 @@ class AppConfig():
         # connect the python DB driver package (of the same name) to the ORM.
         self.postgres_url = \
             os.getenv('POSTGRES_URL',
-                      'postgresql://postgres:password@localhost:5432') \
+                      'postgresql://postgres:password@localhost:5434') \
             .replace("postgresql", "postgresql+psycopg")
         enable_diagnostics_val = os.getenv('ENABLE_DIAGNOSTICS', '') or ""
         self.enable_diagnostics = enable_diagnostics_val.lower() == "true"

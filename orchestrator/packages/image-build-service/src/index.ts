@@ -26,7 +26,6 @@ const main = async () => {
         dockerfile_sha_sum: nextBuildReq.dockerfileSHA,
         dockerfile_contents: nextBuildReq.dockerfileContent,
         response_url: nextBuildReq.responseURL,
-        build_key: nextBuildReq.buildKey
       };
       const result = await createAndStoreGraderImage(infoAsBuildReq);
       await handleCompletedImageBuild(nextBuildReq.dockerfileSHA, true);

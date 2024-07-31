@@ -38,7 +38,6 @@ CREATE TABLE "Job" (
 CREATE TABLE "ImageBuildInfo" (
     "dockerfileSHA" TEXT NOT NULL,
     "dockerfileContent" TEXT NOT NULL,
-    "buildKey" TEXT NOT NULL,
     "responseURL" TEXT NOT NULL,
     "inProgress" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -66,9 +65,6 @@ CREATE UNIQUE INDEX "Submitter_clientURL_collationType_collationID_key" ON "Subm
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Job_clientURL_clientKey_key" ON "Job"("clientURL", "clientKey");
-
--- CreateIndex
-CREATE UNIQUE INDEX "ImageBuildInfo_buildKey_responseURL_key" ON "ImageBuildInfo"("buildKey", "responseURL");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "JobConfigAwaitingImage_clientKey_clientURL_key" ON "JobConfigAwaitingImage"("clientKey", "clientURL");

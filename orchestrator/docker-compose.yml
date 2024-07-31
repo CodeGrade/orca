@@ -8,20 +8,19 @@ services:
       - "4000:4000"
     depends_on:
       - postgres
-    links:
-      - postgres
     environment:
-      POSTGRES_URL: postgresql://postgres:password@postgres
+      POSTGRES_URL: postgresql://postgres:password@localhost:5434
     container_name: orca-orchestrator
     volumes:
       - ./packages:/usr/packages
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
+    network_mode: host
 
   postgres:
     image: postgres:10
     ports:
-      - "5432:5432"
+      - "5434:5432"
     container_name: postgres
     environment:
       POSTGRES_PASSWORD: password

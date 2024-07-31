@@ -23,5 +23,4 @@ export interface GraderImageBuildRequest {
   dockerfile_contents: string,
   dockerfile_sha_sum: string,
   response_url: string,
-  build_key: string,
 }

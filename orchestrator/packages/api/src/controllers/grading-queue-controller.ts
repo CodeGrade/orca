@@ -18,8 +18,10 @@ import {
   deleteJob as deleteJobInQueue,
   createOrUpdateJob as putJobInQueue,
   getAllGradingJobs,
-  GradingQueueOperationException
+  GradingQueueOperationException,
+  getJobStatus
 } from "@codegrade-orca/db";
+import { describeReleaseTiming, reservationWaitingOnRelease } from "../utils/helpers";
 
 export const getGradingJobs = async (req: Request, res: Response) => {
   if (
@@ -112,8 +114,9 @@ export const createOrUpdateImmediateJob = async (
   const gradingJobConfig = req.body;
 
   try {
-    await putJobInQueue(req.body, true);
-    return res.status(200).json({ message: "OK" });
+    // TODO: Return job id from db operation and in response obj
+    const jobID = await putJobInQueue(req.body, true);
+    return res.status(200).json({ message: "OK", jobID });
   } catch (error) {
     console.error(error);
     if (error instanceof GradingQueueOperationException) {
@@ -132,8 +135,9 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
   }
 
   try {
-    await putJobInQueue(req.body, false);
-    return res.status(200).json({ message: "OK" });
+    // TODO: Return job id from db operation and in response obj
+    const jobID = await putJobInQueue(req.body, false);
+    return res.status(200).json({ message: "OK", jobID });
   } catch (err) {
     console.error(err);
     if (err instanceof GradingQueueOperationException) {
@@ -178,3 +182,23 @@ export const deleteJob = async (req: Request, res: Response) => {
     }
   }
 };
+
+export const jobStatus = async (req: Request, res: Response) => {
+  const jobID = parseInt(req.params.jobID);
+  if (isNaN(jobID)) {
+    return errorResponse(res, 400, [`The given job ID ${jobID} is not a number.`]);
+  }
+  const jobQueueStatus = await getJobStatus(jobID);
+  if (!jobQueueStatus) {
+    return res.json("We could not find the job you're looking for. Please contact a professor or admin.");
+  } else if (typeof jobQueueStatus === "string") {
+    return res.json(jobQueueStatus);
+  }
+  const { reservation, queuePosition } = jobQueueStatus;
+  if (reservationWaitingOnRelease(reservation.releaseAt)) {
+    return res.json(describeReleaseTiming(reservation.releaseAt));
+  } else {
+    return res.json(`Your job is number ${queuePosition} in the queue.`);
+  }
+}
+

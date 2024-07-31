@@ -10,7 +10,6 @@ describe("grader image functionality", () => {
     dockerfile_contents: `FROM hello-world`,
     dockerfile_sha_sum: "generated-sha-sum",
     response_url: "http://example.com/response",
-    build_key: "{\"grader_id\": 1}"
   };
 
   beforeAll(() => {
