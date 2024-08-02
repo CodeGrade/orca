@@ -15,13 +15,14 @@ from orca_grader.exceptions import InvalidWorkerStateException
 from orca_grader.executor.builder.docker_grading_job_executor_builder import DockerGradingJobExecutorBuilder
 from orca_grader.executor.builder.grading_job_executor_builder import GradingJobExecutorBuilder
 from orca_grader.job_retrieval.local.local_grading_job_retriever import LocalGradingJobRetriever
-from orca_grader.job_retrieval.postgres.grading_job_retriever import PostgresGradingJobRetirever
+from orca_grader.job_retrieval.postgres.grading_job_retriever import PostgresGradingJobRetriever
 from orca_grader.docker_utils.images.utils import does_image_exist_locally
 from orca_grader.docker_utils.images.image_loading import retrieve_image_tgz_from_url, load_image_from_tgz
 from orca_grader.job_termination.nonblocking_thread_executor import NonBlockingThreadPoolExecutor
 from orca_grader.job_termination.stop_worker import GracefulKiller
 from orca_grader.validations.exceptions import InvalidGradingJobJSONException
 from orca_grader.validations.grading_job import is_valid_grading_job_json
+from orca_grader.common.services.push_status import post_job_status_to_client
 
 CONTAINER_WORKING_DIR = '/home/orca-grader'
 
@@ -36,7 +37,7 @@ def run_local_job(job_path: str, no_container: bool,
 
 def process_jobs_from_db(no_container: bool,
                          container_command: List[str] | None):
-    retriever = PostgresGradingJobRetirever()
+    retriever = PostgresGradingJobRetriever()
     with GracefulKiller() as killer:
         with NonBlockingThreadPoolExecutor(max_workers=2) as futures_executor:
             stop_future = futures_executor.submit(killer.wait_for_stop_signal)
@@ -52,11 +53,12 @@ def process_jobs_from_db(no_container: bool,
                     if job_retrieval_future.exception() is None:
                         grading_job = job_retrieval_future.result()
                         if grading_job is not None:
-                            reenqueue_job(grading_job)
+                            updated_db_id = reenqueue_job(grading_job)
+                            inform_client_of_reenqueue(grading_job,
+                                                       updated_db_id)
 
                 if job_retrieval_future in done:
                     if job_retrieval_future.exception():
-                        # TODO: replace with log statement.
                         print(job_retrieval_future.exception())
                         time.sleep(1)
                         continue
@@ -68,7 +70,14 @@ def process_jobs_from_db(no_container: bool,
                 if stop_future in done:
                     break
 
-                print(f"Pulled job with key {grading_job['key']} and url {grading_job['response_url']}")
+                post_job_status_to_client(
+                    location="Worker",
+                    response_url=grading_job['response_url'],
+                    key=grading_job['key']
+                )
+                print(
+                    f"Pulled job with key {grading_job['key']} and url {grading_job['response_url']}"
+                )
 
                 job_execution_future = futures_executor.submit(
                     run_grading_job, grading_job, no_container, container_command)
@@ -79,7 +88,8 @@ def process_jobs_from_db(no_container: bool,
                 # 2. Stop future not done, job future done.
                 # 3. Stop future done, job future done.
                 if stop_future in done and job_execution_future in not_done:
-                    reenqueue_job(grading_job)
+                    updated_db_id = reenqueue_job(grading_job)
+                    inform_client_of_reenqueue(grading_job, updated_db_id)
 
                 if job_execution_future in done:
                     if type(job_execution_future.exception()) == InvalidWorkerStateException:
@@ -114,8 +124,8 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
     except Exception as e:
         print(e)
         if type(e) == CalledProcessError:
-          print(e.stdout)
-          print(e.stderr)
+            print(e.stdout)
+            print(e.stderr)
         if "response_url" in grading_job:
             push_results_with_exception(grading_job, e)
         else:
@@ -162,6 +172,13 @@ def handle_grading_job(grading_job: GradingJobJSON, container_sha: str | None = 
             print(result.stdout.decode())
         if result and result.stderr:
             print(result.stderr.decode())
+
+
+def inform_client_of_reenqueue(grading_job: GradingJobJSON,
+                               updated_db_id: int) -> None:
+    post_job_status_to_client(location="Queue",
+                              response_url=grading_job["response_url"],
+                              key=grading_job["key"])
 
 
 def can_execute_job(grading_job: GradingJobJSON) -> bool:

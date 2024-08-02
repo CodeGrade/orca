@@ -1,11 +1,13 @@
 import {
   GraderImageBuildRequest,
   toMilliseconds,
-  isImageBuildResult
+  isImageBuildResult,
+  pushStatusUpdate
 } from "@codegrade-orca/common";
 import { getNextImageBuild, handleCompletedImageBuild } from "@codegrade-orca/db";
 import { createAndStoreGraderImage, removeStaleImageFiles } from "./process-request";
 import { cleanUpDockerFiles, sendJobResultForBuildFail, removeImageFromDockerIfExists, notifyClientOfBuildResult } from "./utils";
+import { EnqueuedJobInfo } from "@codegrade-orca/db/dist/image-builder-operations/handle-completed-image-build";
 
 const LOOP_SLEEP_TIME = 5; // Seconds
 
@@ -28,8 +30,10 @@ const main = async () => {
         response_url: nextBuildReq.responseURL,
       };
       const result = await createAndStoreGraderImage(infoAsBuildReq);
-      await handleCompletedImageBuild(nextBuildReq.dockerfileSHA, true);
+      // When success is passed as true, we get EnqueuedJobInfo[].
+      const jobInfo = await handleCompletedImageBuild(nextBuildReq.dockerfileSHA, true) as EnqueuedJobInfo[];
       await notifyClientOfBuildResult(result, infoAsBuildReq);
+      await Promise.all(jobInfo.map(({ key, response_url, ...status }) => pushStatusUpdate(status, response_url, key)));
       console.info(`Successfully built image with SHA ${nextBuildReq.dockerfileSHA}.`);
     } catch (err) {
       if (isImageBuildResult(err) && infoAsBuildReq) {
