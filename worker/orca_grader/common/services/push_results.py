@@ -2,7 +2,7 @@ import random
 import time
 import requests
 from requests import HTTPError
-from typing import Dict, Optional
+from typing import Dict
 from orca_grader.common.grading_job.grading_job_result import GradingJobResult
 from orca_grader.common.services.exceptions import PushResultsFailureException
 from orca_grader.common.types.grading_job_json_types import GradingJobJSON
@@ -37,9 +37,13 @@ def _send_results_with_exponential_backoff(payload: dict, response_url: str, n: 
         res.raise_for_status()
         return res
     except HTTPError as e:
-        print(e)
-        if n == _MAX_RETRIES:
-            # TODO: Should we re-enqueue job on raising this exception?
+        if not _should_retry(e.response.status_code) or n == _MAX_RETRIES:
+            print(e)
+            print(f"{e.request.body}, {e.request.headers}")
             raise PushResultsFailureException
         time.sleep(2**n + (random.randint(0, 1000) / 1000.0))
         return _send_results_with_exponential_backoff(payload, response_url, n + 1)
+
+
+def _should_retry(status_code: int) -> bool:
+    return status_code in [503, 504]

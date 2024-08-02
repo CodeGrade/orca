@@ -67,10 +67,10 @@ def reenqueue_job(grading_job: GradingJobJSON):
                 grading_job["client_url"]
             )
             __delete_more_recent_job_queue_info(session, more_recent_job)
-            __create_immediate_job(session, {**grading_job,
+            return __create_immediate_job(session, {**grading_job,
                                              **more_recent_job.config})
         else:
-            __create_immediate_job(session, grading_job)
+            return __create_immediate_job(session, grading_job)
 
 
 def __create_immediate_job(session: Session, grading_job: GradingJobJSON):
@@ -88,6 +88,7 @@ def __create_immediate_job(session: Session, grading_job: GradingJobJSON):
         insert(Reservation)
         .values(job_id=inserted_job_id, release_at=grading_job["release_at"])
     )
+    return inserted_job_id
 
 
 def __omit(d: Dict[str, Any], keys: Set[str]) -> Dict[str, Any]:

@@ -6,6 +6,7 @@ import { existsSync } from "fs";
 export * from "./grading-jobs";
 export * from "./types";
 export * from "./config";
+export * from "./utils";
 export { validations };
 
 export const toMilliseconds = (seconds: number) => seconds * 1_000;

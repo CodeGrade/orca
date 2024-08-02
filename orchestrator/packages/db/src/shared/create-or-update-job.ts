@@ -1,5 +1,5 @@
 import { CollationType, Job, Prisma } from '@prisma/client';
-import { GradingJobConfig, imageWithSHAExists, toMilliseconds } from '@codegrade-orca/common';
+import { GradingJobConfig, JobStatus, imageWithSHAExists, toMilliseconds } from '@codegrade-orca/common';
 import prismaInstance from '../prisma-instance';
 import { getAssociatedReservation, immediateJobExists, retireReservationAndJob, submitterJobExists } from '../utils';
 import { GradingQueueOperationException } from '../exceptions';
@@ -25,7 +25,7 @@ export const createOrUpdateJob = (jobConfig: GradingJobConfig, isImmediateJob: b
   });
 };
 
-export const createOrUpdateJobWithClient = async (jobConfig: GradingJobConfig, isImmediateJob: boolean, tx: Prisma.TransactionClient): Promise<number> => {
+export const createOrUpdateJobWithClient = async (jobConfig: GradingJobConfig, isImmediateJob: boolean, tx: Prisma.TransactionClient): Promise<JobStatus> => {
   const existingImmediateJob = await immediateJobExists(jobConfig.key, jobConfig.response_url, tx);
   const existingSubmitterJob =
     await submitterJobExists(jobConfig.key, jobConfig.response_url, tx);
@@ -41,7 +41,7 @@ export const createOrUpdateJobWithClient = async (jobConfig: GradingJobConfig, i
         config: jobConfig as object
       }
     });
-    return id;
+    return { location: 'Queue', id };
   }
 
   if (existingSubmitterJob && isImmediateJob) {
@@ -60,7 +60,7 @@ export const createOrUpdateJobWithClient = async (jobConfig: GradingJobConfig, i
   return await (isImmediateJob ? createImmediateJob(jobConfig, tx) : createSubmitterJob(jobConfig, tx));
 }
 
-const placeJobInHoldingPen = async (jobConfig: GradingJobConfig, tx: Prisma.TransactionClient): Promise<number> => {
+const placeJobInHoldingPen = async (jobConfig: GradingJobConfig, tx: Prisma.TransactionClient): Promise<JobStatus> => {
   const { id } = await tx.jobConfigAwaitingImage.create({
     data: {
       jobConfig: jobConfig as object,
@@ -69,10 +69,10 @@ const placeJobInHoldingPen = async (jobConfig: GradingJobConfig, tx: Prisma.Tran
       imageBuildSHA: jobConfig.grader_image_sha
     }
   });
-  return id;
+  return { location: 'HoldingPen', id };
 }
 
-const createImmediateJob = async (jobConfig: GradingJobConfig, tx: Prisma.TransactionClient) => {
+const createImmediateJob = async (jobConfig: GradingJobConfig, tx: Prisma.TransactionClient): Promise<JobStatus> => {
   const { id } = await tx.job.create({
     data: {
       clientKey: jobConfig.key,
@@ -85,10 +85,10 @@ const createImmediateJob = async (jobConfig: GradingJobConfig, tx: Prisma.Transa
       jobID: id
     }
   });
-  return id;
+  return { location: 'Queue', id };
 };
 
-const createSubmitterJob = async (jobConfig: GradingJobConfig, tx: Prisma.TransactionClient): Promise<number> => {
+const createSubmitterJob = async (jobConfig: GradingJobConfig, tx: Prisma.TransactionClient): Promise<JobStatus> => {
   const submitter = await tx.submitter.upsert({
     where: {
       clientURL_collationType_collationID: {
@@ -122,5 +122,5 @@ const createSubmitterJob = async (jobConfig: GradingJobConfig, tx: Prisma.Transa
     }
   });
 
-  return id;
+  return { location: 'Queue', id };
 };

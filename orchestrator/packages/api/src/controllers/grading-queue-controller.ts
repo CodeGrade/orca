@@ -115,8 +115,8 @@ export const createOrUpdateImmediateJob = async (
 
   try {
     // TODO: Return job id from db operation and in response obj
-    const jobID = await putJobInQueue(req.body, true);
-    return res.status(200).json({ message: "OK", jobID });
+    const status = await putJobInQueue(req.body, true);
+    return res.status(200).json({ message: "OK", status });
   } catch (error) {
     console.error(error);
     if (error instanceof GradingQueueOperationException) {
@@ -136,8 +136,8 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
 
   try {
     // TODO: Return job id from db operation and in response obj
-    const jobID = await putJobInQueue(req.body, false);
-    return res.status(200).json({ message: "OK", jobID });
+    const status = await putJobInQueue(req.body, false);
+    return res.status(200).json({ message: "OK", status });
   } catch (err) {
     console.error(err);
     if (err instanceof GradingQueueOperationException) {
@@ -191,8 +191,6 @@ export const jobStatus = async (req: Request, res: Response) => {
   const jobQueueStatus = await getJobStatus(jobID);
   if (!jobQueueStatus) {
     return res.json("We could not find the job you're looking for. Please contact a professor or admin.");
-  } else if (typeof jobQueueStatus === "string") {
-    return res.json(jobQueueStatus);
   }
   const { reservation, queuePosition } = jobQueueStatus;
   if (reservationWaitingOnRelease(reservation.releaseAt)) {
