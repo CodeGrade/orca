@@ -191,8 +191,6 @@ export const jobStatus = async (req: Request, res: Response) => {
   const jobQueueStatus = await getJobStatus(jobID);
   if (!jobQueueStatus) {
     return res.json("We could not find the job you're looking for. Please contact a professor or admin.");
-  } else if (typeof jobQueueStatus === "string") {
-    return res.json(jobQueueStatus);
   }
   const { reservation, queuePosition } = jobQueueStatus;
   if (reservationWaitingOnRelease(reservation.releaseAt)) {

@@ -5,6 +5,7 @@ import { getConfig } from "@codegrade-orca/common";
 import express = require("express");
 import cors = require("cors");
 import dockerImagesRouter from "./routes/docker-images";
+import holdingPenRouter from "./routes/holding-pen";
 
 const CONFIG = getConfig();
 
@@ -14,7 +15,7 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/v1", gradingQueueRouter, dockerImagesRouter);
+app.use("/api/v1", gradingQueueRouter, dockerImagesRouter, holdingPenRouter);
 app.use("/status", (_req, res) => res.json({"message": "ok"}));
 app.use("/images", express.static(CONFIG.dockerImageFolder));
 

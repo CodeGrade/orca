@@ -8,17 +8,14 @@ export interface JobQueueStatus {
   queuePosition: number
 }
 
-const getJobStatus = async (jobID: number): Promise<JobQueueStatus | string | null> =>
+const getJobStatus = async (jobID: number): Promise<JobQueueStatus | null> =>
   prismaInstance.$transaction(async (tx) => {
     const job = await tx.job.findFirst({
       where: { id: jobID },
       include: { reservation: true }
     });
     if (!job) {
-      const jobInHoldingPen = Boolean(await tx.jobConfigAwaitingImage.count(
-        { where: { id: jobID } }
-      ));
-      return jobInHoldingPen ? "This job is waiting on its grader image to be built." : null;
+      return null;
     }
     const reservation: Reservation = job.reservation || await getAssociatedReservation(job, tx);
     return {
