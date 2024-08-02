@@ -79,3 +79,9 @@ model JobConfigAwaitingImage {
 
   @@unique([clientKey, clientURL])
 }
+
+model ApiKey {
+  id Int @id @default(autoincrement())
+  hostname String
+  value String
+}
