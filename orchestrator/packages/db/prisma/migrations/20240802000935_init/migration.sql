@@ -57,6 +57,15 @@ CREATE TABLE "JobConfigAwaitingImage" (
     CONSTRAINT "JobConfigAwaitingImage_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "ApiKey" (
+    "id" SERIAL NOT NULL,
+    "hostname" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
+
+    CONSTRAINT "ApiKey_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Reservation_jobID_key" ON "Reservation"("jobID");
 
