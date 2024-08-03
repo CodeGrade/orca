@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import { errorResponse } from "./utils";
 import {
+    graderImageExists,
   validations,
 } from "@codegrade-orca/common";
 import { GradingQueueOperationException, enqueueImageBuild, imageIsAwaitingBuild, imageIsBeingBuilt } from "@codegrade-orca/db";
-import { graderImageExists } from "../utils/grader-images";
 
 export const createGraderImage = async (req: Request, res: Response) => {
   if (!validations.graderImageBuildRequest(req.body)) {

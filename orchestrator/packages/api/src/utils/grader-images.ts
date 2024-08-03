@@ -1,6 +1,5 @@
 import { getConfig, GradingJobConfig } from "@codegrade-orca/common";
 import { execFile } from "child_process";
-import { existsSync } from "fs";
 import path = require("path");
 
 const CONFIG = getConfig();
@@ -22,6 +21,3 @@ export const touchGraderImageFile = ({
     );
   });
 };
-
-export const graderImageExists = (graderImageSHA: string) =>
-  existsSync(path.join(CONFIG.dockerImageFolder, `${graderImageSHA}.tgz`));

@@ -7,11 +7,16 @@ import {
 import { getNextImageBuild, handleCompletedImageBuild } from "@codegrade-orca/db";
 import { createAndStoreGraderImage, removeStaleImageFiles } from "./process-request";
 import { cleanUpDockerFiles, sendJobResultForBuildFail, removeImageFromDockerIfExists, notifyClientOfBuildResult } from "./utils";
-import { EnqueuedJobInfo } from "@codegrade-orca/db/dist/image-builder-operations/handle-completed-image-build";
+import { EnqueuedJobInfo, cleanStaleBuildInfo } from "@codegrade-orca/db";
 
 const LOOP_SLEEP_TIME = 5; // Seconds
 
 const main = async () => {
+  console.info("Cleaning up stale build info...");
+  const enqueuedJobs = await cleanStaleBuildInfo();
+  await Promise.all(enqueuedJobs.map(
+    ({ response_url, key, ...status }) => pushStatusUpdate(status, response_url, key)
+  ));
   console.info("Build service initialized.");
   while (true) {
     let infoAsBuildReq: GraderImageBuildRequest | undefined = undefined;
@@ -57,7 +62,6 @@ const main = async () => {
     }
   }
 };
-
 
 const sleep = (seconds: number): Promise<void> => {
   return new Promise((resolve) => {
