@@ -23,7 +23,6 @@ import {
   getJobStatus
 } from "@codegrade-orca/db";
 import { describeReleaseTiming, reservationWaitingOnRelease } from "../utils/helpers";
-import url
 
 export const getGradingJobs = async (req: Request, res: Response) => {
   if (
