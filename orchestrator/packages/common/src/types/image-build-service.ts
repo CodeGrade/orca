@@ -1,6 +1,6 @@
 export interface GraderImageBuildResult {
   was_successful: boolean,
-  logs: Array<ImageBuildLog>
+  logs: Array<ImageBuildLog | string>
 }
 
 export type ImageBuildStep = "Write request contents to Dockerfile." |

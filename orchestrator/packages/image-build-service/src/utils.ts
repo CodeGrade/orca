@@ -47,29 +47,29 @@ const imageExistsInDocker = (dockerfileSHASum: string): Promise<boolean> => {
   });
 };
 
-export const sendJobResultForBuildFail = async (cancelInfo: CancelJobInfo) => {
+export const sendJobResultForBuildFail = (cancelInfo: CancelJobInfo) => {
   const result: GradingJobResult = {
     shell_responses: [],
     errors: ["The grader image for this job failed to build. Please contact a Professor or Admin."]
   };
-  await fetch(cancelInfo.response_url, {
+  fetch(cancelInfo.response_url, {
     method: "POST",
     headers: {
       "Accept": "application/json",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({ ...result, key: cancelInfo.key })
-  });
+  }).catch((err) => console.error(err));
 }
 
-export const notifyClientOfBuildResult = async (result: GraderImageBuildResult, originalReq: GraderImageBuildRequest) => {
+export const notifyClientOfBuildResult = (result: GraderImageBuildResult, originalReq: GraderImageBuildRequest) => {
   const { response_url } = originalReq;
-  await fetch(response_url, {
+  fetch(response_url, {
     method: "POST",
     headers: {
       "Accept": "application/json",
       "Content-Type": "application/json"
     },
     body: JSON.stringify(result)
-  });
+  }).catch((err) => console.error(err));
 }

@@ -170,7 +170,7 @@ export const deleteJob = async (req: Request, res: Response) => {
     }
     const deletedJob = await deleteJobInQueue(jobID);
     const deletedJobConfig = deletedJob.config as object as GradingJobConfig;
-    await notifyClientOfCancelledJob(deletedJobConfig)
+    notifyClientOfCancelledJob(deletedJobConfig)
     return res.status(200).json({ message: "OK" });
   } catch (err) {
     if (err instanceof GradingQueueOperationException) {
