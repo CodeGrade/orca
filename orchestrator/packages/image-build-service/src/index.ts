@@ -4,7 +4,8 @@ import {
   isImageBuildResult,
   pushStatusUpdate,
   getConfig,
-  GraderImageBuildResult
+  GraderImageBuildResult,
+  logger
 } from "@codegrade-orca/common";
 import { getNextImageBuild, handleCompletedImageBuild } from "@codegrade-orca/db";
 import { createAndStoreGraderImage, removeStaleImageFiles } from "./process-request";
@@ -16,7 +17,7 @@ import { existsSync, rmSync } from "fs";
 const LOOP_SLEEP_TIME = 5; // Seconds
 
 const main = async () => {
-  console.info("Cleaning up stale build info...");
+  logger.info("Cleaning up stale build info...");
   const shaSumJobInfoPairs = await cleanStaleBuildInfo();
   shaSumJobInfoPairs.forEach(([originalReq, enqueuedJobs]) => {
     removeDockerfileIfExists(originalReq.dockerfile_sha_sum);
@@ -25,7 +26,7 @@ const main = async () => {
       ({ response_url, key, ...status }) => pushStatusUpdate(status, response_url, key)
     );
   });
-  console.info("Build service initialized.");
+  logger.info("Build service initialized.");
   while (true) {
     let infoAsBuildReq: GraderImageBuildRequest | undefined = undefined;
     try {
@@ -36,7 +37,7 @@ const main = async () => {
         continue;
       }
 
-      console.info(`Attempting to build image with SHA ${nextBuildReq.dockerfileSHA}.`);
+      logger.info(`Attempting to build image with SHA ${nextBuildReq.dockerfileSHA}.`);
 
       infoAsBuildReq = {
         dockerfile_sha_sum: nextBuildReq.dockerfileSHA,
@@ -49,7 +50,7 @@ const main = async () => {
 
       notifyClientOfBuildResult(result, infoAsBuildReq);
       jobInfo.forEach(({ key, response_url, ...status }) => pushStatusUpdate(status, response_url, key));
-      console.info(`Successfully built image with SHA ${nextBuildReq.dockerfileSHA}.`);
+      logger.info(`Successfully built image with SHA ${nextBuildReq.dockerfileSHA}.`);
     } catch (err) {
       if (isImageBuildResult(err) && infoAsBuildReq) {
         const cancelledJobInfoList = await handleCompletedImageBuild(infoAsBuildReq.dockerfile_sha_sum, false);
@@ -59,7 +60,7 @@ const main = async () => {
         notifyClientOfBuildResult(err, infoAsBuildReq);
         await cleanUpDockerFiles(infoAsBuildReq.dockerfile_sha_sum);
       }
-      console.error(err);
+      logger.error(`Encountered during image build: ${err}.`);
     } finally {
       if (infoAsBuildReq) {
         await removeImageFromDockerIfExists(infoAsBuildReq.dockerfile_sha_sum);

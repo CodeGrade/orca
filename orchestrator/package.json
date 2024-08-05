@@ -17,7 +17,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "pino": "^9.3.2"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",

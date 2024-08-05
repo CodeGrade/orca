@@ -1,5 +1,6 @@
 import path from "path";
 import { getConfig } from "./config";
+import logger from "./logger";
 import validations from "./validations";
 import { existsSync } from "fs";
 
@@ -8,6 +9,7 @@ export * from "./types";
 export * from "./config";
 export * from "./utils";
 export { validations };
+export { logger };
 
 export const toMilliseconds = (seconds: number) => seconds * 1_000;
 export const imageWithSHAExists = (dockerfileSHASum: string): boolean => {
