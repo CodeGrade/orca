@@ -1,4 +1,4 @@
-import { GradingJobConfig, GradingJobResult } from "@codegrade-orca/common";
+import { GradingJobConfig, GradingJobResult, logger } from "@codegrade-orca/common";
 import { Response } from "express";
 
 export const errorResponse = (
@@ -6,15 +6,21 @@ export const errorResponse = (
   status: number,
   errors: string[],
 ) => {
+  if (isClientError(status)) {
+    logger.warn(errors.join(', '));
+  } else {
+    logger.error(errors.join(', '));
+  }
   return res.status(status).json({ errors: errors });
 };
+
+const isClientError = (statusCode: number): boolean => statusCode > 399 && statusCode < 500;
 
 export const notifyClientOfCancelledJob = (jobConfig: GradingJobConfig) => {
   const result: GradingJobResult = {
     shell_responses: [],
     errors: ["Job cancelled by a course professor or Orca admin."]
   };
-  console.info(jobConfig.response_url);
   fetch(jobConfig.response_url, {
     method: "POST",
     headers: {
@@ -23,7 +29,7 @@ export const notifyClientOfCancelledJob = (jobConfig: GradingJobConfig) => {
     },
     body: JSON.stringify({ ...result, key: jobConfig.key })
   }).catch((err) =>
-    console.error(
+    logger.error(
       `Encountered the following error while attempting to notify client of Job cancellation: ${err}`
     ));
 }

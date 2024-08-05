@@ -1,4 +1,4 @@
-import { GraderImageBuildRequest, GraderImageBuildResult, GradingJobResult, getConfig } from "@codegrade-orca/common";
+import { GraderImageBuildRequest, GraderImageBuildResult, GradingJobResult, getConfig, logger } from "@codegrade-orca/common";
 import { CancelJobInfo } from "@codegrade-orca/db/dist/image-builder-operations/handle-completed-image-build";
 import { execFile } from "child_process";
 import { existsSync, rmSync } from "fs";
@@ -59,7 +59,7 @@ export const sendJobResultForBuildFail = (cancelInfo: CancelJobInfo) => {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({ ...result, key: cancelInfo.key })
-  }).catch((err) => console.error(err));
+  }).catch((err) => logger.error(`Could not update client on job result; ${err}`));
 }
 
 export const notifyClientOfBuildResult = (result: GraderImageBuildResult, originalReq: GraderImageBuildRequest) => {
@@ -71,5 +71,5 @@ export const notifyClientOfBuildResult = (result: GraderImageBuildResult, origin
       "Content-Type": "application/json"
     },
     body: JSON.stringify(result)
-  }).catch((err) => console.error(err));
+  }).catch((err) => logger.error(`Encountered the following error when sending result to ${response_url}: ${err}`));
 }
