@@ -24,7 +24,7 @@ export const removeImageFromDockerIfExists = async (dockerfileSHASum: string) =>
 
 const deleteImage = (dockerfileSHASum: string): Promise<void> => {
   return new Promise<void>((resolve, reject) => {
-    execFile("docker", ["image", "rm", `${dockerfileSHASum}:latest`], (err, _stdout, _stderr) => {
+    execFile("docker", ["image", "rm", `grader-${dockerfileSHASum}:latest`], (err, _stdout, _stderr) => {
       if (err) {
         reject(err);
       } else {

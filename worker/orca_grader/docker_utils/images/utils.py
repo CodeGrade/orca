@@ -20,4 +20,6 @@ def get_all_docker_images() -> List[str]:
                          capture_output=True)
     output = res.stdout.decode()
     image_names = output.split('\n')[:-1]
+    if 'orca-grader-base' in image_names:
+        image_names.remove('orca-grader-base')
     return image_names
