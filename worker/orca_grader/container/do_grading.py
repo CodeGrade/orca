@@ -2,8 +2,10 @@ import json
 import os
 import shutil
 import traceback
+import logging
 from pathlib import Path
 from typing import Dict, List, TextIO
+from orca_grader.config import APP_CONFIG
 from orca_grader.common.services.push_results import push_results_to_response_url
 from orca_grader.container.build_script.preprocess.preprocessor import GradingScriptPreprocessor
 from orca_grader.container.exec_secret import GradingJobExecutionSecret
@@ -18,6 +20,9 @@ from orca_grader.common.types.grading_job_json_types import (
     GradingScriptCommandJSON
 )
 from orca_grader.container.fs_tree import tree
+
+_LOGGER = logging.getLogger("do_grading" if __name__ != '__main__' else
+                            __name__)
 
 
 def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobResult:
@@ -41,17 +46,16 @@ def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobResul
         preprocessor = GradingScriptPreprocessor(secret, commands, code_files,
                                                  code_file_processor)
         script: GradingScriptCommand = preprocessor.preprocess_job()
-        print("****Directories and their files:****")
+        _LOGGER.debug("****Directories and their files:****")
         for actual_dir in interpolated_dirs.values():
-            print(f"{actual_dir}:")
+            _LOGGER.debug(f"{actual_dir}:")
             for line in tree(Path(actual_dir)):
-                print(line)
+                _LOGGER.debug(line)
         output: GradingJobResult = script.execute(command_responses)
     except PreprocessingException as preprocess_e:
         output = GradingJobResult(command_responses, [preprocess_e])
     except Exception as e:
         output = GradingJobResult(command_responses, [e])
-    print(output.to_json(interpolated_dirs=interpolated_dirs))
     reverse_interpolated_dirs = {v: k for k, v in interpolated_dirs.items()}
     push_results_to_response_url(output,
                                  grading_job_json["key"],
@@ -77,6 +81,13 @@ def cleanup(secret: str) -> None:
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG if APP_CONFIG.environment == 'dev'
+                        else logging.INFO,
+                        format='%(asctime)s - %(levelname)s - %(message)s',
+                        handlers=[
+                          logging.FileHandler(filename=APP_CONFIG.logging_filepath),
+                          logging.StreamHandler()
+                        ])
     secret = GradingJobExecutionSecret.get_secret()
     try:
         file_name = os.getenv('GRADING_JOB_FILE_NAME', 'grading_job.json')
@@ -84,8 +95,7 @@ if __name__ == "__main__":
             grading_job = get_job_from_input_stream(job_json_fp)
             do_grading(secret, grading_job)
     except Exception as e:
-        traceback.print_tb(e.__traceback__)
-        output = GradingJobResult([], [e.with_traceback(None)])
+        output = GradingJobResult([], [e])
         push_results_to_response_url(output,
                                      grading_job["key"],
                                      grading_job["container_response_url"]
