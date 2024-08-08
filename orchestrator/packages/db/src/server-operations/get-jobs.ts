@@ -25,12 +25,27 @@ const getAllGradingJobs = (): Promise<Array<GradingJob>> => prismaInstance.$tran
       createdAt: 'desc'
     }
   });
-  const submitterIDToJobs: Map<number, Array<Job>> = Map.groupBy(submitterJobs, (j: Job) => j.submitterID!);
+  const submitterIDToJobs: Map<number, Array<Job>> = groupBySubmitterID(submitterJobs);
   return reservations.map((r) =>
     r.submitterID === null ?
       combineJobAndReservation(r, r.job!) :
       combineJobAndReservation(r, submitterIDToJobs.get(r.submitterID)!.shift()!));
 });
+
+const groupBySubmitterID = (submitterJobs: Array<Job>) => {
+  const submitterIDToJobs: Map<number, Array<Job>> = new Map();
+  submitterJobs.forEach((j) => {
+    if (j.submitterID === null) {
+      throw TypeError("Cannot group by a null submitter ID.");
+    }
+    if (!submitterIDToJobs.has(j.submitterID!)) {
+      submitterIDToJobs.set(j.submitterID, [j]);
+    } else {
+      submitterIDToJobs.set(j.submitterID, [...submitterIDToJobs.get(j.submitterID)!, j]);
+    }
+  });
+  return submitterIDToJobs;
+}
 
 const combineJobAndReservation = (r: Reservation, j: Job): GradingJob => ({
   ...j.config as object as GradingJobConfig,
