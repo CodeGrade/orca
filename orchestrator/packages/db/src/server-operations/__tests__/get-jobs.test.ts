@@ -19,7 +19,11 @@ describe('get all grading jobs in the queue', () => {
     const configs = generateJobConfigs(2);
     const queueInfos = generateMultipleMockQueueInfos(configs, true);
     mockPrismaInstance.reservation.findMany.mockResolvedValue(queueInfos.map((q) => ({ ...q.reservation, job: q.job })));
-    mockPrismaInstance.job.findMany.mockResolvedValue(queueInfos.map((q) => q.job));
+    // the getAllGradingJobs function only calls job.findMany with a list of
+    // submitter IDs from the provided reservations. These are all immediate
+    // jobs in this case, meaning that there would be _zero_ reservations with
+    // submitter IDs on these reservations.
+    mockPrismaInstance.job.findMany.mockResolvedValue([]);
     await expect(getAllGradingJobs().then((jobs) => jobs.map((j) => j.key))).resolves.toEqual(configs.map((c) => c.key));
   });
   it('returns both submitter and immediate jobs in order of release at', async () => {
