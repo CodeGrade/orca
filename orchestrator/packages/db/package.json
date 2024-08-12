@@ -9,7 +9,9 @@
   "scripts": {
     "build": "tsc --build",
     "check": "tsc --noEmit",
-    "generate-api-key": "ts-node src/scripts/generate-api-key.ts"
+    "generate-api-key": "ts-node src/scripts/generate-api-key.ts",
+    "list-api-keys": "ts-node src/scripts/list-api-keys.ts",
+    "delete-api-key": "ts-node src/scripts/delete-api-key.ts"
   },
   "devDependencies": {
     "jest-mock-extended": "^3.0.5",

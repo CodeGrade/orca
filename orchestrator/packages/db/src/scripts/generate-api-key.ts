@@ -8,7 +8,8 @@ const main = async () => {
     console.error("Must provide hostname for api key generation with flag '-h'.");
     process.exit(1);
   }
-  await createAPIKey(hostname as string);
+  const newKey = await createAPIKey(hostname as string);
+  process.stdout.write(newKey + "\n");
 }
 
 main();
