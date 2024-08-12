@@ -2,7 +2,9 @@ import argparse
 import concurrent.futures
 import json
 import os
+import sys
 import time
+import logging
 from typing import List, Optional
 import tempfile
 from subprocess import CalledProcessError
@@ -25,6 +27,7 @@ from orca_grader.validations.grading_job import is_valid_grading_job_json
 from orca_grader.common.services.push_status import post_job_status_to_client
 
 CONTAINER_WORKING_DIR = '/home/orca-grader'
+_LOGGER = logging.getLogger(__name__)
 
 
 def run_local_job(job_path: str, no_container: bool,
@@ -40,6 +43,7 @@ def process_jobs_from_db(no_container: bool,
     retriever = PostgresGradingJobRetriever()
     with GracefulKiller() as killer:
         with NonBlockingThreadPoolExecutor(max_workers=2) as futures_executor:
+            _LOGGER.info("Job loop initialized.")
             stop_future = futures_executor.submit(killer.wait_for_stop_signal)
             while True:
                 job_retrieval_future = futures_executor.submit(
@@ -56,10 +60,11 @@ def process_jobs_from_db(no_container: bool,
                             updated_db_id = reenqueue_job(grading_job)
                             inform_client_of_reenqueue(grading_job,
                                                        updated_db_id)
+                            _LOGGER.info(f"Reenqueued job with new database id {updated_db_id}.")
 
                 if job_retrieval_future in done:
                     if job_retrieval_future.exception():
-                        print(job_retrieval_future.exception())
+                        _LOGGER.exception("Failed to retrieve grading job from postgres.")
                         time.sleep(1)
                         continue
                     grading_job = job_retrieval_future.result()
@@ -75,7 +80,7 @@ def process_jobs_from_db(no_container: bool,
                     response_url=grading_job['response_url'],
                     key=grading_job['key']
                 )
-                print(
+                _LOGGER.info(
                     f"Pulled job with key {grading_job['key']} and url {grading_job['response_url']}"
                 )
 
@@ -90,11 +95,15 @@ def process_jobs_from_db(no_container: bool,
                 if stop_future in done and job_execution_future in not_done:
                     updated_db_id = reenqueue_job(grading_job)
                     inform_client_of_reenqueue(grading_job, updated_db_id)
+                    _LOGGER.info(f"Reenqueued job with new database id {updated_db_id}.")
+
 
                 if job_execution_future in done:
                     if type(job_execution_future.exception()) == InvalidWorkerStateException:
+                        _LOGGER.critical("This worker has entered an invaid state "
+                                          "due to some number of issues with the container.")
                         exit(1)
-                    print("Job completed.")
+                    _LOGGER.info("Job completed.")
                     clean_up_unused_images()
 
                 if stop_future in done:
@@ -122,14 +131,10 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
         else:
             handle_grading_job(grading_job, container_sha)
     except Exception as e:
-        print(e)
-        if type(e) == CalledProcessError:
-            print(e.stdout)
-            print(e.stderr)
-        if "response_url" in grading_job:
-            push_results_with_exception(grading_job, e)
-        else:
-            print(e)
+        _LOGGER.debug(e)
+        if isinstance(e, CalledProcessError):
+            _LOGGER.debug("STDERR output of subprocess: {e.stderr}")
+        push_results_with_exception(grading_job, e)
 
 
 # TODO: Would it be more useful to return the result of the job here?
@@ -154,6 +159,10 @@ def handle_grading_job(grading_job: GradingJobJSON, container_sha: str | None = 
             builder.add_docker_volume_mapping(
                 temp_job_file.name, container_job_path
             )
+            builder.add_docker_volume_mapping(
+                os.path.abspath(APP_CONFIG.logging_filepath),
+                os.path.join(CONTAINER_WORKING_DIR, APP_CONFIG.logging_filepath)
+            )
             # Allows for new code written to the orca_grader.container
             # module to be automatically picked up while running
             # during development.
@@ -168,10 +177,9 @@ def handle_grading_job(grading_job: GradingJobJSON, container_sha: str | None = 
         executor = builder.build()
         result = executor.execute()
         if result and result.stdout:
-            # TODO: make this a log statement of some sort.
-            print(result.stdout.decode())
+            print(result.stdout.decode(), file=sys.stderr)
         if result and result.stderr:
-            print(result.stderr.decode())
+            print(result.stderr.decode(), file=sys.stderr)
 
 
 def inform_client_of_reenqueue(grading_job: GradingJobJSON,
@@ -189,6 +197,13 @@ def can_execute_job(grading_job: GradingJobJSON) -> bool:
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG if APP_CONFIG.environment == 'dev'
+                        else logging.INFO,
+                        format='%(asctime)s - %(levelname)s - %(message)s',
+                        handlers=[
+                          logging.FileHandler(filename=APP_CONFIG.logging_filepath),
+                          logging.StreamHandler()
+                        ])
     arg_parser = argparse.ArgumentParser(
         prog="Orca Grader",
         description="Pulls a job from a Redis queue and executes a script to autograde."

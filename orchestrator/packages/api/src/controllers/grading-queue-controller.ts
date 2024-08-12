@@ -12,6 +12,7 @@ import {
   filterGradingJobs,
   getFilterInfo,
   getGradingQueueStats,
+  logger,
   validations,
 } from "@codegrade-orca/common";
 import {
@@ -94,7 +95,6 @@ export const getGradingJobs = async (req: Request, res: Response) => {
       filter_info: filterInfo,
     });
   } catch (err) {
-    console.error(err);
     if (err instanceof GradingQueueOperationException) {
       return errorResponse(res, 400, [err.message]);
     }
@@ -111,20 +111,17 @@ export const createOrUpdateImmediateJob = async (
   if (!validations.gradingJobConfig(req.body)) {
     return errorResponse(res, 400, ["Invalid grading job configuration."]);
   }
-  const gradingJobConfig = req.body;
-
   try {
-    // TODO: Return job id from db operation and in response obj
     const status = await putJobInQueue(req.body, true);
+    logger.info(`New job from ${new URL(req.body.response_url).host} sent to ${status.location} with database id ${status.id}.`);
     return res.status(200).json({ message: "OK", status });
   } catch (error) {
-    console.error(error);
     if (error instanceof GradingQueueOperationException) {
       return errorResponse(res, 400, [error.message]);
     }
     return errorResponse(res, 500, [
       "An error occurred while trying to create an immediate job or update an " +
-      `existing one for ${gradingJobConfig.collation.type} with ID ${gradingJobConfig.collation.id}.`,
+      `existing one for ${req.body.collation.type} with ID ${req.body.collation.id}.`,
     ]);
   }
 };
@@ -133,13 +130,11 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
   if (!validations.gradingJobConfig(req.body)) {
     return errorResponse(res, 400, ["The given grading job was invalid."]);
   }
-
   try {
-    // TODO: Return job id from db operation and in response obj
     const status = await putJobInQueue(req.body, false);
+    logger.info(`New job from ${new URL(req.body.response_url).host} sent to ${status.location} with database id ${status.id}.`);
     return res.status(200).json({ message: "OK", status });
   } catch (err) {
-    console.error(err);
     if (err instanceof GradingQueueOperationException) {
       return errorResponse(res, 400, [err.message]);
     } else {
@@ -170,6 +165,7 @@ export const deleteJob = async (req: Request, res: Response) => {
     }
     const deletedJob = await deleteJobInQueue(jobID);
     const deletedJobConfig = deletedJob.config as object as GradingJobConfig;
+    logger.info(`Deleted job from ${new URL(deletedJobConfig.response_url).host} with former id ${jobID}.`);
     notifyClientOfCancelledJob(deletedJobConfig)
     return res.status(200).json({ message: "OK" });
   } catch (err) {
