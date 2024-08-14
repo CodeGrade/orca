@@ -22,7 +22,7 @@ const transport = pino.transport({
 
 const getLogger = () => {
   if (_CONFIG.orchestratorLogsDir && !existsSync(_CONFIG.orchestratorLogsDir)) {
-    mkdirSync(_CONFIG.orchestratorLogsDir);
+    mkdirSync(_CONFIG.orchestratorLogsDir, { recursive: true });
   }
   return pino({
     level: getConfig().environment === 'production' ? 'info' : 'debug',
