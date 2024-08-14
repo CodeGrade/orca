@@ -5,6 +5,7 @@ export interface OrchestratorConfig {
   dockerImageFolder: string;
   postgresURL: string;
   environment: string;
+  orchestratorLogsDir?: string;
 }
 
 interface OrchestratorAPIOptions {
@@ -17,5 +18,6 @@ export const getConfig = (): OrchestratorConfig => ({
     port: process.env.API_PORT ? parseInt(process.env.API_PORT) : 8090,
   },
   dockerImageFolder: join(__dirname, "../../../", "images"),
-  environment: process.env.ENVIRONMENT?.toLowerCase() || 'dev'
+  environment: process.env.ENVIRONMENT?.toLowerCase() || 'dev',
+  orchestratorLogsDir: process.env.ORCHESTRATOR_LOG_DIR
 });
