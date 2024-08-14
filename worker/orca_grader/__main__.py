@@ -28,6 +28,7 @@ from orca_grader.common.services.push_status import post_job_status_to_client
 
 CONTAINER_WORKING_DIR = '/home/orca-grader'
 _LOGGER = logging.getLogger(__name__)
+_SLEEP_LENGTH = 5  # seconds
 
 
 def run_local_job(job_path: str, no_container: bool,
@@ -65,11 +66,12 @@ def process_jobs_from_db(no_container: bool,
                 if job_retrieval_future in done:
                     if job_retrieval_future.exception():
                         _LOGGER.exception("Failed to retrieve grading job from postgres.")
-                        time.sleep(1)
+                        time.sleep(_SLEEP_LENGTH)
                         continue
                     grading_job = job_retrieval_future.result()
                     if grading_job is None:
-                        time.sleep(1)
+                        _LOGGER.debug(f"No jobs on the queue; sleeping for {_SLEEP_LENGTH} seconds.")
+                        time.sleep(_SLEEP_LENGTH)
                         continue
 
                 if stop_future in done:
