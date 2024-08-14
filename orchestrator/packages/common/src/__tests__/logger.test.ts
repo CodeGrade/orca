@@ -8,7 +8,7 @@ const mockConfig: OrchestratorConfig = {
   environment: 'development',
   dockerImageFolder: 'dir',
   orchestratorLogsDir: logsDirForTesting,
-  api: {}
+  api: { port: 4000 }
 };
 jest.mock('../config', () => ({
   getConfig: jest.fn().mockReturnValue(mockConfig)

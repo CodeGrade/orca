@@ -9,13 +9,13 @@ export interface OrchestratorConfig {
 }
 
 interface OrchestratorAPIOptions {
-  port?: number;
+  port: number;
 }
 
 export const getConfig = (): OrchestratorConfig => ({
   postgresURL: process.env.POSTGRES_URL || "postgresql://localhost:5432",
   api: {
-    port: process.env.API_PORT ? parseInt(process.env.API_PORT) : 8090,
+    port: process.env.API_PORT ? parseInt(process.env.API_PORT) : 4000,
   },
   dockerImageFolder: join(__dirname, "../../../", "images"),
   environment: process.env.ENVIRONMENT?.toLowerCase() || 'dev',
