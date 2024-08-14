@@ -27,6 +27,7 @@ def push_results_to_response_url(job_result: GradingJobResult,
 
 def push_results_with_exception(grading_job: GradingJobJSON,
                                 e: Exception) -> None:
+    _LOGGER.debug(e)
     output = GradingJobResult([], [e])
     key, response_url = grading_job["key"], grading_job["response_url"]
     push_results_to_response_url(output, key, response_url, {})
@@ -48,6 +49,8 @@ def _send_results_with_exponential_backoff(payload: dict, response_url: str, n: 
             raise PushResultsFailureException
         time.sleep(2**n + (random.randint(0, 1000) / 1000.0))
         return _send_results_with_exponential_backoff(payload, response_url, n + 1)
+    except Exception as e:
+        _LOGGER.error(f"Encountered the following error pushing results: {e}")
 
 
 def _should_retry(status_code: int) -> bool:
