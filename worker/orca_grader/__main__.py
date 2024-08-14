@@ -87,7 +87,9 @@ def process_jobs_from_db(no_container: bool,
                 )
 
                 job_execution_future = futures_executor.submit(
-                    run_grading_job, grading_job, no_container, container_command)
+                    run_grading_job, grading_job,
+                    no_container, container_command
+                )
                 done, not_done = concurrent.futures.wait(
                     [stop_future, job_execution_future], return_when="FIRST_COMPLETED")
                 # States of job and stop future after wait
@@ -133,9 +135,12 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
         else:
             handle_grading_job(grading_job, container_sha)
     except Exception as e:
-        _LOGGER.debug(e)
         if isinstance(e, CalledProcessError):
-            _LOGGER.debug("STDERR output of subprocess: {e.stderr}")
+            _LOGGER.warning(f"STDERR output of subprocess: {e.stderr.decode()}")
+        else:
+            _LOGGER.warning(
+                f"Encountered error while trying to run this job: {e}"
+            )
         push_results_with_exception(grading_job, e)
 
 
@@ -161,14 +166,23 @@ def handle_grading_job(grading_job: GradingJobJSON, container_sha: str | None = 
             builder.add_docker_volume_mapping(
                 temp_job_file.name, container_job_path
             )
-            builder.add_docker_volume_mapping(
-                os.path.abspath(APP_CONFIG.logging_filepath),
-                os.path.join(CONTAINER_WORKING_DIR, APP_CONFIG.logging_filepath)
-            )
+            if logging_filepath() is not None:
+                log_file_name = os.path.basename(logging_filepath)
+                container_log_path = os.path.join(CONTAINER_WORKING_DIR,
+                                                  log_file_name)
+                builder.add_docker_volume_mapping(
+                    os.path.abspath(APP_CONFIG.logging_filepath),
+                    os.path.join(CONTAINER_WORKING_DIR, APP_CONFIG.logging_filepath)
+                )
+                builder.add_docker_environment_variable_mapping(
+                    "CONTAINER_LOG_FILE_PATH",
+                    container_log_path
+                )
+
             # Allows for new code written to the orca_grader.container
             # module to be automatically picked up while running
             # during development.
-            if APP_CONFIG.environment == "dev":
+            if APP_CONFIG.environment == "development":
                 builder.add_docker_volume_mapping(
                     "./orca_grader",
                     os.path.join(CONTAINER_WORKING_DIR, "orca_grader")
@@ -178,10 +192,14 @@ def handle_grading_job(grading_job: GradingJobJSON, container_sha: str | None = 
             builder = GradingJobExecutorBuilder(file_name)
         executor = builder.build()
         result = executor.execute()
-        if result and result.stdout:
-            print(result.stdout.decode(), file=sys.stderr)
-        if result and result.stderr:
-            print(result.stderr.decode(), file=sys.stderr)
+        # Because the docker container is running in a subprocess
+        # and we are capturing the STDOUT and STDERR, we need to
+        # explicitly write their to STDOUT (with no formatting; hence
+        # the print call) if we want to see logs display in the terminal.
+        if result and result.stdout and logging_filepath() is None:
+            print(result.stdout.decode())
+        if result and result.stderr and logging_filepath() is None:
+            print(result.stderr.decode())
 
 
 def inform_client_of_reenqueue(grading_job: GradingJobJSON,
@@ -198,14 +216,26 @@ def can_execute_job(grading_job: GradingJobJSON) -> bool:
         return False
 
 
+def logging_filepath() -> Optional[str]:
+    if APP_CONFIG.worker_logs_dir is not None:
+        return os.path.join(APP_CONFIG.worker_logs_dir,
+                            f"{APP_CONFIG.environment}.log")
+    else:
+        return None
+
+
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG if APP_CONFIG.environment == 'dev'
+    if APP_CONFIG.worker_logs_dir is not None:
+        if not os.path.isdir(APP_CONFIG.worker_logs_dir):
+            os.makedirs(APP_CONFIG.worker_logs_dir)
+        handler = logging.FileHandler(filename=logging_filepath())
+    else:
+        handler = logging.StreamHandler(stream=sys.stdout)
+
+    logging.basicConfig(level=logging.DEBUG if APP_CONFIG.environment == 'development'
                         else logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(message)s',
-                        handlers=[
-                          logging.FileHandler(filename=APP_CONFIG.logging_filepath),
-                          logging.StreamHandler()
-                        ])
+                        handlers=[handler])
     arg_parser = argparse.ArgumentParser(
         prog="Orca Grader",
         description="Pulls a job from a Redis queue and executes a script to autograde."

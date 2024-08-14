@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import shutil
 import traceback
 import logging
@@ -81,13 +82,17 @@ def cleanup(secret: str) -> None:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG if APP_CONFIG.environment == 'dev'
+    # Separate container environment variable
+    # This file must exist prior to being set
+    # since it relies on an existing docker volume.
+    log_file_path = os.getenv("CONTAINER_LOG_FILE_PATH")
+    handler = logging.FileHandler(filename=log_file_path) if \
+        log_file_path is not None else logging.StreamHandler(stream=sys.stdout)
+    logging.basicConfig(level=logging.DEBUG if APP_CONFIG.environment == 'development'
                         else logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(message)s',
-                        handlers=[
-                          logging.FileHandler(filename=APP_CONFIG.logging_filepath),
-                          logging.StreamHandler()
-                        ])
+                        handlers=[handler])
+
     secret = GradingJobExecutionSecret.get_secret()
     try:
         file_name = os.getenv('GRADING_JOB_FILE_NAME', 'grading_job.json')

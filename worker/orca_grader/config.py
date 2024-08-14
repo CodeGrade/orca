@@ -16,7 +16,8 @@ class AppConfig():
             .replace("postgresql", "postgresql+psycopg")
         enable_diagnostics_val = os.getenv('ENABLE_DIAGNOSTICS', '') or ""
         self.enable_diagnostics = enable_diagnostics_val.lower() == "true"
-        self.environment = os.getenv("ENVIRONMENT", "DEV").lower()
-        self.logging_filepath = f"log/{self.environment}.log"
+        self.environment = os.getenv("ENVIRONMENT", "DEVELOPMENT").lower()
+        self.worker_logs_dir = os.getenv("WORKER_LOGS_DIR")
+
 
 APP_CONFIG = AppConfig()
