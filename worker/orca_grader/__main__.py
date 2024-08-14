@@ -168,7 +168,7 @@ def handle_grading_job(grading_job: GradingJobJSON, container_sha: str | None = 
             # Allows for new code written to the orca_grader.container
             # module to be automatically picked up while running
             # during development.
-            if APP_CONFIG.environment == "dev":
+            if APP_CONFIG.environment == "development":
                 builder.add_docker_volume_mapping(
                     "./orca_grader",
                     os.path.join(CONTAINER_WORKING_DIR, "orca_grader")
@@ -199,7 +199,7 @@ def can_execute_job(grading_job: GradingJobJSON) -> bool:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG if APP_CONFIG.environment == 'dev'
+    logging.basicConfig(level=logging.DEBUG if APP_CONFIG.environment == 'development'
                         else logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(message)s',
                         handlers=[

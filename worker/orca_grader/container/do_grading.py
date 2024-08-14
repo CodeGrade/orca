@@ -81,7 +81,7 @@ def cleanup(secret: str) -> None:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG if APP_CONFIG.environment == 'dev'
+    logging.basicConfig(level=logging.DEBUG if APP_CONFIG.environment == 'development'
                         else logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(message)s',
                         handlers=[
