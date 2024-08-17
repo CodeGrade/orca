@@ -1,6 +1,6 @@
 FROM ubuntu:20.04
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 RUN ["useradd", "-ms", "/bin/bash", "orca-grader"]
 RUN ["chmod", "755", "/home/orca-grader"]
 WORKDIR /home/orca-grader
@@ -13,7 +13,6 @@ RUN ["add-apt-repository", "ppa:deadsnakes/ppa", "-y"]
 RUN ["apt", "update", "-y"]
 RUN ["apt", "install", "python3.10", "-y"]
 RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
-RUN ["apt", "remove", "curl", "-y"]
 RUN ["python3.10", "-m", "pip", "install", "pip"]
 
 COPY ../requirements.txt .
