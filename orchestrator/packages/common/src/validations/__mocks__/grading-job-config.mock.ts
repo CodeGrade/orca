@@ -11,6 +11,7 @@ export const defaultGradingJobConfig: GradingJobConfig = {
     student: {
       url: "https://www.example.com/submission.zip",
       mime_type: "application/zip",
+      should_replace_paths: false
     },
   },
   metadata_table: {

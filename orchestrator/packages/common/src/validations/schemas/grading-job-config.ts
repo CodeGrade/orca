@@ -6,6 +6,12 @@ const fileInfo = {
     mime_type: { type: "string" },
     should_replace_paths: { type: "boolean" },
   },
+  required: [
+    'url',
+    'mime_type',
+    'should_replace_paths'
+  ],
+  additionalProperties: false,
 } as const;
 
 const bashGradingScriptCommand = {
@@ -41,8 +47,10 @@ const bashGradingScriptCommand = {
     },
     label: { type: "string" },
     working_dir: { type: "string" },
+    timeout: { type: "number" }
   },
   required: ["cmd"],
+  additionalProperties: false,
 } as const;
 
 const gradingScriptCondition = {
@@ -52,6 +60,11 @@ const gradingScriptCondition = {
     path: { type: "string" },
     predicate: { type: "string", enum: ["exists", "file", "dir"] },
   },
+  required: [
+    'path',
+    'predicate'
+  ],
+  additionalProperties: false,
 } as const;
 
 const conditionalGradingScriptCommand = {
@@ -86,6 +99,7 @@ const conditionalGradingScriptCommand = {
     label: { type: "string" },
   },
   required: ["condition"],
+  additionalProperties: false,
 } as const;
 
 const gradingScriptCommand = {
@@ -146,4 +160,5 @@ export const gradingJobConfigSchema = {
     "response_url",
     "grader_image_sha",
   ],
+  additionalProperties: false,
 } as const;

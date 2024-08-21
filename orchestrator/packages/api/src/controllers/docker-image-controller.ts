@@ -20,6 +20,7 @@ export const createGraderImage = async (req: Request, res: Response) => {
     ];
     return errorResponse(res, 400, errors);
   }
+  console.info("Passed validation");
   const { dockerfile_sha_sum } = req.body;
   if (graderImageExists(dockerfile_sha_sum)) {
     return res.status(200).json({ message: "This grader already exists on the server; no build needed." });

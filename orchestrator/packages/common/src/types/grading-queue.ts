@@ -31,6 +31,7 @@ type GradingScriptCommandEdge = number | string | GradingScriptCommand;
 export interface FileInfo {
   url: string;
   mime_type: string;
+  should_replace_paths: boolean;
 }
 
 export type CollationType = "team" | "user";
