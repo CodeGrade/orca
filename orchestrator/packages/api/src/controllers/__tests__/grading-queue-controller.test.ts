@@ -17,7 +17,8 @@ describe('job creation controller functions', () => {
       const { files: _files, ...rest } = defaultGradingJobConfig;
       const validator = validations.gradingJobConfig;
       validator(rest);
-      expect(!!validator.errors?.length).toBeTruthy();
+      expect(validator.errors).toBeDefined();
+      expect(validator.errors!.length).toBeGreaterThan(0);
       const [mockReq, mockRes] = [{ body: rest } as Request, {} as Response];
       await controllerFunc(mockReq, mockRes);
       // Add one to length of array for hardcoded error string.
