@@ -15,7 +15,7 @@ const verifyAPIKey = async (req: Request, res: Response, next: NextFunction) => 
       return next();
     }
   } catch (e) {
-    logger.debug(`Error: while constructing url or validating key for ${apiKey} and ${urlStr}: ${e}`);
+    logger.warn(`Error: while constructing url or validating key for ${apiKey} and ${urlStr}: ${e}`);
   }
   res.sendStatus(401);
 };
