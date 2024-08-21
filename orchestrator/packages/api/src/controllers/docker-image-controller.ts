@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { errorResponse, formatValidationError, formatValidationErrors } from "./utils";
+import { errorResponse, formatValidationErrors } from "./utils";
 import {
     graderImageExists,
   logger,
