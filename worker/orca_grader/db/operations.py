@@ -71,9 +71,9 @@ def reenqueue_job(grading_job: GradingJobJSON):
         _LOGGER.debug(
             f"Attempting to reenqueue job with id {grading_job['queue_id']}."
         )
-        more_recent_job_exists=session.query(func.count(Job.id))
-            .where(Job.client_key == grading_job["key"])
-            .where(Job.client_url == grading_job["response_url"])
+        more_recent_job_exists = session.query(func.count(Job.id)) \
+            .where(Job.client_key == grading_job["key"]) \
+            .where(Job.client_url == grading_job["response_url"]) \
             .scalar() > 0
         if more_recent_job_exists:
             _LOGGER.debug("A more recent job exists; merging queue info.")
@@ -139,8 +139,8 @@ def __delete_more_recent_job_queue_info(session: Session, more_recent_job: Job) 
 
 def __clean_up_submitter(session: Session, submitter_id: int):
     _LOGGER.debug("Cleaning up submitter.")
-    num_jobs_for_submitter=session.query(func.count(Job.id))
-        .where(Job.submitter_id == submitter_id)
+    num_jobs_for_submitter = session.query(func.count(Job.id)) \
+        .where(Job.submitter_id == submitter_id) \
         .scalar()
     # NOTE: this function is always called when a submitter only has one job
     # -- the one that is about to be removed from the queue.
