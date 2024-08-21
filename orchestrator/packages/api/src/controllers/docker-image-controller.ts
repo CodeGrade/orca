@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { errorResponse, formatValidationError } from "./utils";
+import { errorResponse, formatValidationError, formatValidationErrors } from "./utils";
 import {
     graderImageExists,
   logger,
@@ -10,15 +10,7 @@ import { GradingQueueOperationException, enqueueImageBuild, imageIsAwaitingBuild
 export const createGraderImage = async (req: Request, res: Response) => {
   const validator = validations.graderImageBuildRequest;
   if (!validator(req.body)) {
-    const errors = [
-      "The request body to build a grader image is invalid.",
-      ...validator.errors ?
-        validator.errors.map(
-          (e) => formatValidationError(e.instancePath, e.message)
-        ).filter((s) => !!s.length) :
-        []
-    ];
-    return errorResponse(res, 400, errors);
+    return errorResponse(res, 400, formatValidationErrors("The request body to build a grader image is invalid.", validator.errors));
   }
   const { dockerfile_sha_sum } = req.body;
   if (graderImageExists(dockerfile_sha_sum)) {

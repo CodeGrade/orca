@@ -18,6 +18,8 @@ ajv = gradingJobConfigSubSchemas.reduce(
   ajv,
 );
 
+export type ValidationErrors = typeof ajv.errors;
+
 export default {
   gradingJobConfig: ajv.compile<GradingJobConfig>(gradingJobConfigSchema),
   moveJobRequest: ajv.compile<MoveJobRequest>(moveJobRequestSchema),
