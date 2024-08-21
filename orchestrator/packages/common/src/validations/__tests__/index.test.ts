@@ -1,5 +1,5 @@
 import validations from "..";
-import { defaultGraderImageBuildRequest, mockGradingJobConfig } from "../../utils/testing";
+import { mockGraderImageBuildRequest, mockGradingJobConfig } from "../../utils/testing";
 
 describe("JSONSchema validations", () => {
   describe("GradingJobConfig schema validation", () => {
@@ -19,6 +19,15 @@ describe("JSONSchema validations", () => {
       ).toBe(true);
     });
 
+    it("returns false on missing arguments", () => {
+      const keys = Object.keys(mockGradingJobConfig);
+      keys.forEach((k) => {
+        const config = {...mockGradingJobConfig};
+        delete (config as Record<string, any>)[k]
+        expect(validations.gradingJobConfig(config)).toBe(false);
+      });
+    });
+
     it("validates a job with a container response url", () => {
       expect(
         validations.gradingJobConfig({
@@ -32,8 +41,17 @@ describe("JSONSchema validations", () => {
   describe("GraderImageBuildRequest schema validation", () => {
     it("validates a request with contents and SHA sum of a dockerfile", () => {
       expect(
-        validations.graderImageBuildRequest(defaultGraderImageBuildRequest),
+        validations.graderImageBuildRequest(mockGraderImageBuildRequest),
       ).toBe(true);
+    });
+
+    it("returns false on validation if any properties are missing", () => {
+      const keys = Object.keys(mockGraderImageBuildRequest);
+      keys.forEach((k) => {
+        const req = {...mockGraderImageBuildRequest};
+        delete (req as Record<string, any>)[k]
+        expect(validations.graderImageBuildRequest(req)).toBe(false);
+      });
     });
   });
 });

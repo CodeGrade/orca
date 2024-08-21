@@ -28,7 +28,7 @@ export const mockGradingJobConfig: GradingJobConfig = {
   grader_image_sha: "orca-java-grader",
 };
 
-export const defaultGraderImageBuildRequest: GraderImageBuildRequest = {
+export const mockGraderImageBuildRequest: GraderImageBuildRequest = {
   dockerfile_contents: `FROM hello-world:latest`,
   dockerfile_sha_sum: "generated-sha-sum",
   response_url: "http://example.com/response",
