@@ -1,17 +1,16 @@
 import validations from "..";
-import { defaultGradingJobConfig } from "../__mocks__/grading-job-config.mock";
-import { defaultGraderImageBuildRequest } from "../__mocks__/grader-image-build-request";
+import { defaultGraderImageBuildRequest, mockGradingJobConfig } from "../../utils/testing";
 
 describe("JSONSchema validations", () => {
   describe("GradingJobConfig schema validation", () => {
     it("validates a job from a user", () => {
-      expect(validations.gradingJobConfig(defaultGradingJobConfig)).toBe(true);
+      expect(validations.gradingJobConfig(mockGradingJobConfig)).toBe(true);
     });
 
     it("validates a job from a team", () => {
       expect(
         validations.gradingJobConfig({
-          ...defaultGradingJobConfig,
+          ...mockGradingJobConfig,
           collation: {
             type: "team",
             id: "123456",
@@ -23,7 +22,7 @@ describe("JSONSchema validations", () => {
     it("validates a job with a container response url", () => {
       expect(
         validations.gradingJobConfig({
-          ...defaultGradingJobConfig,
+          ...mockGradingJobConfig,
           container_response_url: "https://example.com/response",
         }),
       ).toBe(true);

@@ -1,8 +1,7 @@
-import { defaultGradingJobConfig } from '../../__mocks__/grading-job-config.mock';
 import { createOrUpdateJob, createOrUpdateImmediateJob  } from '../grading-queue-controller';
 import { Request, Response } from 'express';
 import { errorResponse } from '../utils';
-import { validations } from '@codegrade-orca/common';
+import { mockGradingJobConfig, validations } from '@codegrade-orca/common';
 
 
 jest.mock('../utils', () => ({
@@ -14,7 +13,7 @@ describe('job creation controller functions', () => {
   it.each([createOrUpdateJob, createOrUpdateImmediateJob])(
     'should throw a 400 with errors when %p is given an invalid request',
     async (controllerFunc) => {
-      const { files: _files, ...rest } = defaultGradingJobConfig;
+      const { files: _files, ...rest } = mockGradingJobConfig;
       const validator = validations.gradingJobConfig;
       validator(rest);
       expect(validator.errors).toBeDefined();

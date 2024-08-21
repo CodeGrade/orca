@@ -1,6 +1,6 @@
-import { GradingJobConfig } from "@codegrade-orca/common";
+import { GraderImageBuildRequest, GradingJobConfig } from "../types";
 
-export const defaultGradingJobConfig: GradingJobConfig = {
+export const mockGradingJobConfig: GradingJobConfig = {
   key: "random-key",
   response_url: "https://www.example.com/callback",
   collation: {
@@ -26,4 +26,10 @@ export const defaultGradingJobConfig: GradingJobConfig = {
     },
   ],
   grader_image_sha: "orca-java-grader",
+};
+
+export const defaultGraderImageBuildRequest: GraderImageBuildRequest = {
+  dockerfile_contents: `FROM hello-world:latest`,
+  dockerfile_sha_sum: "generated-sha-sum",
+  response_url: "http://example.com/response",
 };
