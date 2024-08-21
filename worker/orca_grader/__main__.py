@@ -139,7 +139,12 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
             handle_grading_job(grading_job, container_sha)
     except Exception as e:
         if isinstance(e, CalledProcessError):
-            _LOGGER.warning(f"STDERR output of subprocess: {e.stderr.decode()}")
+            stderr_output, stdout_output = [
+                encoded_output.decode() if encoded_output is not None else '<None>'
+                for encoded_output in [e.stderr, e.stdout]
+            ]
+            _LOGGER.warning(f"STDERR output of subprocess: {stderr_output}")
+            _LOGGER.warning(f"STDOUT output of subprocess: {stdout_output}")
         else:
             _LOGGER.warning(
                 f"Encountered error while trying to run this job: {e}"
