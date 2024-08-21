@@ -127,6 +127,7 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
             return handle_grading_job(grading_job)
         container_sha = grading_job["grader_image_sha"]
         if not does_image_exist_locally(f"grader-{container_sha}"):
+            _LOGGER.info(f"No image with tag grader-{container_sha} found in local docker registry.")
             retrieve_image_tgz_from_url(
                 container_sha, f"{APP_CONFIG.orca_web_server_host}/images/{container_sha}.tgz"
             )
@@ -151,10 +152,12 @@ def handle_grading_job(grading_job: GradingJobJSON, container_sha: str | None = 
                        container_cmd: List[str] | None = None) -> None:
     with tempfile.NamedTemporaryFile(mode="w") as temp_job_file:
         file_name = os.path.basename(temp_job_file.name)
+        _LOGGER.debug(f"Tempfile created at {temp_job_file.name}")
         # TODO: Can we swap write(json.dump(... with a simple json.dump?
         # Will need to see source code for json.dump.
         temp_job_file.write(json.dumps(grading_job, default=str))
         temp_job_file.flush()
+        _LOGGER.debug("Job contents written to tempfile.")
         if container_sha:
             container_job_path = os.path.join(CONTAINER_WORKING_DIR, file_name)
             builder = DockerGradingJobExecutorBuilder(
@@ -193,6 +196,7 @@ def handle_grading_job(grading_job: GradingJobJSON, container_sha: str | None = 
             os.environ["GRADING_JOB_FILE_NAME"] = file_name
             builder = GradingJobExecutorBuilder(file_name)
         executor = builder.build()
+        _LOGGER.debug("Grading container launcher built successfully.")
         result = executor.execute()
         # Because the docker container is running in a subprocess
         # and we are capturing the STDOUT and STDERR, we need to
