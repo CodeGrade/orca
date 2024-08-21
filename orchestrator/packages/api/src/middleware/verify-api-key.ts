@@ -4,14 +4,19 @@ import { Request, Response, NextFunction } from "express";
 
 const verifyAPIKey = async (req: Request, res: Response, next: NextFunction) => {
   const apiKey = req.header("x-api-key");
-  logger.info(`API Key |${apiKey || 'None'}| Hostname |${req.hostname}|.`);
+  const urlStr = req.body.response_url ?? req.header;
+  logger.info(`API Key: |${apiKey ?? 'None'}| URLString: |${urlStr ?? 'None'}|`);
   if (!apiKey) {
     return res.sendStatus(401);
   }
-  if (await validAPIKey(req.hostname, apiKey)) {
-    next();
-  } else {
-    res.sendStatus(401);
+  try {
+    const url = new URL(urlStr);
+    if (await validAPIKey(url.hostname, apiKey)) {
+      return next();
+    }
+  } catch (e) {
+    logger.debug(`Error: while constructing url or validating key for ${apiKey} and ${urlStr}: ${e}`);
   }
+  res.sendStatus(401);
 };
 export default verifyAPIKey;
