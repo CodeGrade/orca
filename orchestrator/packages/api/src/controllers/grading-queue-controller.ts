@@ -108,8 +108,17 @@ export const createOrUpdateImmediateJob = async (
   req: Request,
   res: Response,
 ) => {
-  if (!validations.gradingJobConfig(req.body)) {
-    return errorResponse(res, 400, ["Invalid grading job configuration."]);
+  const validator = validations.gradingJobConfig
+  if (!validator(req.body)) {
+    const errors = [
+      "The given grading job was invalid.",
+      ...validator.errors ?
+        validator.errors.map(
+          (e) => `${e.message}${e.message && ' for '}${e.instancePath}`
+        ) :
+        []
+    ];
+    return errorResponse(res, 400, errors);
   }
   try {
     const status = await putJobInQueue(req.body, true);
@@ -127,8 +136,17 @@ export const createOrUpdateImmediateJob = async (
 };
 
 export const createOrUpdateJob = async (req: Request, res: Response) => {
-  if (!validations.gradingJobConfig(req.body)) {
-    return errorResponse(res, 400, ["The given grading job was invalid."]);
+  const validator = validations.gradingJobConfig
+  if (!validator(req.body)) {
+    const errors = [
+      "The given grading job was invalid.",
+      ...validator.errors ?
+        validator.errors.map(
+          (e) => `${e.message}${e.message && ' for '}${e.instancePath}`
+        ) :
+        []
+    ];
+    return errorResponse(res, 400, errors);
   }
   try {
     const status = await putJobInQueue(req.body, false);
