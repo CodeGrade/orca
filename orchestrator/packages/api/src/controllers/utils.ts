@@ -20,7 +20,7 @@ export const formatValidationError = (instancePath: string, message: string | un
   if (instancePath.length && message) {
     result += ' ';
   }
-  return result += message ?? '';
+  return result + message ?? '';
 }
 
 const isClientError = (statusCode: number): boolean => statusCode > 399 && statusCode < 500;
