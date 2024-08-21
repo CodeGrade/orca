@@ -65,7 +65,8 @@ def process_jobs_from_db(no_container: bool,
 
                 if job_retrieval_future in done:
                     if job_retrieval_future.exception():
-                        _LOGGER.exception("Failed to retrieve grading job from postgres.")
+                        _LOGGER.error("Failed to retrieve grading job from postgres:"
+                                      f"{job_retrieval_future.exception()}")
                         time.sleep(_SLEEP_LENGTH)
                         continue
                     grading_job = job_retrieval_future.result()
@@ -105,7 +106,8 @@ def process_jobs_from_db(no_container: bool,
                 if job_execution_future in done:
                     if type(job_execution_future.exception()) == InvalidWorkerStateException:
                         _LOGGER.critical("This worker has entered an invaid state "
-                                          "due to some number of issues with the container.")
+                                         "due to some number of issues with the container. "
+                                         f"Exception: {job_execution_future.exception()}")
                         exit(1)
                     _LOGGER.info("Job completed.")
                     clean_up_unused_images()
@@ -232,10 +234,11 @@ if __name__ == "__main__":
     else:
         handler = logging.StreamHandler(stream=sys.stdout)
 
-    logging.basicConfig(level=logging.DEBUG if APP_CONFIG.environment == 'development'
-                        else logging.INFO,
+    logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s - %(levelname)s - %(message)s',
                         handlers=[handler])
+
+    _LOGGER.info(f"PostgreSQL connection string: {APP_CONFIG.postgres_url}")
     arg_parser = argparse.ArgumentParser(
         prog="Orca Grader",
         description="Pulls a job from a Redis queue and executes a script to autograde."
