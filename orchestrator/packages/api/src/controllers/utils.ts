@@ -14,6 +14,15 @@ export const errorResponse = (
   return res.status(status).json({ errors: errors });
 };
 
+export const formatValidationError = (instancePath: string, message: string | undefined): string => {
+  let result = '';
+  result += instancePath;
+  if (instancePath.length && message) {
+    result += ' ';
+  }
+  return result += message ?? '';
+}
+
 const isClientError = (statusCode: number): boolean => statusCode > 399 && statusCode < 500;
 
 export const notifyClientOfCancelledJob = (jobConfig: GradingJobConfig) => {

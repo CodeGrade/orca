@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { errorResponse } from "./utils";
+import { errorResponse, formatValidationError } from "./utils";
 import {
     graderImageExists,
   logger,
@@ -14,8 +14,8 @@ export const createGraderImage = async (req: Request, res: Response) => {
       "The request body to build a grader image is invalid.",
       ...validator.errors ?
         validator.errors.map(
-          (e) => `${e.message}${e.message && ' for '}${e.instancePath}`
-        ) :
+          (e) => formatValidationError(e.instancePath, e.message)
+        ).filter((s) => !!s.length) :
         []
     ];
     return errorResponse(res, 400, errors);

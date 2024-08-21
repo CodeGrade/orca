@@ -5,7 +5,7 @@ import {
   getPageFromGradingQueue as getPageFromGradingJobs,
 } from "../utils/pagination";
 import { validateFilterRequest } from "../utils/validate";
-import { errorResponse, notifyClientOfCancelledJob } from "./utils";
+import { errorResponse, formatValidationError, notifyClientOfCancelledJob } from "./utils";
 import {
   GradingJob,
   GradingJobConfig,
@@ -114,8 +114,8 @@ export const createOrUpdateImmediateJob = async (
       "The given grading job was invalid.",
       ...validator.errors ?
         validator.errors.map(
-          (e) => `${e.message}${e.message && ' for '}${e.instancePath}`
-        ) :
+          (e) => formatValidationError(e.instancePath, e.message)
+        ).filter((s) => !!s.length) :
         []
     ];
     return errorResponse(res, 400, errors);
@@ -142,8 +142,8 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
       "The given grading job was invalid.",
       ...validator.errors ?
         validator.errors.map(
-          (e) => `${e.message}${e.message && ' for '}${e.instancePath}`
-        ) :
+          (e) => formatValidationError(e.instancePath, e.message)
+        ).filter((s) => !!s.length) :
         []
     ];
     return errorResponse(res, 400, errors);
