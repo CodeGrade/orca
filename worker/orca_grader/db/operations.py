@@ -42,8 +42,7 @@ def get_next_job() -> Optional[GradingJobJSON]:
         return __create_grading_job_json(next_reservation, next_job)
 
 
-def __create_grading_job_json(reservation: Reservation, job: Job)
-        -> GradingJobJSON:
+def __create_grading_job_json(reservation: Reservation, job: Job) -> GradingJobJSON:
     return {
         'queue_id': job.id,
         'release_at': reservation.release_at,
