@@ -6,6 +6,7 @@ import express = require("express");
 import cors = require("cors");
 import dockerImagesRouter from "./routes/docker-images";
 import holdingPenRouter from "./routes/holding-pen";
+import { getNumJobsEnqueued } from "@codegrade-orca/db";
 
 const CONFIG = getConfig();
 
@@ -14,8 +15,9 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/v1", gradingQueueRouter, dockerImagesRouter, holdingPenRouter);
-app.use("/status", (_req, res) => res.json({"message": "ok"}));
+app.use("/status", async (_req, res) => res.json({"message": "ok", "numJobs": await getNumJobsEnqueued()}));
 app.use("/images", express.static(CONFIG.dockerImageFolder));
+app.use("/", async(_req, res) => res.send('<h1>Orca Web API</h1>'));
 
 app.listen(CONFIG.api.port, () => {
   if (!existsSync(CONFIG.dockerImageFolder)) {
