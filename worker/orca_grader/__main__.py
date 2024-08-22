@@ -20,7 +20,7 @@ from orca_grader.job_retrieval.local.local_grading_job_retriever import LocalGra
 from orca_grader.job_retrieval.postgres.grading_job_retriever import PostgresGradingJobRetriever
 from orca_grader.docker_utils.images.utils import does_image_exist_locally
 from orca_grader.docker_utils.images.image_name import get_image_name_for_sha
-from orca_grader.docker_utils.images.image_loading import retrieve_image_tgz_for_sha, load_image_from_tgz
+from orca_grader.docker_utils.images.image_loading import retrieve_image_tgz_for_unique_name, load_image_from_tgz
 from orca_grader.job_termination.nonblocking_thread_executor import NonBlockingThreadPoolExecutor
 from orca_grader.job_termination.stop_worker import GracefulKiller
 from orca_grader.validations.exceptions import InvalidGradingJobJSONException
@@ -130,11 +130,11 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
         image_name = get_image_name_for_sha(container_sha)
         if image_name is None:
             _LOGGER.info(f"No image {image_name} found in local docker registry.")
-            retrieve_image_tgz_for_sha(container_sha)
-            image_name = load_image_from_tgz("{0}.tgz".format(container_sha))
+            tgz_file_name = retrieve_image_tgz_for_unique_name(container_sha)
+            image_name = load_image_from_tgz(tgz_file_name)
             if image_name is None:
                 raise NoImageNameFoundException("No image was found from either the "
-                                                "local registry of `docker load`"
+                                                "local registry or `docker load`"
                                                 f"command for {container_sha}")
         if container_command:
             handle_grading_job(grading_job, image_name, container_command)
