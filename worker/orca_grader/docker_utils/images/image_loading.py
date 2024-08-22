@@ -34,6 +34,11 @@ def load_image_from_tgz(tgz_file_path: str) -> Optional[str]:
         _LOGGER.debug(
             f"Docker save stderr: {result.stderr.decode() if result.stderr is not None else '<None>' }")
         _LOGGER.debug("Image loaded.")
+        image_ls = subprocess.run(["docker", "image", "ls"], check=False, capture_output=True)
+        _LOGGER.debug(
+            f"Docker image ls stdout: {image_ls.stdout.decode() if image_ls.stdout is not None else '<None>'}")
+        _LOGGER.debug(
+            f"Docker image ls stderr: {image_ls.stderr.decode() if image_ls.stderr is not None else '<None>'}")
         # os.remove(tgz_file_path)  # To save resources, clean up tgz after load.
         # _LOGGER.debug("Image tgz file removed.")
         return result.stdout and get_name_from_load_output(result.stdout.decode())
@@ -47,6 +52,6 @@ def load_image_from_tgz(tgz_file_path: str) -> Optional[str]:
 
 
 def get_name_from_load_output(docker_load_stdout: str) -> Optional[str]:
-    pattern = re.compile(r"^Loaded image: ([a-zA-Z0-9:_-]+)")
+    pattern = re.compile(r"^Loaded image: ([a-zA-Z0-9/:_-]+)$")
     match = pattern.match(docker_load_stdout)
     return match.group(1).replace(':latest', '') if len(match.groups()) <= 2 else None
