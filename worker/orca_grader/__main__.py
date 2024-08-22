@@ -176,7 +176,7 @@ def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = Non
         if image_name:
             container_job_path = os.path.join(CONTAINER_WORKING_DIR, file_name)
             builder = DockerGradingJobExecutorBuilder(
-                image_name, ["ls", "-l", container_job_path]
+                image_name, ["cat", container_job_path]
             )
             # ) if container_cmd else DockerGradingJobExecutorBuilder(
             #     image_name
