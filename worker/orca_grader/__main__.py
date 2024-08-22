@@ -146,6 +146,7 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
         else:
             handle_grading_job(grading_job, image_name)
     except Exception as e:
+        _LOGGER.exception("Exception encountered while attempting to run this job.")
         if isinstance(e, CalledProcessError):
             stderr_output, stdout_output = [
                 encoded_output.decode() if encoded_output is not None else '<None>'
@@ -153,17 +154,14 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
             ]
             _LOGGER.warning(f"STDERR output of subprocess: {stderr_output}")
             _LOGGER.warning(f"STDOUT output of subprocess: {stdout_output}")
-        else:
-            _LOGGER.warning(
-                f"Encountered error while trying to run this job: {e}"
-            )
         push_results_with_exception(grading_job, e)
 
 
 # TODO: Would it be more useful to return the result of the job here?
 def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = None,
                        container_cmd: List[str] | None = None) -> None:
-    with tempfile.NamedTemporaryFile(mode="w", suffix='.json') as temp_job_file:
+    with tempfile.NamedTemporaryFile(mode="w", suffix='.json',
+                                     delete_on_close=False) as temp_job_file:
         file_name = os.path.basename(temp_job_file.name)
         _LOGGER.debug(f"Tempfile created at {temp_job_file.name}")
         _LOGGER.debug(
@@ -172,20 +170,19 @@ def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = Non
         # Will need to see source code for json.dump.
         temp_job_file.write(json.dumps(grading_job, default=str))
         temp_job_file.flush()
+        temp_job_file.close()
         _LOGGER.debug("Job contents written to tempfile.")
         if image_name:
             container_job_path = os.path.join(CONTAINER_WORKING_DIR, file_name)
             builder = DockerGradingJobExecutorBuilder(
-                image_name, container_cmd
-            ) if container_cmd else DockerGradingJobExecutorBuilder(
-                image_name
+                image_name, ["cat", container_job_path]
             )
+            # ) if container_cmd else DockerGradingJobExecutorBuilder(
+            #     image_name
+            # )
             builder.add_docker_environment_variable_mapping(
                 "GRADING_JOB_FILE_NAME", file_name
             )
-            debugging_temp_file = open(os.path.basename(temp_job_file.name), "w")
-            shutil.copyfileobj(temp_job_file, debugging_temp_file)
-            debugging_temp_file.close()
             builder.add_paths_for_docker_cp(
                 temp_job_file.name, container_job_path
             )
