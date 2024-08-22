@@ -38,7 +38,3 @@ def get_name_from_load_output(stderr: str) -> str:
     pattern = re.compile(r"^Loaded image\: (.*)$")
     match = pattern.match(stderr)
     return match.group(1)
-
-
-if __name__ == '__main__':
-    print(get_name_from_load_output("Loaded image: orca-grader-base:latest\n"))
