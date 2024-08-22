@@ -2,7 +2,7 @@ import subprocess
 import unittest
 from os import path
 
-from orca_grader.docker_utils.images.image_loading import retrieve_image_tgz_from_url, \
+from orca_grader.docker_utils.images.image_loading import retrieve_image_tgz_for_sha, \
     load_image_from_tgz
 from orca_grader.docker_utils.images.utils import does_image_exist_locally
 
@@ -20,8 +20,7 @@ class TestDockerImageLoading(unittest.TestCase):
         return super().setUpClass()
 
     def test_image_download_and_loading(self):
-        retrieve_image_tgz_from_url(
-            "hello-world", "http://localhost:9000/images/hello-world.tgz")
+        retrieve_image_tgz_for_sha("hello-world")
         self.assertTrue(path.exists("hello-world.tgz"))
         load_image_from_tgz("hello-world.tgz")
         self.assertTrue(does_image_exist_locally("hello-world"))

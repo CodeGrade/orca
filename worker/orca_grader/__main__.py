@@ -19,7 +19,7 @@ from orca_grader.executor.builder.grading_job_executor_builder import GradingJob
 from orca_grader.job_retrieval.local.local_grading_job_retriever import LocalGradingJobRetriever
 from orca_grader.job_retrieval.postgres.grading_job_retriever import PostgresGradingJobRetriever
 from orca_grader.docker_utils.images.utils import does_image_exist_locally
-from orca_grader.docker_utils.images.image_loading import retrieve_image_tgz_from_url, load_image_from_tgz
+from orca_grader.docker_utils.images.image_loading import retrieve_image_tgz_for_sha, load_image_from_tgz
 from orca_grader.job_termination.nonblocking_thread_executor import NonBlockingThreadPoolExecutor
 from orca_grader.job_termination.stop_worker import GracefulKiller
 from orca_grader.validations.exceptions import InvalidGradingJobJSONException
@@ -128,9 +128,7 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
         container_sha = grading_job["grader_image_sha"]
         if not does_image_exist_locally(f"grader-{container_sha}"):
             _LOGGER.info(f"No image with tag grader-{container_sha} found in local docker registry.")
-            retrieve_image_tgz_from_url(
-                container_sha, f"{APP_CONFIG.orca_web_server_host}/images/{container_sha}.tgz"
-            )
+            retrieve_image_tgz_for_sha(container_sha)
             load_image_from_tgz("{0}.tgz".format(container_sha))
         if container_command:
             handle_grading_job(
