@@ -7,6 +7,7 @@ import time
 import logging
 from typing import List, Optional
 import tempfile
+import shutil
 from subprocess import CalledProcessError
 from orca_grader.common.services.push_results import push_results_with_exception
 from orca_grader.common.types.grading_job_json_types import GradingJobJSON
@@ -162,7 +163,7 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
 # TODO: Would it be more useful to return the result of the job here?
 def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = None,
                        container_cmd: List[str] | None = None) -> None:
-    with tempfile.NamedTemporaryFile(mode="w", suffix='.json') as temp_job_file:
+    with tempfile.NamedTemporaryFile(mode="w", suffix='.json', delete_on_close=False) as temp_job_file:
         file_name = os.path.basename(temp_job_file.name)
         _LOGGER.debug(f"Tempfile created at {temp_job_file.name}")
         _LOGGER.debug(
@@ -171,6 +172,7 @@ def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = Non
         # Will need to see source code for json.dump.
         temp_job_file.write(json.dumps(grading_job, default=str))
         temp_job_file.flush()
+        temp_job_file.close()
         _LOGGER.debug("Job contents written to tempfile.")
         if image_name:
             container_job_path = os.path.join(CONTAINER_WORKING_DIR, file_name)
@@ -182,6 +184,9 @@ def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = Non
             builder.add_docker_environment_variable_mapping(
                 "GRADING_JOB_FILE_NAME", file_name
             )
+            debugging_temp_file = open(os.path.basename(temp_job_file.name), "w")
+            shutil.copyfileobj(temp_job_file, debugging_temp_file)
+            debugging_temp_file.close()
             builder.add_paths_for_docker_cp(
                 temp_job_file.name, container_job_path
             )
