@@ -12,16 +12,16 @@ class DockerGradingJobExecutorBuilder(GradingJobExecutorBuilder):
     __DEFAULT_CONTIANER_CMD = ["python3.10",
                                "-m", "orca_grader.container.do_grading"]
 
-    def __init__(self, container_sha: str,
+    def __init__(self, image_name: str,
                  container_command: List[str] = __DEFAULT_CONTIANER_CMD) -> None:
-        self.__container_tag = f"grader-{container_sha}"
+        self.__image_name = image_name
         self.__container_command = container_command
         self.__file_mappings: Dict[str, str] = dict()
         self.__env_variable_mappings: Dict[str, str] = dict()
 
     def __num_containers_with_same_sha(self) -> int:
         filter_op: Callable[[str], bool] = lambda n: n.startswith(
-            self.__container_tag)
+            self.__image_name)
         return len(list(filter(filter_op, get_all_container_names())))
 
     def add_docker_volume_mapping(self, local_path: str, container_path: str) -> None:
@@ -32,7 +32,7 @@ class DockerGradingJobExecutorBuilder(GradingJobExecutorBuilder):
 
     def build(self) -> GradingJobExecutor:
         # TODO: How could we maintain a 'reference count' for a unique id?
-        container_name = f"{self.__container_tag}_{int(time.time() * 100_000_000)}"
+        container_name = f"{self.__image_name}_{int(time.time() * 100_000_000)}"
         program_sequence = ["docker", "run", "--rm", "--name", container_name]
         program_sequence.extend(["--network", "host"])
         for name, value in self.__env_variable_mappings.items():
@@ -41,6 +41,6 @@ class DockerGradingJobExecutorBuilder(GradingJobExecutorBuilder):
         for local_path, container_path in self.__file_mappings.items():
             program_sequence.append("-v")
             program_sequence.append(f"{local_path}:{container_path}")
-        program_sequence.append(self.__container_tag)
+        program_sequence.append(self.__image_name)
         program_sequence.extend(self.__container_command)
         return DockerGradingJobExecutor(create_runnable_job_subprocess(program_sequence), container_name)

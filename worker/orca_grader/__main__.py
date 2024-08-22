@@ -13,12 +13,13 @@ from orca_grader.common.types.grading_job_json_types import GradingJobJSON
 from orca_grader.config import APP_CONFIG
 from orca_grader.db.operations import reenqueue_job
 from orca_grader.docker_utils.images.clean_up import clean_up_unused_images
-from orca_grader.exceptions import InvalidWorkerStateException
+from orca_grader.exceptions import InvalidWorkerStateException, NoImageNameFoundException
 from orca_grader.executor.builder.docker_grading_job_executor_builder import DockerGradingJobExecutorBuilder
 from orca_grader.executor.builder.grading_job_executor_builder import GradingJobExecutorBuilder
 from orca_grader.job_retrieval.local.local_grading_job_retriever import LocalGradingJobRetriever
 from orca_grader.job_retrieval.postgres.grading_job_retriever import PostgresGradingJobRetriever
 from orca_grader.docker_utils.images.utils import does_image_exist_locally
+from orca_grader.docker_utils.images.image_name import get_image_name_for_sha
 from orca_grader.docker_utils.images.image_loading import retrieve_image_tgz_for_sha, load_image_from_tgz
 from orca_grader.job_termination.nonblocking_thread_executor import NonBlockingThreadPoolExecutor
 from orca_grader.job_termination.stop_worker import GracefulKiller
@@ -126,15 +127,19 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
         if no_container:
             return handle_grading_job(grading_job)
         container_sha = grading_job["grader_image_sha"]
-        if not does_image_exist_locally(f"grader-{container_sha}"):
-            _LOGGER.info(f"No image with tag grader-{container_sha} found in local docker registry.")
+        image_name = get_image_name_for_sha(container_sha)
+        if image_name is None:
+            _LOGGER.info(f"No image {image_name} found in local docker registry.")
             retrieve_image_tgz_for_sha(container_sha)
-            load_image_from_tgz("{0}.tgz".format(container_sha))
+            image_name = load_image_from_tgz("{0}.tgz".format(container_sha))
+            if image_name is None:
+                raise NoImageNameFoundException("No image was found from either the "
+                                                "local registry of `docker load`"
+                                                f"command for {container_sha}")
         if container_command:
-            handle_grading_job(
-                grading_job, container_sha, container_command)
+            handle_grading_job(grading_job, image_name, container_command)
         else:
-            handle_grading_job(grading_job, container_sha)
+            handle_grading_job(grading_job, image_name)
     except Exception as e:
         if isinstance(e, CalledProcessError):
             stderr_output, stdout_output = [
@@ -151,7 +156,7 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
 
 
 # TODO: Would it be more useful to return the result of the job here?
-def handle_grading_job(grading_job: GradingJobJSON, container_sha: str | None = None,
+def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = None,
                        container_cmd: List[str] | None = None) -> None:
     with tempfile.NamedTemporaryFile(mode="w") as temp_job_file:
         file_name = os.path.basename(temp_job_file.name)
@@ -161,12 +166,12 @@ def handle_grading_job(grading_job: GradingJobJSON, container_sha: str | None = 
         temp_job_file.write(json.dumps(grading_job, default=str))
         temp_job_file.flush()
         _LOGGER.debug("Job contents written to tempfile.")
-        if container_sha:
+        if image_name:
             container_job_path = os.path.join(CONTAINER_WORKING_DIR, file_name)
             builder = DockerGradingJobExecutorBuilder(
-                container_sha, container_cmd
+                image_name, container_cmd
             ) if container_cmd else DockerGradingJobExecutorBuilder(
-                container_sha
+                image_name
             )
             builder.add_docker_environment_variable_mapping(
                 "GRADING_JOB_FILE_NAME", file_name
