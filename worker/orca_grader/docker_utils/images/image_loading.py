@@ -36,7 +36,7 @@ def load_image_from_tgz(tgz_file_path: str) -> Optional[str]:
         _LOGGER.debug("Image loaded.")
         # os.remove(tgz_file_path)  # To save resources, clean up tgz after load.
         # _LOGGER.debug("Image tgz file removed.")
-        return result.stderr and get_name_from_load_output(result.stdout)
+        return result.stdout and get_name_from_load_output(result.stdout.decode())
     except Exception as e:
         if isinstance(e, subprocess.CalledProcessError):
             _LOGGER.debug(
@@ -45,7 +45,8 @@ def load_image_from_tgz(tgz_file_path: str) -> Optional[str]:
                 f"Docker save stderr: {e.stderr.decode() if e.stderr is not None else '<None>' }")
         raise e
 
+
 def get_name_from_load_output(docker_load_stdout: str) -> Optional[str]:
-    pattern = re.compile(r"^Loaded image: ([a-zA-Z0-9/:_-]+)")
+    pattern = re.compile(r"^Loaded image: ([a-zA-Z0-9:_-]+)")
     match = pattern.match(docker_load_stdout)
-    return match.group(1) if len(match.groups()) == 2 else None
+    return match.group(1).replace(':latest', '') if len(match.groups()) <= 2 else None

@@ -132,6 +132,7 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
             _LOGGER.info(f"No image {image_name} found in local docker registry.")
             tgz_file_name = retrieve_image_tgz_for_unique_name(container_sha)
             image_name = load_image_from_tgz(tgz_file_name)
+            _LOGGER.debug(f"Expected image name: {image_name}")
             if image_name is None:
                 raise NoImageNameFoundException("No image was found from either the "
                                                 "local registry or `docker load`"
