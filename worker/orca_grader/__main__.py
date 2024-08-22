@@ -62,7 +62,8 @@ def process_jobs_from_db(no_container: bool,
                             updated_db_id = reenqueue_job(grading_job)
                             inform_client_of_reenqueue(grading_job,
                                                        updated_db_id)
-                            _LOGGER.info(f"Reenqueued job with new database id {updated_db_id}.")
+                            _LOGGER.info(
+                                f"Reenqueued job with new database id {updated_db_id}.")
 
                 if job_retrieval_future in done:
                     if job_retrieval_future.exception():
@@ -72,7 +73,8 @@ def process_jobs_from_db(no_container: bool,
                         continue
                     grading_job = job_retrieval_future.result()
                     if grading_job is None:
-                        _LOGGER.debug(f"No jobs on the queue; sleeping for {_SLEEP_LENGTH} seconds.")
+                        _LOGGER.debug(
+                            f"No jobs on the queue; sleeping for {_SLEEP_LENGTH} seconds.")
                         time.sleep(_SLEEP_LENGTH)
                         continue
 
@@ -101,8 +103,8 @@ def process_jobs_from_db(no_container: bool,
                 if stop_future in done and job_execution_future in not_done:
                     updated_db_id = reenqueue_job(grading_job)
                     inform_client_of_reenqueue(grading_job, updated_db_id)
-                    _LOGGER.info(f"Reenqueued job with new database id {updated_db_id}.")
-
+                    _LOGGER.info(
+                        f"Reenqueued job with new database id {updated_db_id}.")
 
                 if job_execution_future in done:
                     if type(job_execution_future.exception()) == InvalidWorkerStateException:
@@ -129,7 +131,8 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
         container_sha = grading_job["grader_image_sha"]
         image_name = get_image_name_for_sha(container_sha)
         if image_name is None:
-            _LOGGER.info(f"No image {image_name} found in local docker registry.")
+            _LOGGER.info(
+                f"No image {image_name} found in local docker registry.")
             tgz_file_name = retrieve_image_tgz_for_unique_name(container_sha)
             image_name = load_image_from_tgz(tgz_file_name)
             _LOGGER.debug(f"Expected image name: {image_name}")
@@ -162,7 +165,8 @@ def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = Non
     with tempfile.NamedTemporaryFile(mode="w", suffix='.json') as temp_job_file:
         file_name = os.path.basename(temp_job_file.name)
         _LOGGER.debug(f"Tempfile created at {temp_job_file.name}")
-        _LOGGER.debug(f"Assert tempfile is file: {os.path.isfile(temp_job_file.name)}")
+        _LOGGER.debug(
+            f"Assert tempfile is file: {os.path.isfile(temp_job_file.name)}")
         # TODO: Can we swap write(json.dump(... with a simple json.dump?
         # Will need to see source code for json.dump.
         temp_job_file.write(json.dumps(grading_job, default=str))
@@ -178,7 +182,7 @@ def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = Non
             builder.add_docker_environment_variable_mapping(
                 "GRADING_JOB_FILE_NAME", file_name
             )
-            builder.add_docker_volume_mapping(
+            builder.add_paths_for_docker_cp(
                 temp_job_file.name, container_job_path
             )
             if logging_filepath() is not None:
@@ -187,7 +191,8 @@ def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = Non
                                                   log_file_name)
                 builder.add_docker_volume_mapping(
                     os.path.abspath(APP_CONFIG.logging_filepath),
-                    os.path.join(CONTAINER_WORKING_DIR, APP_CONFIG.logging_filepath)
+                    os.path.join(CONTAINER_WORKING_DIR,
+                                 APP_CONFIG.logging_filepath)
                 )
                 builder.add_docker_environment_variable_mapping(
                     "CONTAINER_LOG_FILE_PATH",
@@ -208,14 +213,13 @@ def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = Non
         executor = builder.build()
         _LOGGER.debug("Grading container launcher built successfully.")
         result = executor.execute()
-        # Because the docker container is running in a subprocess
-        # and we are capturing the STDOUT and STDERR, we need to
-        # explicitly write their to STDOUT (with no formatting; hence
-        # the print call) if we want to see logs display in the terminal.
-        if result and result.stdout and logging_filepath() is None:
-            print(result.stdout.decode())
-        if result and result.stderr and logging_filepath() is None:
-            print(result.stderr.decode())
+        if result.was_successful:
+            _LOGGER.info("Job was completed successfully.")
+        else:
+            warn_str = "The processes timed out during execution." if \
+                        result.did_timeout else "An error was encountered during execution."
+            _LOGGER.warn(warn_str)
+        _LOGGER.debug("\n".join(result.results))
 
 
 def inform_client_of_reenqueue(grading_job: GradingJobJSON,
