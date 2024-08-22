@@ -79,7 +79,7 @@ yarn start
 
 ## The Worker
 
-The Worker expects to be run with Python version 3.10.6.
+The Worker expects to be run with Python version 3.12.5.
 
 ### Environment Variables
 

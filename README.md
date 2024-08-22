@@ -16,4 +16,4 @@ Orca expects the following tools with these versions:
 - Docker 27.x.x
 - Postgres 10.x.x
 - Node 21.0.0 (Web Server and Client)
-- Python 3.10.6 (Worker)
+- Python 3.12.5 (Worker)
