@@ -5,7 +5,7 @@ import {
   getPageFromGradingQueue as getPageFromGradingJobs,
 } from "../utils/pagination";
 import { validateFilterRequest } from "../utils/validate";
-import { errorResponse, notifyClientOfCancelledJob } from "./utils";
+import { errorResponse, formatValidationErrors, notifyClientOfCancelledJob } from "./utils";
 import {
   GradingJob,
   GradingJobConfig,
@@ -108,8 +108,9 @@ export const createOrUpdateImmediateJob = async (
   req: Request,
   res: Response,
 ) => {
-  if (!validations.gradingJobConfig(req.body)) {
-    return errorResponse(res, 400, ["Invalid grading job configuration."]);
+  const validator = validations.gradingJobConfig
+  if (!validator(req.body)) {
+    return errorResponse(res, 400, formatValidationErrors("The given grading job was invalid.", validator.errors));
   }
   try {
     const status = await putJobInQueue(req.body, true);
@@ -127,8 +128,9 @@ export const createOrUpdateImmediateJob = async (
 };
 
 export const createOrUpdateJob = async (req: Request, res: Response) => {
-  if (!validations.gradingJobConfig(req.body)) {
-    return errorResponse(res, 400, ["The given grading job was invalid."]);
+  const validator = validations.gradingJobConfig
+  if (!validator(req.body)) {
+    return errorResponse(res, 400, formatValidationErrors("The given grading job was invalid.", validator.errors));
   }
   try {
     const status = await putJobInQueue(req.body, false);

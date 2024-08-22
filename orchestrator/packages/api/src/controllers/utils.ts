@@ -1,4 +1,5 @@
-import { GradingJobConfig, GradingJobResult, logger } from "@codegrade-orca/common";
+import { GradingJobConfig, GradingJobResult, logger, validations } from "@codegrade-orca/common";
+import { ValidationErrors } from "@codegrade-orca/common/src/validations";
 import { Response } from "express";
 
 export const errorResponse = (
@@ -13,6 +14,18 @@ export const errorResponse = (
   }
   return res.status(status).json({ errors: errors });
 };
+
+export const formatValidationErrors = (description: string, validationErrors: ValidationErrors): Array<string> =>
+  [
+    description,
+    ...(validationErrors ?
+      validationErrors.map((e) => formatValidationError(e.instancePath, e.message)).filter((s) => s !== '') :
+      [])
+  ];
+
+const formatValidationError = (instancePath: string, message: string | undefined): string => {
+  return `${instancePath} ${message ?? ''}`.trim();
+}
 
 const isClientError = (statusCode: number): boolean => statusCode > 399 && statusCode < 500;
 
