@@ -1,7 +1,7 @@
 import subprocess
 from orca_grader.exceptions import InvalidWorkerStateException
 from orca_grader.executor.grading_job_executor import GradingJobExecutor
-from typing import Callable
+from typing import Callable, List
 from subprocess import CompletedProcess, TimeoutExpired
 
 
@@ -11,8 +11,8 @@ class DockerGradingJobExecutor(GradingJobExecutor):
     # seconds; SIGKILL (if necessary) is sent at end of timeout above.
     __STOP_BUFFER = 5
 
-    def __init__(self, grading_subprocess: Callable[[], CompletedProcess], container_name: str) -> None:
-        super().__init__(grading_subprocess)
+    def __init__(self, grading_subprocesses: List[Callable[[], CompletedProcess]], container_name: str) -> None:
+        super().__init__(grading_subprocesses)
         self.__container_name = container_name
 
     def _handle_timeout(self, time_err: TimeoutExpired):
