@@ -61,6 +61,7 @@ class DockerGradingJobExecutorBuilder(GradingJobExecutorBuilder):
             "docker",
             "container",
             "start",
+            "-a",
             container_name
         ]
         return create_runnable_job_subprocess(program_args)
