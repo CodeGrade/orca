@@ -159,9 +159,10 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
 # TODO: Would it be more useful to return the result of the job here?
 def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = None,
                        container_cmd: List[str] | None = None) -> None:
-    with tempfile.NamedTemporaryFile(mode="w") as temp_job_file:
+    with tempfile.NamedTemporaryFile(mode="w", suffix='.json') as temp_job_file:
         file_name = os.path.basename(temp_job_file.name)
         _LOGGER.debug(f"Tempfile created at {temp_job_file.name}")
+        _LOGGER.debug(f"Assert tempfile is file: {os.path.isfile(temp_job_file.name)}")
         # TODO: Can we swap write(json.dump(... with a simple json.dump?
         # Will need to see source code for json.dump.
         temp_job_file.write(json.dumps(grading_job, default=str))
