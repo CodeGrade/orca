@@ -31,10 +31,10 @@ def load_image_from_tgz(tgz_file_path: str) -> str:
     _LOGGER.debug("Image loaded.")
     # os.remove(tgz_file_path)  # To save resources, clean up tgz after load.
     # _LOGGER.debug("Image tgz file removed.")
-    return get_name_from_load_output(result.stderr.decode())
+    return result.stderr and get_name_from_load_output(result.stderr.decode())
 
 
-def get_name_from_load_output(stderr: str) -> str:
+def get_name_from_load_output(stderr: str) -> Optional[str]:
     pattern = re.compile(r"^Loaded image\: (.*)$")
     match = pattern.match(stderr)
-    return match.group(1)
+    return match.group(1) if len(match.groups()) == 2 else None
