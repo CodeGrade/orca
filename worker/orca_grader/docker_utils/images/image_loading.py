@@ -10,9 +10,9 @@ from orca_grader.config import APP_CONFIG
 _LOGGER = logging.getLogger(__name__)
 
 
-def retrieve_image_tgz_for_unique_name(unique_name: str) -> str:
+def retrieve_image_tgz_for_unique_name(images_endpoint: str, unique_name: str) -> str:
     file_name = f"{unique_name}.tgz"
-    images_url = f"{APP_CONFIG.orca_web_server_host}/images/{file_name}"
+    images_url = f"{images_endpoint}/{file_name}"
     _LOGGER.debug(f"Attempting to download image from {images_url}")
     download_file(images_url, file_name)
     _LOGGER.debug("Image downloaded.")
@@ -39,8 +39,8 @@ def load_image_from_tgz(tgz_file_path: str) -> Optional[str]:
             f"Docker image ls stdout: {image_ls.stdout.decode() if image_ls.stdout is not None else '<None>'}")
         _LOGGER.debug(
             f"Docker image ls stderr: {image_ls.stderr.decode() if image_ls.stderr is not None else '<None>'}")
-        # os.remove(tgz_file_path)  # To save resources, clean up tgz after load.
-        # _LOGGER.debug("Image tgz file removed.")
+        os.remove(tgz_file_path)  # To save resources, clean up tgz after load.
+        _LOGGER.debug("Image tgz file removed.")
         return result.stdout and get_name_from_load_output(result.stdout.decode())
     except Exception as e:
         if isinstance(e, subprocess.CalledProcessError):

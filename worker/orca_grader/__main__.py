@@ -134,7 +134,8 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
         if image_name is None:
             _LOGGER.info(
                 f"No image {image_name} found in local docker registry.")
-            tgz_file_name = retrieve_image_tgz_for_unique_name(container_sha)
+            images_endpoint = f"{APP_CONFIG.orca_web_server_host}/images"
+            tgz_file_name = retrieve_image_tgz_for_unique_name(images_endpoint, container_sha)
             image_name = load_image_from_tgz(tgz_file_name)
             _LOGGER.debug(f"Expected image name: {image_name}")
             if image_name is None:
@@ -160,8 +161,7 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
 # TODO: Would it be more useful to return the result of the job here?
 def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = None,
                        container_cmd: List[str] | None = None) -> None:
-    with tempfile.NamedTemporaryFile(mode="w", suffix='.json',
-                                     delete_on_close=False) as temp_job_file:
+    with tempfile.NamedTemporaryFile(mode="w", suffix='.json') as temp_job_file:
         file_name = os.path.basename(temp_job_file.name)
         _LOGGER.debug(f"Tempfile created at {temp_job_file.name}")
         _LOGGER.debug(
@@ -170,7 +170,6 @@ def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = Non
         # Will need to see source code for json.dump.
         temp_job_file.write(json.dumps(grading_job, default=str))
         temp_job_file.flush()
-        temp_job_file.close()
         os.chmod(temp_job_file.name, 0o666)
         _LOGGER.debug("Job contents written to tempfile.")
         if image_name:
@@ -219,7 +218,7 @@ def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = Non
         else:
             warn_str = "The processes timed out during execution." if \
                         result.did_timeout else "An error was encountered during execution."
-            _LOGGER.warn(warn_str)
+            _LOGGER.warning(warn_str)
         _LOGGER.debug("\n".join(result.results))
 
 
@@ -227,7 +226,8 @@ def inform_client_of_reenqueue(grading_job: GradingJobJSON,
                                updated_db_id: int) -> None:
     post_job_status_to_client(location="Queue",
                               response_url=grading_job["response_url"],
-                              key=grading_job["key"])
+                              key=grading_job["key"],
+                              id=updated_db_id)
 
 
 def can_execute_job(grading_job: GradingJobJSON) -> bool:
@@ -253,7 +253,8 @@ if __name__ == "__main__":
     else:
         handler = logging.StreamHandler(stream=sys.stdout)
 
-    logging.basicConfig(level=logging.DEBUG,
+    logging.basicConfig(level=logging.INFO if APP_CONFIG.environment ==
+                        'production' else logging.DEBUG,
                         format='%(asctime)s - %(levelname)s - %(message)s',
                         handlers=[handler])
 
