@@ -7,6 +7,7 @@ import time
 import logging
 from typing import List, Optional
 import tempfile
+import shutil
 from subprocess import CalledProcessError
 from orca_grader.common.services.push_results import push_results_with_exception
 from orca_grader.common.types.grading_job_json_types import GradingJobJSON
@@ -147,6 +148,7 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
     except InvalidWorkerStateException as ive:
         raise ive
     except Exception as e:
+        _LOGGER.exception("Exception encountered while attempting to run this job.")
         if isinstance(e, CalledProcessError):
             stderr_output, stdout_output = [
                 encoded_output.decode() if encoded_output is not None else '<None>'
@@ -154,17 +156,14 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
             ]
             _LOGGER.warning(f"STDERR output of subprocess: {stderr_output}")
             _LOGGER.warning(f"STDOUT output of subprocess: {stdout_output}")
-        else:
-            _LOGGER.warning(
-                f"Encountered error while trying to run this job: {e}"
-            )
         push_results_with_exception(grading_job, e)
 
 
 # TODO: Would it be more useful to return the result of the job here?
 def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = None,
                        container_cmd: List[str] | None = None) -> None:
-    with tempfile.NamedTemporaryFile(mode="w", suffix='.json') as temp_job_file:
+    with tempfile.NamedTemporaryFile(mode="w", suffix='.json',
+                                     delete_on_close=False) as temp_job_file:
         file_name = os.path.basename(temp_job_file.name)
         _LOGGER.debug(f"Tempfile created at {temp_job_file.name}")
         _LOGGER.debug(
@@ -173,11 +172,13 @@ def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = Non
         # Will need to see source code for json.dump.
         temp_job_file.write(json.dumps(grading_job, default=str))
         temp_job_file.flush()
+        temp_job_file.close()
+        os.chmod(temp_job_file.name, 0o666)
         _LOGGER.debug("Job contents written to tempfile.")
         if image_name:
             container_job_path = os.path.join(CONTAINER_WORKING_DIR, file_name)
             builder = DockerGradingJobExecutorBuilder(
-                image_name, container_cmd
+                image_name
             ) if container_cmd else DockerGradingJobExecutorBuilder(
                 image_name
             )
