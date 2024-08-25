@@ -145,8 +145,8 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
             handle_grading_job(grading_job, image_name, container_command)
         else:
             handle_grading_job(grading_job, image_name)
-    except InvalidWorkerStateException as ive:
-        raise ive
+    except InvalidWorkerStateException as invalid_state_err:
+        raise invalid_state_err
     except Exception as e:
         _LOGGER.exception("Exception encountered while attempting to run this job.")
         if isinstance(e, CalledProcessError):
