@@ -2,20 +2,18 @@ import json
 import os
 import sys
 import shutil
-import traceback
 import logging
 from pathlib import Path
 from typing import Dict, List, TextIO
-from orca_grader.config import APP_CONFIG
 from orca_grader.common.services.push_results import push_results_to_response_url
 from orca_grader.container.build_script.preprocess.preprocessor import GradingScriptPreprocessor
 from orca_grader.container.exec_secret import GradingJobExecutionSecret
 from orca_grader.common.grading_job.grading_job_result import GradingJobResult
 from orca_grader.container.grading_script.grading_script_command import GradingScriptCommand
 from orca_grader.container.grading_script.grading_script_command_response import GradingScriptCommandResponse
-from orca_grader.container.build_script.code_file.processing.code_file_processor import CodeFileProcessor
+from orca_grader.container.build_script.file_info.processing.file_processor import FileProcessor
 from orca_grader.container.build_script.exceptions import PreprocessingException
-from orca_grader.container.build_script.code_file.code_file_info import CodeFileInfo, json_to_code_file_info
+from orca_grader.container.build_script.file_info.file_info import FileInfo, json_to_file_info
 from orca_grader.common.types.grading_job_json_types import (
     GradingJobJSON,
     GradingScriptCommandJSON
@@ -41,11 +39,11 @@ def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobResul
     #
     # *Handled outside in the "if name == '__main__'" section.
     try:
-        code_files = produce_code_files_dictionary(grading_job_json["files"])
+        file_infos = produce_file_info_dictionary(grading_job_json["files"])
         commands: List[GradingScriptCommandJSON] = grading_job_json["script"]
-        code_file_processor = CodeFileProcessor(interpolated_dirs)
-        preprocessor = GradingScriptPreprocessor(secret, commands, code_files,
-                                                 code_file_processor)
+        file_processor = FileProcessor(interpolated_dirs)
+        preprocessor = GradingScriptPreprocessor(secret, commands, file_infos,
+                                                 file_processor)
         script: GradingScriptCommand = preprocessor.preprocess_job()
         _LOGGER.debug("****Directories and their files:****")
         for actual_dir in interpolated_dirs.values():
@@ -67,10 +65,10 @@ def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobResul
     return output
 
 
-def produce_code_files_dictionary(code_files_json: Dict[str, any]) \
-        -> Dict[str, CodeFileInfo]:
-    return {name: json_to_code_file_info(code_file_json, name)
-            for (name, code_file_json) in code_files_json.items()}
+def produce_file_info_dictionary(file_infos_json: Dict[str, any]) \
+        -> Dict[str, FileInfo]:
+    return {name: json_to_file_info(file_info_json, name)
+            for (name, file_info_json) in file_infos_json.items()}
 
 
 def get_job_from_input_stream(input_stream: TextIO) -> GradingJobJSON:

@@ -1,5 +1,4 @@
 from typing import Dict, List, Set, Tuple
-from orca_grader.container.build_script.json_helpers.grading_script_command import is_conditional_command
 from orca_grader.common.types.grading_job_json_types import GradingScriptCommandJSON
 
 

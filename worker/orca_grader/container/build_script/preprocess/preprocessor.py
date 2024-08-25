@@ -1,14 +1,14 @@
-from typing import Dict, List, Literal, Optional, Tuple
+from typing import Dict, List
 import os
-from orca_grader.container.build_script.code_file.code_file_info import CodeFileInfo
-from orca_grader.container.build_script.code_file.processing.code_file_processor import CodeFileProcessor
+from orca_grader.container.build_script.file_info.file_info import FileInfo
+from orca_grader.container.build_script.file_info.processing.file_processor import FileProcessor
 from orca_grader.container.build_script.preprocess.cycle_detector import CycleDetector
 from orca_grader.container.build_script.exceptions import InvalidGradingScriptCommand, NotADAGException
 from orca_grader.container.build_script.preprocess.utils import flatten_grading_script
 from orca_grader.container.grading_script.bash_grading_script_command import BashGradingScriptCommand
 from orca_grader.container.grading_script.conditional_grading_script_command import ConditionalGradingScriptCommand, GradingScriptPredicate
 from orca_grader.container.grading_script.grading_script_command import GradingScriptCommand
-from orca_grader.container.build_script.json_helpers.grading_script_command import RESERVED_KEYWORDS, is_bash_command, is_conditional_command
+from orca_grader.container.build_script.json_helpers.grading_script_command import is_bash_command, is_conditional_command
 from orca_grader.common.types.grading_job_json_types import GradingScriptCommandJSON
 
 DEFAULT_COMMAND_TIMEOUT = 60  # 1 minute
@@ -17,7 +17,7 @@ DEFAULT_COMMAND_TIMEOUT = 60  # 1 minute
 class GradingScriptPreprocessor:
 
     def __init__(self, secret: str, json_cmds: List[GradingScriptCommandJSON],
-                 code_files: Dict[str, CodeFileInfo], code_file_processor: CodeFileProcessor,
+                 files: Dict[str, FileInfo], file_processor: FileProcessor,
                  cmd_timeout: int = DEFAULT_COMMAND_TIMEOUT) -> None:
         flattened_cmds = flatten_grading_script(json_cmds)
         if CycleDetector.contains_cycle(flattened_cmds):
@@ -27,9 +27,9 @@ class GradingScriptPreprocessor:
             "$EXTRACTED": f"{secret}/extracted",
             "$BUILD": f"{secret}/build"
         }
-        self.__code_file_processor = code_file_processor
+        self.__file_processor = file_processor
         self.__json_cmds = flattened_cmds
-        self.__code_files = code_files
+        self.__files = files
         self.__cmds = [None for _ in range(len(flattened_cmds))]
         self.__cmd_timeout = cmd_timeout
 
@@ -45,10 +45,10 @@ class GradingScriptPreprocessor:
         self.__create_script_dirs()
         download_dir = self.__interpolated_dirs["$DOWNLOADED"]
         extract_dir = self.__interpolated_dirs["$EXTRACTED"]
-        for name, code_file in self.__code_files.items():
+        for name, code_file in self.__files.items():
             file_download_dir = os.path.join(download_dir, name)
             file_extract_dir = os.path.join(extract_dir, name)
-            self.__code_file_processor.process_file(code_file, file_download_dir,
+            self.__file_processor.process_file(code_file, file_download_dir,
                                                     file_extract_dir)
 
     def __generate_grading_script(self) -> GradingScriptCommand:

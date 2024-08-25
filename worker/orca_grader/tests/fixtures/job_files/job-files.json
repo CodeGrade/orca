@@ -1,41 +1,41 @@
 {
   "basic-file": {
-    "url": "http://localhost:9000/code_files/text-files/basic-file.txt",
+    "url": "http://localhost:9000/job_files/text-files/basic-file.txt",
     "mime_type": "text/plain",
     "should_replace_paths": false
   },
   "basic-file-replace": {
-    "url": "http://localhost:9000/code_files/text-files/basic-file-replace.txt",
+    "url": "http://localhost:9000/job_files/text-files/basic-file-replace.txt",
     "mime_type": "text/plain",
     "should_replace_paths": true
   },
   "gzip-empty-replace": {
-    "url": "http://localhost:9000/code_files/basic-file.txt.gz",
+    "url": "http://localhost:9000/job_files/basic-file.txt.gz",
     "mime_type": "application/gzip",
     "should_replace_paths": true
   },
   "tar-replace-paths": {
-    "url": "http://localhost:9000/code_files/text-files.tar",
+    "url": "http://localhost:9000/job_files/text-files.tar",
     "mime_type": "application/x-tar",
     "should_replace_paths": true
   },
   "tgz-replace-paths": {
-    "url": "http://localhost:9000/code_files/text-files.tgz",
+    "url": "http://localhost:9000/job_files/text-files.tgz",
     "mime_type": "application/x-gtar",
     "should_replace_paths": true
   },
   "tar-gz-replace-paths": {
-    "url": "http://localhost:9000/code_files/text-files.tar.gz",
+    "url": "http://localhost:9000/job_files/text-files.tar.gz",
     "mime_type": "application/x-gtar",
     "should_replace_paths": true
   },
   "zip-replace-paths": {
-    "url": "http://localhost:9000/code_files/text-files.zip",
+    "url": "http://localhost:9000/job_files/text-files.zip",
     "mime_type": "application/zip",
     "should_replace_paths": true
   },
   "7zip-replace-paths": {
-    "url": "http://localhost:9000/code_files/text-files.7z",
+    "url": "http://localhost:9000/job_files/text-files.7z",
     "mime_type": "application/x-7z-compressed",
     "should_replace_paths": true
   }
