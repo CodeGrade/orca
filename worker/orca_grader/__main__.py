@@ -7,7 +7,6 @@ import time
 import logging
 from typing import List, Optional
 import tempfile
-import shutil
 from subprocess import CalledProcessError
 from orca_grader.common.services.push_results import push_results_with_exception
 from orca_grader.common.types.grading_job_json_types import GradingJobJSON
@@ -19,7 +18,6 @@ from orca_grader.executor.builder.docker_grading_job_executor_builder import Doc
 from orca_grader.executor.builder.grading_job_executor_builder import GradingJobExecutorBuilder
 from orca_grader.job_retrieval.local.local_grading_job_retriever import LocalGradingJobRetriever
 from orca_grader.job_retrieval.postgres.grading_job_retriever import PostgresGradingJobRetriever
-from orca_grader.docker_utils.images.utils import does_image_exist_locally
 from orca_grader.docker_utils.images.image_name import get_image_name_for_sha
 from orca_grader.docker_utils.images.image_loading import retrieve_image_tgz_for_unique_name, load_image_from_tgz
 from orca_grader.job_termination.nonblocking_thread_executor import NonBlockingThreadPoolExecutor
@@ -161,7 +159,8 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
 # TODO: Would it be more useful to return the result of the job here?
 def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = None,
                        container_cmd: List[str] | None = None) -> None:
-    with tempfile.NamedTemporaryFile(mode="w", suffix='.json') as temp_job_file:
+    with tempfile.NamedTemporaryFile(mode="w", suffix='.json',
+                                     delete_on_close=False) as temp_job_file:
         file_name = os.path.basename(temp_job_file.name)
         _LOGGER.debug(f"Tempfile created at {temp_job_file.name}")
         _LOGGER.debug(
@@ -170,6 +169,7 @@ def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = Non
         # Will need to see source code for json.dump.
         temp_job_file.write(json.dumps(grading_job, default=str))
         temp_job_file.flush()
+        temp_job_file.close()
         os.chmod(temp_job_file.name, 0o666)
         _LOGGER.debug("Job contents written to tempfile.")
         if image_name:
