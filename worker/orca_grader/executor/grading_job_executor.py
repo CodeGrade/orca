@@ -53,10 +53,15 @@ class GradingJobExecutor():
             _LOGGER.error(f"Encountered exception while execution job: {e}")
             results.append(str(e))
             successful = False
+        finally:
+          self._handle_cleanup()
         return ExecutorResult(results, successful, timed_out)
 
     def _handle_timeout(self, time_err: TimeoutExpired):
         _LOGGER.warn("Timeout handler unimplemented for GradingJobExecutor. Ensure concrete class implements this.")
+
+    def _handle_cleanup(self):
+        _LOGGER.warning("Clean up handler unimplemented for GradingJobExecutor. Ensure concrete class implements this.")
 
 
 def format_completed_proc_output(cmd: str, stdout: str = '', stderr: str = '') -> str:

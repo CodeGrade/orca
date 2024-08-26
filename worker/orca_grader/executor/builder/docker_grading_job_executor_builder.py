@@ -22,11 +22,6 @@ class DockerGradingJobExecutorBuilder(GradingJobExecutorBuilder):
         self.__env_variable_mappings: Dict[str, str] = dict()
         self.__to_copy = dict()
 
-    def __num_containers_with_same_sha(self) -> int:
-        filter_op: Callable[[str], bool] = lambda n: n.startswith(
-            self.__image_name)
-        return len(list(filter(filter_op, get_all_container_names())))
-
     def add_docker_volume_mapping(self, local_path: str, container_path: str) -> None:
         self.__volume_mappings[local_path] = container_path
 
