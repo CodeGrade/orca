@@ -16,7 +16,7 @@ def censor_url(url: str) -> str:
     pwd_re = r'^(?P<protocol>.*)://(?P<username>.*?):(?P<password>.*?)@(?P<url>.*)'
     url_match = re.search(pwd_re, url)
     if url_match:
-        return f"{url_match.group('protocol')}://{url_match.group('username')}@[paassword]:{url_match.group('url')}"
+        return f"{url_match.group('protocol')}://{url_match.group('username')}:[password]@{url_match.group('url')}"
     return url
 
 def get_next_job() -> Optional[GradingJobJSON]:
