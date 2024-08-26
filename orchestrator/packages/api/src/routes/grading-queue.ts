@@ -12,7 +12,7 @@ import verifyAPIKey from "../middleware/verify-api-key";
 const gradingQueueRouter = Router();
 
 // TODO: Add middleware/move existing validation to middleware
-gradingQueueRouter.get("/grading_queue", getGradingJobs);
+// gradingQueueRouter.get("/grading_queue", getGradingJobs);
 gradingQueueRouter.put("/grading_queue", verifyAPIKey, createOrUpdateJob);
 gradingQueueRouter.put("/grading_queue/immediate", verifyAPIKey, createOrUpdateImmediateJob);
 gradingQueueRouter.put("/grading_queue/move", verifyAPIKey, moveJob);

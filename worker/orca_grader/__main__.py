@@ -7,7 +7,6 @@ import time
 import logging
 from typing import List, Optional
 import tempfile
-import shutil
 from subprocess import CalledProcessError
 from orca_grader.common.services.push_results import push_results_with_exception
 from orca_grader.common.types.grading_job_json_types import GradingJobJSON
@@ -19,7 +18,6 @@ from orca_grader.executor.builder.docker_grading_job_executor_builder import Doc
 from orca_grader.executor.builder.grading_job_executor_builder import GradingJobExecutorBuilder
 from orca_grader.job_retrieval.local.local_grading_job_retriever import LocalGradingJobRetriever
 from orca_grader.job_retrieval.postgres.grading_job_retriever import PostgresGradingJobRetriever
-from orca_grader.docker_utils.images.utils import does_image_exist_locally
 from orca_grader.docker_utils.images.image_name import get_image_name_for_sha
 from orca_grader.docker_utils.images.image_loading import retrieve_image_tgz_for_unique_name, load_image_from_tgz
 from orca_grader.job_termination.nonblocking_thread_executor import NonBlockingThreadPoolExecutor
@@ -134,7 +132,8 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
         if image_name is None:
             _LOGGER.info(
                 f"No image {image_name} found in local docker registry.")
-            tgz_file_name = retrieve_image_tgz_for_unique_name(container_sha)
+            images_endpoint = f"{APP_CONFIG.orca_web_server_host}/images"
+            tgz_file_name = retrieve_image_tgz_for_unique_name(images_endpoint, container_sha)
             image_name = load_image_from_tgz(tgz_file_name)
             _LOGGER.debug(f"Expected image name: {image_name}")
             if image_name is None:
@@ -219,7 +218,7 @@ def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = Non
         else:
             warn_str = "The processes timed out during execution." if \
                         result.did_timeout else "An error was encountered during execution."
-            _LOGGER.warn(warn_str)
+            _LOGGER.warning(warn_str)
         _LOGGER.debug("\n".join(result.results))
 
 
@@ -227,7 +226,8 @@ def inform_client_of_reenqueue(grading_job: GradingJobJSON,
                                updated_db_id: int) -> None:
     post_job_status_to_client(location="Queue",
                               response_url=grading_job["response_url"],
-                              key=grading_job["key"])
+                              key=grading_job["key"],
+                              id=updated_db_id)
 
 
 def can_execute_job(grading_job: GradingJobJSON) -> bool:
@@ -253,7 +253,8 @@ if __name__ == "__main__":
     else:
         handler = logging.StreamHandler(stream=sys.stdout)
 
-    logging.basicConfig(level=logging.DEBUG,
+    logging.basicConfig(level=logging.INFO if APP_CONFIG.environment ==
+                        'production' else logging.DEBUG,
                         format='%(asctime)s - %(levelname)s - %(message)s',
                         handlers=[handler])
 
