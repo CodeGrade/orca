@@ -86,7 +86,8 @@ if __name__ == "__main__":
     log_file_path = os.getenv("CONTAINER_LOG_FILE_PATH")
     handler = logging.FileHandler(filename=log_file_path) if \
         log_file_path is not None else logging.StreamHandler(stream=sys.stdout)
-    logging.basicConfig(level=logging.DEBUG,
+    logging.basicConfig(level=logging.INFO if APP_CONFIG.environment ==
+                        'production' else logging.DEBUG,
                         format='%(asctime)s - %(levelname)s - %(message)s',
                         handlers=[handler])
 
