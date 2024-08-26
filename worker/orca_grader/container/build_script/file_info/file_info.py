@@ -1,18 +1,17 @@
 from urllib.parse import urlparse, unquote
 from os.path import basename
-from orca_grader.container.build_script.code_file.mime_types import MIMEType
-from orca_grader.common.types.grading_job_json_types import CodeFileInfoJSON
+from orca_grader.common.types.grading_job_json_types import FileInfoJSON
 
-class CodeFileInfo:
+class FileInfo:
   """
-  CodeFileInfo contains:
+  FileInfo contains:
     - A URL to download/save/extract either an assignment, submission, or
       grading file.
     - The MIME type of that file.
     - The source of the code file. See ./code_file_source.py for more info.
   """
 
-  def __init__(self, url: str, mime_type: MIMEType,
+  def __init__(self, url: str, mime_type: str,
     save_dir_name: str, should_replace_paths: bool) -> None:
     self.__url = url
     self.__mime_type = mime_type
@@ -22,7 +21,7 @@ class CodeFileInfo:
   def get_url(self) -> str:
     return self.__url
 
-  def get_mime_type(self) -> MIMEType:
+  def get_mime_type(self) -> str:
     return self.__mime_type
 
   def should_replace_paths(self) -> bool:
@@ -40,6 +39,6 @@ class CodeFileInfo:
     file_path = unquote(url_encoded_file_path)
     return basename(file_path)
 
-def json_to_code_file_info(json_code_file: CodeFileInfoJSON, dir_name: str) -> CodeFileInfo:
-  return CodeFileInfo(json_code_file["url"], MIMEType(json_code_file["mime_type"]),
+def json_to_file_info(json_code_file: FileInfoJSON, dir_name: str) -> FileInfo:
+  return FileInfo(json_code_file["url"], json_code_file["mime_type"],
     dir_name, json_code_file["should_replace_paths"])
