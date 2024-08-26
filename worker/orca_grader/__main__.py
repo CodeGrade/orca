@@ -2,6 +2,7 @@ import argparse
 import concurrent.futures
 import json
 import os
+import re
 import sys
 import time
 import logging
@@ -11,7 +12,7 @@ from subprocess import CalledProcessError
 from orca_grader.common.services.push_results import push_results_with_exception
 from orca_grader.common.types.grading_job_json_types import GradingJobJSON
 from orca_grader.config import APP_CONFIG
-from orca_grader.db.operations import reenqueue_job, censor_url
+from orca_grader.db.operations import reenqueue_job
 from orca_grader.docker_utils.images.clean_up import clean_up_unused_images
 from orca_grader.exceptions import InvalidWorkerStateException, NoImageNameFoundException
 from orca_grader.executor.builder.docker_grading_job_executor_builder import DockerGradingJobExecutorBuilder
@@ -29,6 +30,14 @@ from orca_grader.common.services.push_status import post_job_status_to_client
 CONTAINER_WORKING_DIR = '/home/orca-grader'
 _LOGGER = logging.getLogger(__name__)
 _SLEEP_LENGTH = 5  # seconds
+
+
+def censor_url(url: str) -> str:
+    pwd_re = r'^(?P<protocol>.*)://(?P<username>.*?):(?P<password>.*?)@(?P<url>.*)'
+    url_match = re.search(pwd_re, url)
+    if url_match:
+        return f"{url_match.group('protocol')}://{url_match.group('username')}:[password]@{url_match.group('url')}"
+    return url
 
 
 def run_local_job(job_path: str, no_container: bool,
@@ -260,7 +269,9 @@ if __name__ == "__main__":
                         format='%(asctime)s - %(levelname)s - %(message)s',
                         handlers=[handler])
 
+    _LOGGER.info(f"Uncensored PostgreSQL connection string: {APP_CONFIG.postgres_url}")
     _LOGGER.info(f"PostgreSQL connection string: {censor_url(APP_CONFIG.postgres_url)}")
+    _LOGGER.info(f"Uncensored PostgreSQL connection string after censoring: {APP_CONFIG.postgres_url}")
     arg_parser = argparse.ArgumentParser(
         prog="Orca Grader",
         description="Pulls a job from a Redis queue and executes a script to autograde."

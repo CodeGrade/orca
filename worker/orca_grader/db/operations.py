@@ -20,7 +20,9 @@ def censor_url(url: str) -> str:
     return url
 
 def get_next_job() -> Optional[GradingJobJSON]:
+    _LOGGER.debug(f"Uncensored url: {__ENGINE.url}")
     _LOGGER.debug(f"SQLAlchemy engine URL: {censor_url(__ENGINE.url)}")
+    _LOGGER.debug(f"Uncensored url after censoring: {__ENGINE.url}")
     _LOGGER.debug("Attempting to get next job from queue.")
     with Session(__ENGINE) as session, session.begin():
         _LOGGER.debug("Getting next reservation.")
