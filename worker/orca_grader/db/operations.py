@@ -3,6 +3,7 @@ import re
 from typing import Optional, Set, Any, Dict
 from sqlalchemy import create_engine, select, delete, func, \
     insert
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
 from orca_grader.config import APP_CONFIG
@@ -12,15 +13,21 @@ from orca_grader.db.models import Submitter, Reservation, Job
 __ENGINE = create_engine(APP_CONFIG.postgres_url)
 _LOGGER = logging.getLogger(__name__)
 
-def censor_url(url: str) -> str:
-    pwd_re = r'^(?P<protocol>.*)://(?P<username>.*?):(?P<password>.*?)@(?P<url>.*)'
-    url_match = re.search(pwd_re, url)
-    if url_match:
-        return f"{url_match.group('protocol')}://{url_match.group('username')}:[password]@{url_match.group('url')}"
-    return url
+def censored_url() -> str:
+    if __ENGINE:
+        return __ENGINE.url.render_as_string()
+    url = APP_CONFIG.postgres_url
+    try:
+        return make_url(url).render_as_string()
+    except Exception:
+        pwd_re = r'^(?P<protocol>.*)://(?P<username>.*?):(?P<password>.*?)@(?P<url>.*)'
+        matches = re.search(pwd_re, url)
+        if matches:
+            return f"{matches['protocol']}://{matches['username']}:[password]@{matches['url']}"
+        return url
 
 def get_next_job() -> Optional[GradingJobJSON]:
-    _LOGGER.debug(f"SQLAlchemy engine URL: {censor_url(__ENGINE.url)}")
+    _LOGGER.debug(f"SQLAlchemy engine URL: {censored_url()}")
     _LOGGER.debug("Attempting to get next job from queue.")
     with Session(__ENGINE) as session, session.begin():
         _LOGGER.debug("Getting next reservation.")

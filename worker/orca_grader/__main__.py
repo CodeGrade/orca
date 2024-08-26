@@ -11,7 +11,7 @@ from subprocess import CalledProcessError
 from orca_grader.common.services.push_results import push_results_with_exception
 from orca_grader.common.types.grading_job_json_types import GradingJobJSON
 from orca_grader.config import APP_CONFIG
-from orca_grader.db.operations import reenqueue_job, censor_url
+from orca_grader.db.operations import reenqueue_job, censored_url
 from orca_grader.docker_utils.images.clean_up import clean_up_unused_images
 from orca_grader.exceptions import InvalidWorkerStateException, NoImageNameFoundException
 from orca_grader.executor.builder.docker_grading_job_executor_builder import DockerGradingJobExecutorBuilder
@@ -260,7 +260,7 @@ if __name__ == "__main__":
                         format='%(asctime)s - %(levelname)s - %(message)s',
                         handlers=[handler])
 
-    _LOGGER.info(f"PostgreSQL connection string: {censor_url(APP_CONFIG.postgres_url)}")
+    _LOGGER.info(f"PostgreSQL connection string: {censored_url()}")
     arg_parser = argparse.ArgumentParser(
         prog="Orca Grader",
         description="Pulls a job from a Redis queue and executes a script to autograde."
