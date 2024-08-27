@@ -19,6 +19,7 @@ from orca_grader.common.types.grading_job_json_types import (
     GradingScriptCommandJSON
 )
 from orca_grader.container.fs_tree import tree
+from orca_grader.config import APP_CONFIG
 
 _LOGGER = logging.getLogger("do_grading" if __name__ != '__main__' else
                             __name__)
