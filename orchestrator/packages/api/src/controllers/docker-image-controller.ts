@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { errorResponse, formatValidationErrors } from "./utils";
 import {
-    graderImageExists,
+  graderImageExists,
   logger,
   validations,
 } from "@codegrade-orca/common";
@@ -10,7 +10,12 @@ import { GradingQueueOperationException, enqueueImageBuild, imageIsAwaitingBuild
 export const createGraderImage = async (req: Request, res: Response) => {
   const validator = validations.graderImageBuildRequest;
   if (!validator(req.body)) {
-    return errorResponse(res, 400, formatValidationErrors("The request body to build a grader image is invalid.", validator.errors));
+    return errorResponse(res, 400,
+      [
+        "The request body to build a grader image is invalid.",
+        ...formatValidationErrors(validator.errors)
+      ]
+    );
   }
   const { dockerfile_sha_sum } = req.body;
   if (graderImageExists(dockerfile_sha_sum)) {
