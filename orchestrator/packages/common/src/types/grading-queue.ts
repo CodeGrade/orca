@@ -36,6 +36,8 @@ export interface FileInfo {
 
 export type CollationType = "team" | "user";
 
+export type GradingScript = GradingScriptCommand[];
+
 export interface Collation {
   type: CollationType;
   id: string;
@@ -47,7 +49,7 @@ export interface GradingJobConfig {
   metadata_table: Record<string, string | string[]>;
   files: Record<string, FileInfo>;
   priority: number;
-  script: GradingScriptCommand[];
+  script: GradingScript;
   response_url: string;
   container_response_url?: string;
   grader_image_sha: string;

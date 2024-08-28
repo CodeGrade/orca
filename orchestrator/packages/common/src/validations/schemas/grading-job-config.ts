@@ -14,7 +14,7 @@ const fileInfo = {
   additionalProperties: false,
 } as const;
 
-const bashGradingScriptCommand = {
+const bashGradingScriptCommandSchema = {
   $id: "https://orca-schemas.com/grading-job-config/bash-grading-script-command",
   type: "object",
   properties: {
@@ -53,7 +53,7 @@ const bashGradingScriptCommand = {
   additionalProperties: false,
 } as const;
 
-const gradingScriptCondition = {
+const gradingScriptConditionSchema = {
   $id: "https://orca-schemas.com/grading-job-config/grading-script-condition",
   type: "object",
   properties: {
@@ -67,7 +67,7 @@ const gradingScriptCondition = {
   additionalProperties: false,
 } as const;
 
-const conditionalGradingScriptCommand = {
+const conditionalGradingScriptCommandSchema = {
   $id: "https://orca-schemas.com/grading-job-config/conditional-grading-script-command",
   type: "object",
   properties: {
@@ -102,7 +102,7 @@ const conditionalGradingScriptCommand = {
   additionalProperties: false,
 } as const;
 
-const gradingScriptCommand = {
+export const gradingScriptCommandSchema = {
   $id: "https://orca-schemas.com/grading-job-config/grading-script-command",
   oneOf: [
     {
@@ -114,12 +114,25 @@ const gradingScriptCommand = {
   ],
 } as const;
 
+export const gradingScriptSubSchemas = [
+  bashGradingScriptCommandSchema,
+  gradingScriptConditionSchema,
+  conditionalGradingScriptCommandSchema,
+  gradingScriptCommandSchema
+];
+
+export const gradingScriptSchema = {
+  $id: "https://orca-schemas.com/grading-job-config/grading-script",
+  type: "array",
+  items: {
+    $ref: "https://orca-schemas.com/grading-job-config/grading-script-command",
+  },
+} as const;
+
 export const gradingJobConfigSubSchemas = [
   fileInfo,
-  gradingScriptCommand,
-  bashGradingScriptCommand,
-  gradingScriptCondition,
-  conditionalGradingScriptCommand,
+  ...gradingScriptSubSchemas,
+  gradingScriptSchema
 ];
 
 export const gradingJobConfigSchema = {
@@ -140,12 +153,7 @@ export const gradingJobConfigSchema = {
       },
     },
     priority: { type: "number" },
-    script: {
-      type: "array",
-      items: {
-        $ref: "https://orca-schemas.com/grading-job-config/grading-script-command",
-      },
-    },
+    script: { $ref: "https://orca-schemas.com/grading-job-config/grading-script" },
     response_url: { type: "string" },
     container_response_url: { type: "string" },
     grader_image_sha: { type: "string" },
