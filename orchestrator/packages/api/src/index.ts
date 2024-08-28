@@ -16,9 +16,9 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/v1", gradingQueueRouter, dockerImagesRouter, holdingPenRouter, validationsRouter);
-app.use("/status", async (_req, res) => res.json({"message": "ok", "numJobs": await getNumJobsEnqueued()}));
+app.get("/status", async (_req, res) => res.json({"message": "ok", "numJobs": await getNumJobsEnqueued()}));
 app.use("/images", express.static(CONFIG.dockerImageFolder));
-app.use("/", async(_req, res) => res.send('<h1>Orca Web API</h1>'));
+app.get("/", async(_req, res) => res.send('<h1>Orca Web API</h1>'));
 
 app.listen(CONFIG.api.port, () => {
   if (!existsSync(CONFIG.dockerImageFolder)) {
