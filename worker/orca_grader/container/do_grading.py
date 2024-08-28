@@ -28,9 +28,9 @@ _LOGGER = logging.getLogger("do_grading" if __name__ != '__main__' else
 def do_grading(secret: str, grading_job_json: GradingJobJSON) -> GradingJobResult:
     command_responses: List[GradingScriptCommandResponse] = []
     interpolated_dirs = {
-        "$DOWNLOADED": f"{secret}/downloaded",
-        "$EXTRACTED": f"{secret}/extracted",
-        "$BUILD": f"{secret}/build"
+        "$DOWNLOADED": os.path.abspath(f"{secret}/downloaded"),
+        "$EXTRACTED": os.path.abspath(f"{secret}/extracted"),
+        "$BUILD": os.path.abspath(f"{secret}/build")
     }
     # The following exceptions are used to encapsulate things "expected to go wrong":
     # - InvalidGradingJobJSONException*: Thrown when job JSON doesn't match schema (see validations/).

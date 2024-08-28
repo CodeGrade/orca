@@ -60,7 +60,7 @@ const main = async () => {
         notifyClientOfBuildResult(err, infoAsBuildReq);
         await cleanUpDockerFiles(infoAsBuildReq.dockerfile_sha_sum);
       }
-      logger.error(`Encountered during image build: ${err}.`);
+      logger.error(`Encountered during image build: ${JSON.stringify(err)}.`);
     } finally {
       if (infoAsBuildReq) {
         await removeImageFromDockerIfExists(infoAsBuildReq.dockerfile_sha_sum);

@@ -13,7 +13,7 @@ from orca_grader.common.types.grading_job_json_types import GradingJobJSON
 from orca_grader.config import APP_CONFIG
 from orca_grader.db.operations import reenqueue_job, censored_url
 from orca_grader.docker_utils.images.clean_up import clean_up_unused_images
-from orca_grader.exceptions import InvalidWorkerStateException, NoImageNameFoundException
+from orca_grader.exceptions import InvalidWorkerStateException, NoImageNameFoundException, ExecutorExecutionException
 from orca_grader.executor.builder.docker_grading_job_executor_builder import DockerGradingJobExecutorBuilder
 from orca_grader.executor.builder.grading_job_executor_builder import GradingJobExecutorBuilder
 from orca_grader.job_retrieval.local.local_grading_job_retriever import LocalGradingJobRetriever
@@ -131,7 +131,7 @@ def run_grading_job(grading_job: GradingJobJSON, no_container: bool,
         image_name = get_image_name_for_sha(container_sha)
         if image_name is None:
             _LOGGER.info(
-                f"No image {image_name} found in local docker registry.")
+                f"No image with SHA {container_sha} found in local docker registry; trying to retrieve from orchestrator.")
             images_endpoint = f"{APP_CONFIG.orca_web_server_host}/images"
             tgz_file_name = retrieve_image_tgz_for_unique_name(images_endpoint, container_sha)
             image_name = load_image_from_tgz(tgz_file_name)
@@ -217,11 +217,14 @@ def handle_grading_job(grading_job: GradingJobJSON, image_name: str | None = Non
         result = executor.execute()
         if result.was_successful:
             _LOGGER.info("Job was completed successfully.")
+            _LOGGER.debug("\n".join(result.results))
         else:
             warn_str = "The processes timed out during execution." if \
                         result.did_timeout else "An error was encountered during execution."
             _LOGGER.warning(warn_str)
-        _LOGGER.debug("\n".join(result.results))
+            _LOGGER.warning("\n".join(result.results))
+            raise ExecutorExecutionException(warn_str + "\n".join(result.results))
+
 
 
 def inform_client_of_reenqueue(grading_job: GradingJobJSON,
