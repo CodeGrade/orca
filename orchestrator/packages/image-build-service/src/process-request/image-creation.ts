@@ -1,4 +1,4 @@
-import { GraderImageBuildRequest, GraderImageBuildResult, ImageBuildLog, ImageBuildStep, getConfig } from "@codegrade-orca/common";
+import { logger, GraderImageBuildRequest, GraderImageBuildResult, ImageBuildLog, ImageBuildStep, getConfig } from "@codegrade-orca/common";
 import { execFile } from "child_process";
 import { writeFile, rm } from "fs";
 import path from "path";
@@ -8,6 +8,7 @@ const CONFIG = getConfig();
 export const createAndStoreGraderImage = (
   buildRequest: GraderImageBuildRequest,
 ): Promise<GraderImageBuildResult> => {
+  logger.debug(`createAndStoreGraderImage: ${JSON.stringify(buildRequest)}`);
   const buildLogs: Array<ImageBuildLog> = [];
   return writeDockerfileContentsToFile(buildRequest, buildLogs)
     .then((_) => buildImage(buildRequest, buildLogs))
@@ -61,8 +62,9 @@ const buildImage = ({ dockerfile_sha_sum }: GraderImageBuildRequest, buildLogs: 
     execFile(
       "docker",
       dockerBuildArgs,
-      (err, _stdout, stderr) => {
+      (err, stdout, stderr) => {
         const step: ImageBuildStep = "Run docker build on Dockerfile.";
+	logger.debug(`docker build command complete: >>${dockerBuildArgs.join(' ')}<<, err? ${JSON.stringify(err)}`);
         if (err) {
           buildLogs.push({
             step,
@@ -73,11 +75,9 @@ const buildImage = ({ dockerfile_sha_sum }: GraderImageBuildRequest, buildLogs: 
             logs: buildLogs
           });
         } else {
-          // All docker build information, regardless of status code,
-          // is logged to STDERR.
           buildLogs.push({
             step,
-            output: stderr
+            output: `Stdout:\n${stdout}\n\nStderr:\n${stderr}`
           });
           resolve();
         }

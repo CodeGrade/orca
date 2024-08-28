@@ -128,8 +128,10 @@ export const createOrUpdateImmediateJob = async (
 };
 
 export const createOrUpdateJob = async (req: Request, res: Response) => {
+  logger.debug(`createOrUpdateJob: ${JSON.stringify(req.body)}`);
   const validator = validations.gradingJobConfig
   if (!validator(req.body)) {
+     logger.debug(`validator rejected job: ${JSON.stringify(validator.errors)}`);
     return errorResponse(res, 400, formatValidationErrors("The given grading job was invalid.", validator.errors));
   }
   try {
