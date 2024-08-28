@@ -2,6 +2,11 @@ from typing import Dict, List, Optional
 from orca_grader.container.grading_script.grading_script_command_response import GradingScriptCommandResponse
 from orca_grader.common.types.grading_job_json_types import GradingJobResultJSON
 
+def censor(message: str, interpolated_dirs: Dict[str, str]) -> str:
+    return GradingScriptCommandResponse(
+        cmd='', stdout_output=message,
+        stderr_output='', is_error=False,
+        status_code=0).to_json(interpolated_dirs=interpolated_dirs)['stdout']
 
 
 class GradingJobResult:
@@ -34,10 +39,10 @@ class GradingJobResult:
         if self.__execution_errors is not None:
             result["errors"] = list(
                 map(
-                    lambda e: f"{e.__class__.__name__}: {e}",
+                    lambda e: censor(f"{e.__class__.__name__}: {e}", interpolated_dirs),
                     self.__execution_errors
                 )
             )
         if self.__output is not None:
-            result["output"] = self.__output
+            result["output"] = censor(self.__output, interpolated_dirs)
         return result

@@ -23,9 +23,9 @@ class GradingScriptPreprocessor:
         if CycleDetector.contains_cycle(flattened_cmds):
             raise NotADAGException()
         self.__interpolated_dirs = {
-            "$DOWNLOADED": f"{secret}/downloaded",
-            "$EXTRACTED": f"{secret}/extracted",
-            "$BUILD": f"{secret}/build"
+            "$DOWNLOADED": os.path.abspath(f"{secret}/downloaded"),
+            "$EXTRACTED": os.path.abspath(f"{secret}/extracted"),
+            "$BUILD": os.path.abspath(f"{secret}/build")
         }
         self.__file_processor = file_processor
         self.__json_cmds = flattened_cmds
