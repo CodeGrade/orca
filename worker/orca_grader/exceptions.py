@@ -16,3 +16,12 @@ class NoImageNameFoundException(Exception):
 
     def __init__(self, msg: str):
         self.msg = msg
+
+
+class ExecutorExecutionException(Exception):
+    """
+    Used to signal when executing a job's executor failed for some reason.
+    """
+
+    def __init__(self, msg: str):
+        self.msg = msg
