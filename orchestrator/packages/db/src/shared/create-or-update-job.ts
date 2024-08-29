@@ -18,7 +18,7 @@ export const createOrUpdateJob = (jobConfig: GradingJobConfig, isImmediateJob: b
     })) > 0;
 
     if (!imageBuilding && !imageWithSHAExists(jobConfig.grader_image_sha)) {
-      throw new GradingQueueOperationException(`No image exists or is being build with SHA sum ${jobConfig.grader_image_sha}`);
+      throw new GradingQueueOperationException(`No image exists or is being built with SHA sum ${jobConfig.grader_image_sha}`);
     }
 
     return await (imageBuilding ? placeJobInHoldingPen(jobConfig, tx) : createOrUpdateJobWithClient(jobConfig, isImmediateJob, tx));
