@@ -10,6 +10,7 @@
     "generate-api-key": "yarn workspace @codegrade-orca/db generate-api-key",
     "delete-api-key": "yarn workspace @codegrade-orca/db delete-api-key",
     "list-api-keys": "yarn workspace @codegrade-orca/db list-api-keys",
+    "console": "npx @prismatools/console",
     "server": "yarn workspace @codegrade-orca/api start",
     "server:dev": "yarn workspace @codegrade-orca/api dev",
     "image-builder": "yarn workspace @codegrade-orca/image-build-service start",
