@@ -1,11 +1,11 @@
-# Data Definitions - Orca/Grading VMs
+# Data Definitions
 
 This document explores the shape of data exchanged between various points in the Orca workflow, where JSON objects are passed:
 
-1. From grading job source to the Orca Web Server
-2. From the Orca Web Server to the Redis Grading Queue
-3. From the Redis Grading Queue to the Orca Grading VM
-4. From the Orca VM to grading job source
+1. From grading job source to the Orchestrator Web Server
+2. From the Orca Web Server to the Grading Queue
+3. From the Grading Queue to the Worker
+4. From the Worker back to grading job source
 
 While Orca is mainly suited to integrate with Bottlenose, in theory it could be used with any source that can submit a grading job and accept its result.
 
@@ -39,10 +39,7 @@ Orca needs to know if a job belongs to a single user or a team to maintain an _o
 
 ```typescript
 
-enum CollationType {
-  User = "user"
-  Team = "team"
-}
+type CollationType = "user" | "team";
 
 interface Collation {
   type: CollationType;
@@ -56,7 +53,7 @@ interface Collation {
 
 The Orca Web Client is filterable by useful metadata for a given grading job. `GradingJob`s specify a dictionary of field names that are mapped to a given identifier.
 
-For example, JUnit Grader for Assignment 1 might have a metadata field of:
+For example, the JUnit Grader for Assignment 1 might have a metadata field of:
 
 ```json
 {
@@ -72,7 +69,7 @@ For example, JUnit Grader for Assignment 1 might have a metadata field of:
 
 ### `FileInfo`
 
-A `FileInfo` contains a URL to files necessary to grade this submission. A MIME type is also included so that the grading VM can download and extract (as necessary) files correctly.
+A `FileInfo` contains a URL to files necessary to grade this submission. A MIME type is also included so that the worker can download and extract (as necessary) files correctly.
 
 ```typescript
 interface CodeFileInfo {
@@ -90,7 +87,7 @@ Grading jobs have a numeric priority determined by their sources, which is inter
 
 Jobs are run inside Docker containers to provide a level of isolation from the local machine. When an assignment is generated, professors will provide a Dockerfile to build their grader image. Orca's web server will build this image and save it to a .tgz file with the name `<SHA>.tgz`, where `<SHA>` is the SHA sum generated from the image's Dockerfile.
 
-The grading VM will use the `grader_image_sha`'s value to determine if the image already exists on its local machine or if it should be downloaded from the URL `https://<orca-server-hostname>/images/<SHA>.tgz`.
+The worker will use the `grader_image_sha`'s value to determine if the image already exists on its local machine or if it should be downloaded from the URL `https://<orca-server-hostname>/images/<SHA>.tgz`.
 
 The script defines the actual grading process, as a state machine specified below.
 
@@ -116,7 +113,11 @@ A `BashGradingScriptCommand` describes a step in the grading script that require
 
 Each command could either succeed or fail. If successful and `on_complete` says to _output_, or if failed and `on_fail` says to _abort_, then the script exits and sends the results back to the job's source.
 
-If `on_complete` is not specified, then the state machine goes to the next command in the list. If `on_fail` is not specified, then it will automatically abort the script.
+These terminating cases are indicated by the following:
+* `on_fail` is either excluded or points to the reserved keyword `"abort"`.
+* `on_complete` points to the reserved keywork `"output"`.
+
+If `on_complete` is not specified, then the state machine goes to the next command in the list.
 
 If either key points to the reserved keyword `"next"`, then the state machine will go to the next command.
 
@@ -144,7 +145,7 @@ A `ConditionalGradingScriptCommand` allows the control flow of a script to branc
 
 The `GradingScriptCondition` defines how to check for the existence of an object in the file path: either as a file (`'file'`), a directory (`'dir'`), or as either one (`'exists'`).
 
-Simlar to the `BashGradingScriptCommand`, the optional `on_true` and `on_false` keys specify which command to run next.
+Similar to the `BashGradingScriptCommand`, the optional `on_true` and `on_false` keys specify which command to run next.
 
 These pointers are almost exactly congruent to the `BashGradingScriptCommand`'s `on_complete` and `on_fail` properties, except that a script **cannot exit** from a `ConfitionalGradingScriptCommand`.
 
@@ -153,33 +154,36 @@ These pointers are almost exactly congruent to the `BashGradingScriptCommand`'s 
 ## `GradingJob`
 
 ```typescript
-interface QueuedJobInformation {
-  created_at: number;
-  release_at: number;
-  orca_key: string;
+interface AdditionalJobInformation {
+  created_at: Date;
+  release_at: Date;
+  queue_id: number;
 }
 
 type GradingJob = GradingJobConfig & QueuedJobInformation;
 ```
 
-Once a `GradingJobConfig` has been received and validated by the server, Orca generates the requisite infromation from its contents to enqueue the job. This data is represented as `QueuedJobInformation`, and the resulting `GradingJob` is what the server adds to Redis.
+Once a `GradingJobConfig` has been received and validated by the server, it is enqueued by creating records in the Postgres database.
 
-While a `GradingJobConfig`'s `key` is unique to its source, that does not mean that it is unique to the queue -- i.e., multiple sources could have configurations with the same key. The `orca_key` is an identifier unique to a job in the Redis queue; it's value is the result of hashing the concatenation of the `GradingJobConfig`'s `key` and `response_url` properties.
+All references to the job's information will now be in the form of a `GradingJob`: a combination of the original `GradingJobConfig` and new `AdditionalJobData`. The latter's properties are interpreted as the following:
 
-The `created_at` property is the config's time of arrival at the server and the `released_at` property is that arrival time added with the config's priority.
+* `created_at` - the date and time of the job's creation.
+* `release_at` - the date and time at which a job is guaranteed to be in the front of the queue.
+* `queue_id` - the primary key of the `Job` record in the database.
 
 <hr>
 
 ## `GradingJobResult`
 
-Execution of a grading job will result in a `GradingJobResult` object to send back data to a given job's `response_url`. _Optionally_, a `container_response_url` may be included for local development as if the grading container needs to contact an test echo server also running in a container, then there will be a need for separate `http://localhost` and `http://<container_name>` URLs.
+Execution of a grading job will result in a `GradingJobResult` object to be sent back to a job's `response_url` with its `key`.
+
+_Optionally_, a `container_response_url` may be included for local development as if the grading container needs to contact an test echo server also running in a container, then there will be a need for separate `http://localhost` and `http://<container_name>` URLs.
 
 ```typescript
 interface GradingJobResult {
   output?: string;
   shell_responses: [GradingScriptCommandResponse];
   errors?: [string];
-  key: JSONString;
 }
 
 interface GradingScriptCommandResponse {
@@ -195,6 +199,6 @@ The output includes the key given in the original job for use by its originator.
 
 A successful `GradingJobResult` will _always_ contain `output`.
 
-An unsuccessful `GradingJobResult` will still contain any responses of commands executed by the script. '
+An unsuccessful `GradingJobResult` will still contain any responses of commands executed by the script.
 
 If the worker fails (e.g., due to resource limits) or an operation on the server removes the job (e.g., cancelling a job in the queue), the `errors` property will contain a non-empty array.
