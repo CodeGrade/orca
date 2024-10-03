@@ -1,4 +1,4 @@
-import { getConfig, GradingJobConfig } from "@codegrade-orca/common";
+import { getConfig, GradingJobConfig, logger } from "@codegrade-orca/common";
 import { execFile } from "child_process";
 import path = require("path");
 
@@ -15,6 +15,7 @@ export const touchGraderImageFile = ({
         if (err) {
           reject(err);
         } else {
+          logger.info(`Touching grader image ${grader_image_sha}.tgz`);
           resolve();
         }
       },
