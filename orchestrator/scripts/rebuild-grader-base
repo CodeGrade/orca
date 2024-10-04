@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+cd ../../worker
+docker build -t orca-grader-base -f images/orca-grader-base.Dockerfile .
+cd ../orchestrator
+rm -rf images/*
+
