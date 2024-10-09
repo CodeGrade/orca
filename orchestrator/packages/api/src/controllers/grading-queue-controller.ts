@@ -205,7 +205,8 @@ export const jobStatus = async (req: Request, res: Response) => {
   if (!jobQueueStatus) {
     return res.json("We could not find the job you're looking for. Please contact a professor or admin.");
   }
-  const { reservation, queuePosition } = jobQueueStatus;
+  const { reservation, queuePosition, job } = jobQueueStatus;
+  await touchGraderImageFile(job.config as object as GradingJobConfig);
   if (reservationWaitingOnRelease(reservation.releaseAt)) {
     return res.json(describeReleaseTiming(reservation.releaseAt));
   } else {
