@@ -1,6 +1,7 @@
 import path from "path";
 import {
   getConfig,
+  logger,
 } from "@codegrade-orca/common";
 import { readdir, rm, stat } from "fs/promises";
 
@@ -23,6 +24,7 @@ export const removeStaleImageFiles = async (): Promise<Array<string>> => {
         UPPER_LIMIT_OF_TIME_SINCE_IMAGE_USE
       ) {
         await rm(pathToImage);
+        logger.info(`Removing image ${image} off Orchestrator`);
         imagesRemoved.push(image);
       }
     }),
