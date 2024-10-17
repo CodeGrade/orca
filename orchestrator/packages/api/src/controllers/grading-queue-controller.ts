@@ -23,6 +23,8 @@ import {
   getJobStatus
 } from "@codegrade-orca/db";
 import { describeReleaseTiming, reservationWaitingOnRelease } from "../utils/helpers";
+import { touchGraderImageFile } from "../utils/grader-images";
+import path from "path";
 
 export const getGradingJobs = async (req: Request, res: Response) => {
   if (
@@ -120,6 +122,7 @@ export const createOrUpdateImmediateJob = async (
   try {
     const status = await putJobInQueue(req.body, true);
     logger.info(`New job from ${new URL(req.body.response_url).host} sent to ${status.location} with database id ${status.id}.`);
+    await touchGraderImageFile(req.body).catch((err) => logger.warn(`Error encountered while touching grader image: ${err}`));
     return res.status(200).json({ message: "OK", status });
   } catch (error) {
     if (error instanceof GradingQueueOperationException) {
@@ -133,7 +136,6 @@ export const createOrUpdateImmediateJob = async (
 };
 
 export const createOrUpdateJob = async (req: Request, res: Response) => {
-  logger.debug(`createOrUpdateJob: ${JSON.stringify(req.body)}`);
   const validator = validations.gradingJobConfig
   if (!validator(req.body)) {
     logger.debug(`validator rejected job: ${JSON.stringify(validator.errors)}`);
@@ -147,6 +149,7 @@ export const createOrUpdateJob = async (req: Request, res: Response) => {
   try {
     const status = await putJobInQueue(req.body, false);
     logger.info(`New job from ${new URL(req.body.response_url).host} sent to ${status.location} with database id ${status.id}.`);
+    await touchGraderImageFile(req.body).catch((err) => logger.warn(`Error encountered while touching grader image: ${err}`));
     return res.status(200).json({ message: "OK", status });
   } catch (err) {
     if (err instanceof GradingQueueOperationException) {
@@ -202,7 +205,9 @@ export const jobStatus = async (req: Request, res: Response) => {
   if (!jobQueueStatus) {
     return res.json("We could not find the job you're looking for. Please contact a professor or admin.");
   }
-  const { reservation, queuePosition } = jobQueueStatus;
+  const { reservation, queuePosition, job } = jobQueueStatus;
+  await touchGraderImageFile(job.config as object as GradingJobConfig)
+    .catch((err) => logger.warn(`Error encountered while trying to touch grader image: ${err}`));
   if (reservationWaitingOnRelease(reservation.releaseAt)) {
     return res.json(describeReleaseTiming(reservation.releaseAt));
   } else {
